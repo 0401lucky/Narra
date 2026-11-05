@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.PhoneContextBuilderTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:03.703Z" hostname="LUCKY" time="0.035">
+  <properties/>
+  <testcase name="build_roleplayContextSkipsDescriptionWhenPromptToggleOff" classname="com.example.myapplication.conversation.PhoneContextBuilderTest" time="0.019"/>
+  <testcase name="build_chatContextUsesAssistantAsPhoneOwner" classname="com.example.myapplication.conversation.PhoneContextBuilderTest" time="0.004"/>
+  <testcase name="build_roleplayContextAppendsScenarioFields" classname="com.example.myapplication.conversation.PhoneContextBuilderTest" time="0.008"/>
+  <testcase name="build_roleplayUserPhoneContextKeepsUserAsOwner" classname="com.example.myapplication.conversation.PhoneContextBuilderTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

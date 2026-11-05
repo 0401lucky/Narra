@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:07.437Z" hostname="LUCKY" time="0.024">
+  <properties/>
+  <testcase name="saveDraft_thenSend_movesLetterToSent" classname="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" time="0.006"/>
+  <testcase name="settings_roundTripAndMarkProactiveLetterTime" classname="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" time="0.006"/>
+  <testcase name="moveToTrash_keepsLetterOutOfVisibleBoxes" classname="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" time="0.007"/>
+  <testcase name="incomingLetter_markRead_archiveAndDeleteConversation_updatesStorage" classname="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" time="0.003"/>
+  <testcase name="deleteScenarioData_removesLettersAndSettings" classname="com.example.myapplication.data.repository.mailbox.MailboxRepositoryTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

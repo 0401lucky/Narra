@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH02Test" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:12:25.865Z" hostname="LUCKY" time="0.636">
+  <properties/>
+  <testcase name="h02_p03_online_empty_session" classname="com.example.myapplication.ui.screenshot.PageScreenshotH02Test" time="0.144"/>
+  <testcase name="h02_p01_messages_empty_state" classname="com.example.myapplication.ui.screenshot.PageScreenshotH02Test" time="0.093"/>
+  <testcase name="h02_p02_assistants_no_search_result" classname="com.example.myapplication.ui.screenshot.PageScreenshotH02Test" time="0.397"/>
+  <system-out><![CDATA[Roborazzi: H02_p03-online-empty-session.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H02_p01-messages-empty.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H02_p02-assistants-no-search-result.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

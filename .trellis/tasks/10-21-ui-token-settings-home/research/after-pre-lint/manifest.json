@@ -1,0 +1,269 @@
+{
+  "phase": "after",
+  "commandExitCode": 1,
+  "expectedMissingBaselines": 16,
+  "acceptedPngHashesUnchanged": 110,
+  "independentWindows": 6,
+  "sourceSha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsScreen.kt": "e06b5538adc16a9e151858987fd9d7b146cd8e3ba7dcf1809b1122e8182e7aa1",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "15f1b95ef9430364c022de46511cc94d774153ef7b50dcf08f7b71f927612df0"
+  },
+  "cases": [
+    {
+      "id": "E10_display-sheet-dark",
+      "file": "E10_display-sheet-dark_actual.png",
+      "sha256": "596b3b434c646e83468bfe6174367d6a5b2ddce5cc36e3152facd915e6896a83",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=显示设置\noperation=代码块自动折叠\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E10_display-sheet-light",
+      "file": "E10_display-sheet-light_actual.png",
+      "sha256": "eb1878e5a5666e4724e8b582c33d4305c8b776c898a6ded9faf5357f402b2491",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=显示设置\noperation=代码块自动折叠\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E10_home-dynamic-dark",
+      "file": "E10_home-dynamic-dark_actual.png",
+      "sha256": "e3a7c288879bde422f66678b9139d42092876f620b7979bdb912190f6b7f870f",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-dynamic-light",
+      "file": "E10_home-dynamic-light_actual.png",
+      "sha256": "1b9e26296d6619923ae8da6fe8e894ea36353031ed4a4a1e20d28a961996cb7c",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-matcha-dark",
+      "file": "E10_home-matcha-dark_actual.png",
+      "sha256": "6612e4683db23ee374afef628af51dee10549e2254747117bbdceafe511d09f1",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-matcha-light",
+      "file": "E10_home-matcha-light_actual.png",
+      "sha256": "928314b7fec2bebc14cd836e4de0160ffd3812994af392cb01531431a1c1f70b",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-narrow-dark",
+      "file": "E10_home-narrow-dark_actual.png",
+      "sha256": "33b438efa77c53518eeb81c7a69c1d41defe80cc3b66380bf7b33ba98aee8942",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-narrow-light",
+      "file": "E10_home-narrow-light_actual.png",
+      "sha256": "0ba496a2e50a3e2d62bac0b1fd399f1c93c28f78e5618b9b6059b4391d79b41b",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-ocean-dark",
+      "file": "E10_home-ocean-dark_actual.png",
+      "sha256": "9c2a9b6481ce522e4ce42d0fcf3337ef85a0a449d124ea82ae0f8b5a7d504b69",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-ocean-light",
+      "file": "E10_home-ocean-light_actual.png",
+      "sha256": "93ec7ae56889dad4e22fd201ac3b720829628922ad865dd629b44a1f2b0b4b97",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-vanilla-dark",
+      "file": "E10_home-vanilla-dark_actual.png",
+      "sha256": "52fca236d60e6fa7df581f0bc0639e4b26974d45ad5e96c307ad417923f6b886",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_home-vanilla-light",
+      "file": "E10_home-vanilla-light_actual.png",
+      "sha256": "ce9dc7b64fac0f4abdf00c869797e17151b249ab9b2727ec12cc323af8b33b41",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E10_mode-sheet-dark",
+      "file": "E10_mode-sheet-dark_actual.png",
+      "sha256": "a14c9d0babb77803c62986f13dd9e70f5e95ba852b9fd388db42ebd9bae31aef",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=颜色模式\noperation=跟随系统\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E10_mode-sheet-light",
+      "file": "E10_mode-sheet-light_actual.png",
+      "sha256": "cf08c80d07fff136b17c438739951650556fe8e1097df078913e83182e58f397",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=颜色模式\noperation=跟随系统\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E10_theme-sheet-dark",
+      "file": "E10_theme-sheet-dark_actual.png",
+      "sha256": "fe50d58b8fdaf3f83d74a89dd3c936d899a792b01a16f21df27bea9792a280d8",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=选择主题色调\noperation=治愈抹茶\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E10_theme-sheet-light",
+      "file": "E10_theme-sheet-light_actual.png",
+      "sha256": "f4cb9e9026cd550474121518ac675a5158ba21b11bf6f10ad431a7f43dbc76bb",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=选择主题色调\noperation=治愈抹茶\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    }
+  ]
+}

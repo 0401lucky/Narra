@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:57:45.913Z" hostname="LUCKY" time="0.569">
+  <properties/>
+  <testcase name="legacyTopBar_keepsSingleLineWhileOptInTitleWrapsAndActionsRemainIndependent" classname="com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest" time="0.248"/>
+  <testcase name="legacyRow_keepsTwoLineLimitWhileExplicitLayoutCanShowCompleteText" classname="com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest" time="0.241"/>
+  <testcase name="bothGroupOverloads_forwardOptInShapeAndPaddingWhileOldDefaultsRemainVisible" classname="com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest" time="0.077"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

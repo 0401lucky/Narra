@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.ReasoningConfigTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:20.705Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="buildThinkingRequestConfig_anthropicUsesBudgetTokens" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_claudeOpenAiCompatible" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_grok4Disabled" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_qwen37DashScope" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_claudeAnthropic" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="buildThinkingRequestConfig_claudeOpenAiCompatibleUsesReasoningEffort" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.001"/>
+  <testcase name="buildThinkingRequestConfig_anthropicAutoDoesNotForceThinking" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="mapThinkingBudgetToReasoningEffort_gemini35StandardUsesHigh" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="buildThinkingRequestConfig_qwen37AutoDoesNotForceThinking" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_gemini25" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="mapThinkingBudgetToReasoningEffort_gemini35DisplayNameStandardUsesHigh" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="buildThinkingRequestConfig_qwen37UsesEnableThinkingAndThinkingBudget" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_gemini35Flash" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="supportsThinkingBudgetControl_gemini35FlashDisplayName" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <testcase name="mapThinkingBudgetToReasoningEffort_gemini3StandardUsesHigh" classname="com.example.myapplication.model.ReasoningConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

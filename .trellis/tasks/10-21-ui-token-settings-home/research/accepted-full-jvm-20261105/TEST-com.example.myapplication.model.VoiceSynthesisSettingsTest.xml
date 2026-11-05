@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.VoiceSynthesisSettingsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:20.722Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="requireSecureMimoBaseUrl_allowsLoopbackHttpEndpointForLocalTesting" classname="com.example.myapplication.model.VoiceSynthesisSettingsTest" time="0.0"/>
+  <testcase name="normalizeMimoBaseUrl_blankInputFallsBackToDefault" classname="com.example.myapplication.model.VoiceSynthesisSettingsTest" time="0.0"/>
+  <testcase name="resolveMimoChatCompletionsEndpoint_keepsFullEndpoint" classname="com.example.myapplication.model.VoiceSynthesisSettingsTest" time="0.0"/>
+  <testcase name="resolveMimoChatCompletionsEndpoint_appendsChatCompletionsPath" classname="com.example.myapplication.model.VoiceSynthesisSettingsTest" time="0.0"/>
+  <testcase name="requireSecureMimoBaseUrl_rejectsRemoteHttpEndpoint" classname="com.example.myapplication.model.VoiceSynthesisSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -7,3 +7,8 @@
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享修改先枚举定义与全部消费者"}
 {"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"本批真实入口共享所有者覆盖缺口与候选矩阵"}
 {"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"真实窗口捕获before-after接纳及后续队列边界"}
+{"file":"app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotStageTest.kt","reason":"复用确定性截图舞台、字体和零像素门禁"}
+{"file":"app/src/test/java/com/example/myapplication/ui/screenshot/SessionSidebarRenderTest.kt","reason":"复用P05已验证的真实独立窗口捕获模式"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-session-sidebar/verification.md","reason":"P05已完成前置与110张已接纳PNG的最新口径"}
+{"file":"app/src/test/java/com/example/myapplication/ui/theme/UiTokenSourceGuard.kt","reason":"支持SettingsGroup两个重载的显式数量校验，仍扫描全部声明"}
+{"file":"app/src/test/java/com/example/myapplication/ui/theme/UiTokenSourceGuardTest.kt","reason":"为重载硬编码和数量漂移补有意义的负向验证"}

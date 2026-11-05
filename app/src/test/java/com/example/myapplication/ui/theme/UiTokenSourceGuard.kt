@@ -12,6 +12,7 @@ internal object UiTokenSourceGuard {
         val requiredDeclarations: Set<String> = emptySet(),
         val scannedDeclarations: Set<String>? = null,
         val legacyDeclarations: Set<String> = emptySet(),
+        val expectedDeclarationCounts: Map<String, Int> = emptyMap(),
     )
 
     data class Exception(
@@ -50,12 +51,25 @@ internal object UiTokenSourceGuard {
         val findings = scopes.flatMap { scope ->
             val source = sources[scope.path] ?: return@flatMap emptyList()
             val declarations = declarations(maskNonCode(source)).map { it.second }
+            val checkedDeclarations = scope.requiredDeclarations + scope.scannedDeclarations.orEmpty()
+            scope.expectedDeclarationCounts.forEach { (name, count) ->
+                if (name !in checkedDeclarations || count <= 0) {
+                    add("无效的声明数量登记：${scope.path}#$name=$count")
+                }
+            }
+            fun checkDeclarationCount(name: String, label: String) {
+                val expected = scope.expectedDeclarationCounts[name] ?: 1
+                if (declarations.count { it == name } != expected) {
+                    val requirement = if (expected == 1) "必须存在且唯一" else "数量必须为 $expected"
+                    add("$label$requirement：${scope.path}#$name")
+                }
+            }
             scope.requiredDeclarations.forEach { name ->
-                if (declarations.count { it == name } != 1) add("声明必须存在且唯一：${scope.path}#$name")
+                checkDeclarationCount(name, "声明")
             }
             scope.scannedDeclarations?.let { scanned ->
                 scanned.forEach { name ->
-                    if (declarations.count { it == name } != 1) add("扫描声明必须存在且唯一：${scope.path}#$name")
+                    checkDeclarationCount(name, "扫描声明")
                 }
                 val registered = scanned + scope.legacyDeclarations
                 (declarations.toSet() - registered).forEach { add("未登记声明：${scope.path}#$it") }

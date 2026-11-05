@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsHomePersistenceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:50:40.361Z" hostname="LUCKY" time="0.916">
+  <properties/>
+  <testcase name="explicitSave_failureKeepsDraftShowsMessageAndDoesNotCallSuccess" classname="com.example.myapplication.ui.screen.settings.SettingsHomePersistenceTest" time="0.557"/>
+  <testcase name="explicitSave_successDisablesDuplicatesAndOpensOnlyAfterPersistence" classname="com.example.myapplication.ui.screen.settings.SettingsHomePersistenceTest" time="0.354"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

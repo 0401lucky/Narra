@@ -3,7 +3,7 @@
   "name": "ui-token-settings-home",
   "title": "v2.3 扩面三：设置首页",
   "description": "P10设置首页显式采用统一令牌，保留共享设置组件的其他调用方默认。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "frontend",
   "scope": "ui",
   "package": null,
@@ -21,11 +21,13 @@
   "children": [],
   "parent": "10-21-ui-token-accessibility-expansion",
   "relatedFiles": [],
-  "notes": "四批摘要已由2026-10-21用户回复“可以”批准；P05验收后独占设置共享接口，通过opt-in迁移P10，保留其他调用默认。",
+  "notes": "2026-11-05用户接纳P10的16组效果，按精确SHA接纳后共126张PNG，旧110张不变。最终127/127真实截图、1755/1755完整JVM通过，Lint/dev构建/AndroidTest实际编译通过，无新增警告；独立检查无未修复问题。等待具体提交清单确认后提交归档。P11继续等待，版本仍2.2.12-dev，未推送发包，设备/物理性能/新视觉CI未测单列。",
   "meta": {
     "version": "2.3",
     "batch": "3",
-    "review_status": "approved_awaiting_predecessor",
+    "review_status": "accepted_and_verified",
+    "visual_acceptance": "2026-11-05 用户回复：接纳这16组效果（推荐）",
+    "review_artifact": ".trellis/tasks/10-21-ui-token-settings-home/review/index.html",
     "predecessor": "10-21-ui-token-session-sidebar",
     "planned_new_screenshots": 16
   }

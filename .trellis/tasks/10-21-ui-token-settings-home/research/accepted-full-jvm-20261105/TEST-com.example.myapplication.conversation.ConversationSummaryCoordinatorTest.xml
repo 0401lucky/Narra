@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:03.625Z" hostname="LUCKY" time="0.064">
+  <properties/>
+  <testcase name="updateConversationSummary_skipsMessagesAlreadyCoveredBySegments" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.02"/>
+  <testcase name="updateConversationSummary_forceRefreshSummarizesShortHistory" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.006"/>
+  <testcase name="updateConversationSummary_skipsWhenExistingCoverageIsEnough" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.006"/>
+  <testcase name="updateConversationSummary_forceRefreshKeepsExistingSegmentsWhenCoverageIsComplete" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.005"/>
+  <testcase name="updateConversationSummary_splitsLongHistoryIntoSegmentsAndRefreshesTotalSummary" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.009"/>
+  <testcase name="updateConversationSummary_persistsGeneratedSummary" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.006"/>
+  <testcase name="updateConversationSummary_followsDefaultChatModelWhenTitleSummaryModeUsesDefault" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.005"/>
+  <testcase name="updateConversationSummary_forceRefreshRegeneratesSameCoverageSummary" classname="com.example.myapplication.conversation.ConversationSummaryCoordinatorTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

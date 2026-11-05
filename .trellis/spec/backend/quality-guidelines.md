@@ -68,7 +68,7 @@
 
 - UI 外观基准位于 `app/src/test/snapshots/`；用例登记表为
   `ui/screenshot/ScreenshotCases.kt`，宿主与参数记录见同目录 `manifest.md`。
-- 改动消息首页、角色列表、线上 / 线下扮演、会话阅读或气泡外观后运行截图 verify（仅筛选
+- 改动消息首页、角色列表、线上 / 线下扮演、会话阅读、设置首页或气泡外观后运行截图 verify（仅筛选
   `com.example.myapplication.ui.screenshot.*`）；它只比较、不生成基准，
   普通 `testDebugUnitTest` 不比较截图。
 - 禁止在验证前 record，也禁止使用 `verifyAndRecordRoborazziDebug`；新增或
@@ -80,6 +80,7 @@
 - 新增页面无基准时，先用 verify 的缺图 actual 保存修改产品前的真实画面、参数与哈希；
   再保存迁移后候选供人工审阅。接纳前新增项及计数守卫应继续缺图失败，不能暂时豁免；
   将这类失败与旧图差异 / 行为失败分开报告。确认后仅接纳审阅过的图再最终 verify。
+- 若产品改动后才发现捕获前置有误，需要重取before，应使用原始提交的隔离副本，仅覆盖修正后的捕获测试；记录原始提交、覆盖文件/产物哈希和当前工作区未变证明。前后使用相同滚动/窗口策略，不把after反作before；要求滚到底的场景须证明末项整个操作区可见。
 
 ### 性能
 

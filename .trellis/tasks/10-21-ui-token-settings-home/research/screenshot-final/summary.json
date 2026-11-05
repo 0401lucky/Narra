@@ -1,0 +1,95 @@
+{
+  "commandExitCode": 1,
+  "suites": 14,
+  "tests": 127,
+  "failures": 17,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest",
+      "test": "registeredCases_matchMatrixAndSnapshotDirectory",
+      "message": "java.lang.AssertionError: 缺少已登记的基准 PNG：[SettingsHomeScreenshotE10Test/E10_home-matcha-light.png, SettingsHomeScreenshotE10Test/E10_home-matcha-dark.png, SettingsHomeScreenshotE10Test/E10_home-vanilla-light.png, SettingsHomeScreenshotE10Test/E10_home-vanilla-dark.png, SettingsHomeScreenshotE10Test/E10_home-ocean-light.png, SettingsHomeScreenshotE10Test/E10_home-ocean-dark.png, SettingsHomeScreenshotE10Test/E10_home-dynamic-light.png, SettingsHomeScreenshotE10Test/E10_home-narrow-light.png, SettingsHomeScreenshotE10Test/E10_theme-sheet-light.png, SettingsHomeScreenshotE10Test/E10_mode-sheet-light.png, SettingsHomeScreenshotE10Test/E10_display-sheet-light.png, SettingsHomeScreenshotE10Test/E10_home-dynamic-dark.png, SettingsHomeScreenshotE10Test/E10_home-narrow-dark.png, SettingsHomeScreenshotE10Test/E10_theme-sheet-dark.png, SettingsHomeScreenshotE10Test/E10_mode-sheet-dark.png, SettingsHomeScreenshotE10Test/E10_display-sheet-dark.png]"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_display_sheet_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_display-sheet-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_display-sheet-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_ocean_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-ocean-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-ocean-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_dynamic_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-dynamic-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-dynamic-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_matcha_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-matcha-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-matcha-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_theme_sheet_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_theme-sheet-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_theme-sheet-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_vanilla_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-vanilla-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-vanilla-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_theme_sheet_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_theme-sheet-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_theme-sheet-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_narrow_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-narrow-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-narrow-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_mode_sheet_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_mode-sheet-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_mode-sheet-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_matcha_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-matcha-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-matcha-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_display_sheet_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_display-sheet-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_display-sheet-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_ocean_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-ocean-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-ocean-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_mode_sheet_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_mode-sheet-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_mode-sheet-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_narrow_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-narrow-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-narrow-light_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_dynamic_dark",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-dynamic-dark.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-dynamic-dark_actual.png"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test",
+      "test": "e10_home_vanilla_light",
+      "message": "java.lang.AssertionError: Roborazzi: The original file(D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SettingsHomeScreenshotE10Test\\E10_home-vanilla-light.png) was not found.\nSee the actual image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E10_home-vanilla-light_actual.png"
+    }
+  ]
+}

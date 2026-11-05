@@ -1,0 +1,166 @@
+{
+  "reason": "Display screenshot scrolled only the final Text; corrected capture must scroll to the real maximum and keep the entire final Switch touch area in its window.",
+  "baselineCommit": "18c1613f3f935dda790cbb6d01789bdd316c2982",
+  "worktree": "D:\\p10-capture\\before-20261105",
+  "testOverlays": [
+    {
+      "path": "app/src/test/java/com/example/myapplication/ui/screenshot/SettingsHomeRenderTest.kt",
+      "sourceSha256": "f3097939cdbc41e1aaf2afa6c20ca16d8108f3438e62aca46441ad3176f1b8dc",
+      "targetSha256": "f3097939cdbc41e1aaf2afa6c20ca16d8108f3438e62aca46441ad3176f1b8dc"
+    },
+    {
+      "path": "app/src/test/java/com/example/myapplication/ui/screenshot/SettingsHomeScreenshotE10Test.kt",
+      "sourceSha256": "cd979dc8989c2e8dccbd20822b4eb9886f753312b4ae8be30fe00f8eb2606c2d",
+      "targetSha256": "cd979dc8989c2e8dccbd20822b4eb9886f753312b4ae8be30fe00f8eb2606c2d"
+    },
+    {
+      "path": "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotCases.kt",
+      "sourceSha256": "08461a3725feb7c189e2c1bc07d2ff1f645850fa9be1c3ddc28317bb86a7e6b2",
+      "targetSha256": "08461a3725feb7c189e2c1bc07d2ff1f645850fa9be1c3ddc28317bb86a7e6b2"
+    }
+  ],
+  "productionSources": [
+    {
+      "path": "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsScreen.kt",
+      "mainSha256": "e06b5538adc16a9e151858987fd9d7b146cd8e3ba7dcf1809b1122e8182e7aa1",
+      "baselineSha256": "9f0dc514aba681e6d9391c4df17b919ef9e114ee1c682a39820d6011c2b1f171",
+      "baselineGitBlob": "cd4700cb999617f4e995ac3b33239a2602ebcfab"
+    },
+    {
+      "path": "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt",
+      "mainSha256": "15f1b95ef9430364c022de46511cc94d774153ef7b50dcf08f7b71f927612df0",
+      "baselineSha256": "fbab0f1e7bb968af0f95254b859a233ee3d28393cf95ac3c9e66f238e6bd7a48",
+      "baselineGitBlob": "13d3e142fea6503280e63be04b6da3ae9d4c94a6"
+    }
+  ],
+  "acceptedPngHashesUnchanged": 110,
+  "initialWorktreeAttempt": "Nested workspace checkout exceeded Windows path lengths and Git removed the incomplete worktree; used D:/p10-capture with command-scoped core.longpaths=true without changing global Git configuration.",
+  "beforeCommandExitCode": 1,
+  "beforeTests": 17,
+  "beforeExpectedFailures": 17,
+  "initialEvidence": [
+    "before-initial",
+    "after-initial"
+  ],
+  "correctedBeforeChangedCases": [
+    "E10_display-sheet-dark",
+    "E10_display-sheet-light"
+  ],
+  "correctedBeforeUnchangedCases": 14,
+  "beforeCopiedFilesSha256": {
+    "before-recapture-20261105.log": "190389644feaf060535eeffac4d0963e5a27d0d86a87a515d17f90aeb1812b05",
+    "E10_display-sheet-dark-semantics.xml": "7e5fafe6bd2edf368d74cef679d7a7bc72b67ee37dd519b98cac1a36d3006973",
+    "E10_display-sheet-dark-window.txt": "5d0ecb5d682f3ddeb2e047c2906b86757172f065e12997d85dfaf078b38fe383",
+    "E10_display-sheet-dark_actual.png": "e9c25952b890b73493485bed171b9d1fafa22604cb8d124c7aa16bda74b260c3",
+    "E10_display-sheet-light-semantics.xml": "ab93aeff63dd0bceb26b9df52d34371b8f965bfebb53329a91de8dad5ce10f49",
+    "E10_display-sheet-light-window.txt": "ab3908393ea91c058f0e32059a33aaa4b6b862a3b936eca4464e4ed0043b34f2",
+    "E10_display-sheet-light_actual.png": "5fad2a2a810d4c1141eed543018ab81bceb6e588caf8aca01c8e4b9ec1b7cc4f",
+    "E10_home-dynamic-dark-semantics.xml": "b7b6cf80dc8486401586dd5aee567d51b9d8d55d7c4877a6eed10c232e49639e",
+    "E10_home-dynamic-dark_actual.png": "3483466f59151eaa05e0a58efddbdc952515ef1f389e027addef90f2d1fac5db",
+    "E10_home-dynamic-light-semantics.xml": "7e8754f4f02f9f6f5dda161bcc90c25fe1a31ca4657e0c40e06814a69cbe20fa",
+    "E10_home-dynamic-light_actual.png": "c97d9b92d3c009651f8bd0f8733525b7f4363f3cfaa0d5d1c9986bcfd03703de",
+    "E10_home-matcha-dark-semantics.xml": "a15b381b7b470b391786bb86a46c547b0af3c38e192aa3dea34fce4ca9221063",
+    "E10_home-matcha-dark_actual.png": "89a1e1c1b1c0ed627c2e957c4e9fc5ba66de67a8b336efb681cda646d70fe4ce",
+    "E10_home-matcha-light-semantics.xml": "126d824e6b35fc2a8402306bb3ee2f583c0d6f4e2b97b193e2f2b05c39d28f7f",
+    "E10_home-matcha-light_actual.png": "d3e2ef91fa8725b4b30c7ce6284da8048b045ce074d3294bcd053b4d404a4d42",
+    "E10_home-narrow-dark-semantics.xml": "16023bf9bb43b96ec33b19fde1be035185e8be910f2ace44bf6e15e1b3284b57",
+    "E10_home-narrow-dark_actual.png": "25b9280eda785e3851240640b291488f769600501d006eebbe5b44778f80606d",
+    "E10_home-narrow-light-semantics.xml": "a8b79ff83b51e71c3376d345c038523773eeb754a73b067cdd6fdf69a6176116",
+    "E10_home-narrow-light_actual.png": "844568f8c1ad44ae50e1a01f1c0e18dc98d4440329245f99911f36263b7d7a2e",
+    "E10_home-ocean-dark-semantics.xml": "64e16e983e7b14ff62920ee42a04faebe3d861c25f0e20e624d4bc851923a906",
+    "E10_home-ocean-dark_actual.png": "97abbd7914910d2bb255c9cfbda67545c2c688bc854fe36d4a6af3616361f1eb",
+    "E10_home-ocean-light-semantics.xml": "ccc6611df8b28b48a0f80341f94712d10a4538604aa063136f0415e611c677cd",
+    "E10_home-ocean-light_actual.png": "8cd75ecd81da9065918ff77523fa9604b3f016df58cc93d9dcc72bfd33ee4320",
+    "E10_home-vanilla-dark-semantics.xml": "06c42a0f27080284a64a98c674ff3adc6bf77e2ba1993ed6942b452a150a23b5",
+    "E10_home-vanilla-dark_actual.png": "376915b69759ef6e5004d183efb6e6fd4abd2196de36ef4d9c84c6c7b7c2fb23",
+    "E10_home-vanilla-light-semantics.xml": "4d36f1581e4ae7a6c38bb90d1cae6a7db6a7622a75d8834b0112a404f8c8db5d",
+    "E10_home-vanilla-light_actual.png": "16f5d91b7711b954c93edde9d6c9684ee458fc7b081fa2f699a0378fd34bb79f",
+    "E10_mode-sheet-dark-semantics.xml": "58ac29d11fda5f1b638ade92316bbc786708fce53be781489db880161900bdb7",
+    "E10_mode-sheet-dark-window.txt": "24d7d8fb2ed4a9d25d76da53ac94aeb55ae9da437cb20c99cb895ee4b25dc309",
+    "E10_mode-sheet-dark_actual.png": "2387c1b0d98832dc18cba1c4426ee8a8d102d623d3971630c452ed306c44fffc",
+    "E10_mode-sheet-light-semantics.xml": "aa3acb80a25a573622d90715e6c1bb6209935a78c3fd662dc5531b7287e0e49c",
+    "E10_mode-sheet-light-window.txt": "3d2063e86ef4b5afa2a6ecebebaca83d10e5c260e3e198f6ebcd2e9bdba5f7e3",
+    "E10_mode-sheet-light_actual.png": "4d6064531993ef5caa4c97b949ca18e72bbb09febc9fcb5cc923762d24d6fb75",
+    "E10_theme-sheet-dark-semantics.xml": "0e4f102492c3ff2f6e6fc3febfc0f087e620cd14ea80156708535b4442de1b46",
+    "E10_theme-sheet-dark-window.txt": "5883fb698f1db78ceaf05bb4e0683cb49f18089bb39bb9ff2be3038ba680bc4b",
+    "E10_theme-sheet-dark_actual.png": "0ab724290a08c37d223ba90da6ebbc8458ae47de104353896a5672c9a20f5bc5",
+    "E10_theme-sheet-light-semantics.xml": "1278a736fe977d3f9086a8da1217b9fa4b9642b5a9b7e9533e129d1f98ef6ddd",
+    "E10_theme-sheet-light-window.txt": "8b686ba99f94407796d4a9db39937fd864375300d20f5b7ed2f5b4ee1e655348",
+    "E10_theme-sheet-light_actual.png": "b1588b734908192c1ff729bd8227a56289ae35312a7a80c9dceafe08f94ed7e2",
+    "manifest.json": "cf8e5c300d005710f20d21b55e630ad39c131d2d24320905c9924cbd5e38d809",
+    "TEST-com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest.xml": "46e69f164441753f7a5d89db3a631055775839e3168609ca44ca5a99bbbf9ba2",
+    "TEST-com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test.xml": "78d2840d879b99e2e93b0e50706d8543dbf27ebbd390ebeaebd9189f69653b48"
+  },
+  "afterCommandExitCode": 1,
+  "afterTests": 127,
+  "afterExpectedFailures": 17,
+  "correctedAfterChangedCases": [
+    "E10_display-sheet-dark",
+    "E10_display-sheet-light"
+  ],
+  "correctedAfterUnchangedCases": 14,
+  "finalScrollEvidence": {
+    "before/E10_display-sheet-light": {
+      "value": 264.0,
+      "maxValue": 264.0
+    },
+    "before/E10_display-sheet-dark": {
+      "value": 264.0,
+      "maxValue": 264.0
+    },
+    "after/E10_display-sheet-light": {
+      "value": 670.0,
+      "maxValue": 670.0
+    },
+    "after/E10_display-sheet-dark": {
+      "value": 670.0,
+      "maxValue": 670.0
+    }
+  },
+  "beforeManifestSha256": "cf8e5c300d005710f20d21b55e630ad39c131d2d24320905c9924cbd5e38d809",
+  "afterManifestSha256": "e0e8618d5760dd03c14b49203af90a83ba9602b38e4fdcbc3b9a4099f7eddb8a",
+  "postCaptureLintParameterFix": {
+    "description": "Replace the heading-only titleModifier API with titleIsHeading=false and place the private row modifier first among optional parameters.",
+    "previousAfterManifest": "after-pre-lint/manifest.json",
+    "previousAfterManifestSha256": "e0e8618d5760dd03c14b49203af90a83ba9602b38e4fdcbc3b9a4099f7eddb8a",
+    "finalAfterManifestSha256": "855af9e26d1f7a2bed8b0379cb6e9ba6e80ddb1893bc02b43972fe1312cc7942",
+    "beforeSourceSha256": {
+      "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsScreen.kt": "e06b5538adc16a9e151858987fd9d7b146cd8e3ba7dcf1809b1122e8182e7aa1",
+      "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "15f1b95ef9430364c022de46511cc94d774153ef7b50dcf08f7b71f927612df0"
+    },
+    "afterSourceSha256": {
+      "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsScreen.kt": "7296cd66cfc4f55a7b37c039b0bd5b371439055b1cf40bf6048f7d7257411572",
+      "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842"
+    },
+    "unchangedCandidateCount": 16,
+    "reviewedCandidateCount": 16,
+    "finalCandidateSha256": {
+      "E10_display-sheet-dark": "596b3b434c646e83468bfe6174367d6a5b2ddce5cc36e3152facd915e6896a83",
+      "E10_display-sheet-light": "eb1878e5a5666e4724e8b582c33d4305c8b776c898a6ded9faf5357f402b2491",
+      "E10_home-dynamic-dark": "e3a7c288879bde422f66678b9139d42092876f620b7979bdb912190f6b7f870f",
+      "E10_home-dynamic-light": "1b9e26296d6619923ae8da6fe8e894ea36353031ed4a4a1e20d28a961996cb7c",
+      "E10_home-matcha-dark": "6612e4683db23ee374afef628af51dee10549e2254747117bbdceafe511d09f1",
+      "E10_home-matcha-light": "928314b7fec2bebc14cd836e4de0160ffd3812994af392cb01531431a1c1f70b",
+      "E10_home-narrow-dark": "33b438efa77c53518eeb81c7a69c1d41defe80cc3b66380bf7b33ba98aee8942",
+      "E10_home-narrow-light": "0ba496a2e50a3e2d62bac0b1fd399f1c93c28f78e5618b9b6059b4391d79b41b",
+      "E10_home-ocean-dark": "9c2a9b6481ce522e4ce42d0fcf3337ef85a0a449d124ea82ae0f8b5a7d504b69",
+      "E10_home-ocean-light": "93ec7ae56889dad4e22fd201ac3b720829628922ad865dd629b44a1f2b0b4b97",
+      "E10_home-vanilla-dark": "52fca236d60e6fa7df581f0bc0639e4b26974d45ad5e96c307ad417923f6b886",
+      "E10_home-vanilla-light": "ce9dc7b64fac0f4abdf00c869797e17151b249ab9b2727ec12cc323af8b33b41",
+      "E10_mode-sheet-dark": "a14c9d0babb77803c62986f13dd9e70f5e95ba852b9fd388db42ebd9bae31aef",
+      "E10_mode-sheet-light": "cf08c80d07fff136b17c438739951650556fe8e1097df078913e83182e58f397",
+      "E10_theme-sheet-dark": "fe50d58b8fdaf3f83d74a89dd3c936d899a792b01a16f21df27bea9792a280d8",
+      "E10_theme-sheet-light": "f4cb9e9026cd550474121518ac675a5158ba21b11bf6f10ad431a7f43dbc76bb"
+    },
+    "finalScreenshotTests": 127,
+    "finalExpectedMissingFailures": 17,
+    "commandExitCode": 1
+  },
+  "worktreeCleanup": {
+    "path": "D:\\p10-capture\\before-20261105",
+    "commandExitCode": 0,
+    "artifactsVerifiedBeforeRemoval": true,
+    "pathExists": false,
+    "registered": false
+  }
+}

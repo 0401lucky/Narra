@@ -1,0 +1,15 @@
+{
+  "commandExitCode": 1,
+  "suites": 3,
+  "tests": 4,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest",
+      "test": "displaySheet_narrowLargeFont_sliderAndAllSwitchLabelsHaveIndependentSingleCallbacks",
+      "message": "java.lang.AssertionError: 真实点击高度不足48dp：Rect.fromLTRB(12.0, 366.0, 628.0, 454.0)"
+    }
+  ]
+}

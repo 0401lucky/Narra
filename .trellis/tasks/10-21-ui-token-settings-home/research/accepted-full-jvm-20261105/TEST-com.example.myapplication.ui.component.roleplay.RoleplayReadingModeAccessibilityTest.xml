@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:40.512Z" hostname="LUCKY" time="0.796">
+  <properties/>
+  <testcase name="readingLongText_scrollToEnd_keepsCloseReachableAtLargeFont" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest" time="0.235"/>
+  <testcase name="readingMixedTypesAndLongTitle_largeFont_canScrollEveryBodyAndClose" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest" time="0.227"/>
+  <testcase name="emptyReading_largeFont_keepsContentAndCloseReachable" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest" time="0.176"/>
+  <testcase name="readingMixedQuotation_usesActualReadableForeground" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest" time="0.153"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

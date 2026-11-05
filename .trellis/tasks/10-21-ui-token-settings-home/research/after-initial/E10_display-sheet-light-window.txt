@@ -1,0 +1,160 @@
+title=显示设置
+operation=代码块自动折叠
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+Printing with useUnmergedTree = 'true'
+Node #8747 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ |-Node #8748 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   [IsDialog]
+    |-Node #8749 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+      IsTraversalGroup = 'true'
+       |-Node #8750 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+       | ContentDescription = '[关闭工作表]'
+       | TraversalIndex = '1.0'
+       | Actions = [OnClick]
+       | MergeDescendants = 'true'
+       |-Node #8751 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+         IsContainer = 'true'
+         PaneTitle = '底部动作条'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+         TraversalIndex = '0.0'
+          |-Node #8752 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+             |-Node #8755 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             | Actions = [OnLongClick]
+             | MergeDescendants = 'true'
+             |  |-Node #8757 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             |    Focused = 'false'
+             |    Actions = [Dismiss, OnClick, RequestFocus]
+             |    MergeDescendants = 'true'
+             |     |-Node #8758 at (l=288.0, t=44.0, r=352.0, b=52.0)px
+             |       ContentDescription = '[拖动手柄]'
+             |       IsContainer = 'true'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+             |-Node #8760 at (l=0.0, t=96.0, r=640.0, b=1280.0)px
+               IsTraversalGroup = 'true'
+               Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@77176b18'
+               VerticalScrollAxisRange = 'ScrollAxisRange(value=518.0, maxValue=670.0, reverseScrolling=false)'
+               Actions = [ScrollBy, ScrollByOffset]
+                |-Node #8761 at (l=32.0, t=-406.0, r=312.0, b=-303.0)px
+                | Text = '[显示设置]'
+                | [Heading]
+                | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #8764 at (l=32.0, t=-255.0, r=480.0, b=-172.0)px
+                | Text = '[消息字号]'
+                | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #8765 at (l=504.0, t=-252.0, r=608.0, b=-175.0)px
+                | Text = '[偏大]'
+                | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #8766 at (l=12.0, t=-156.0, r=628.0, b=-60.0)px
+                | ContentDescription = '[消息字号]'
+                | Focused = 'false'
+                | ProgressBarRangeInfo = 'ProgressBarRangeInfo(current=1.15, range=0.85..1.25, steps=0)'
+                | StateDescription = '1.15'
+                | Actions = [RequestFocus, SetProgress]
+                | MergeDescendants = 'true'
+                |  |-Node #8768 at (l=458.0, t=-156.0, r=466.0, b=-60.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8772 at (l=40.0, t=-4.0, r=264.0, b=79.0)px
+                | Text = '[思考内容]'
+                | [Heading]
+                | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #8773 at (l=32.0, t=95.0, r=608.0, b=276.0)px
+                | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@7621618b'
+                | Focused = 'false'
+                | Role = 'Switch'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | ToggleableState = 'On'
+                | Actions = [OnClick, OnFillData, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #8775 at (l=32.0, t=111.0, r=344.0, b=188.0)px
+                |  | Text = '[思考默认展开]'
+                |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |  |-Node #8776 at (l=504.0, t=196.0, r=608.0, b=260.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |     |-Node #8777 at (l=552.0, t=204.0, r=600.0, b=252.0)px
+                |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8778 at (l=32.0, t=284.0, r=608.0, b=465.0)px
+                | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@4ac76ec1'
+                | Focused = 'false'
+                | Role = 'Switch'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | ToggleableState = 'On'
+                | Actions = [OnClick, OnFillData, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #8780 at (l=32.0, t=300.0, r=396.0, b=377.0)px
+                |  | Text = '[生成中显示思考]'
+                |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |  |-Node #8781 at (l=504.0, t=385.0, r=608.0, b=449.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |     |-Node #8782 at (l=552.0, t=393.0, r=600.0, b=441.0)px
+                |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8783 at (l=32.0, t=473.0, r=608.0, b=654.0)px
+                | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@36558d34'
+                | Focused = 'false'
+                | Role = 'Switch'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | ToggleableState = 'On'
+                | Actions = [OnClick, OnFillData, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #8785 at (l=32.0, t=489.0, r=500.0, b=566.0)px
+                |  | Text = '[结束后自动收起思考]'
+                |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |  |-Node #8786 at (l=504.0, t=574.0, r=608.0, b=638.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |     |-Node #8787 at (l=552.0, t=582.0, r=600.0, b=630.0)px
+                |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8789 at (l=40.0, t=710.0, r=320.0, b=793.0)px
+                | Text = '[图片与代码]'
+                | [Heading]
+                | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #8790 at (l=32.0, t=809.0, r=608.0, b=990.0)px
+                | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@782a3b63'
+                | Focused = 'false'
+                | Role = 'Switch'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | ToggleableState = 'On'
+                | Actions = [OnClick, OnFillData, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #8792 at (l=32.0, t=825.0, r=344.0, b=902.0)px
+                |  | Text = '[自动预览图片]'
+                |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |  |-Node #8793 at (l=504.0, t=910.0, r=608.0, b=974.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |     |-Node #8794 at (l=552.0, t=918.0, r=600.0, b=966.0)px
+                |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8795 at (l=32.0, t=998.0, r=608.0, b=1179.0)px
+                | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@57a30d4'
+                | Focused = 'false'
+                | Role = 'Switch'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | ToggleableState = 'Off'
+                | Actions = [OnClick, OnFillData, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #8797 at (l=32.0, t=1014.0, r=396.0, b=1091.0)px
+                |  | Text = '[代码块自动换行]'
+                |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |  |-Node #8798 at (l=504.0, t=1099.0, r=608.0, b=1163.0)px
+                |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |     |-Node #8799 at (l=520.0, t=1115.0, r=552.0, b=1147.0)px
+                |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                |-Node #8800 at (l=32.0, t=1187.0, r=608.0, b=1368.0)px
+                  ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                  FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@74baf7dc'
+                  Focused = 'false'
+                  Role = 'Switch'
+                  Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                  ToggleableState = 'Off'
+                  Actions = [OnClick, OnFillData, RequestFocus]
+                  MergeDescendants = 'true'
+                   |-Node #8802 at (l=32.0, t=1203.0, r=396.0, b=1280.0)px
+                   | Text = '[代码块自动折叠]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #8803 at (l=504.0, t=1288.0, r=608.0, b=1352.0)px
+                     Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                      |-Node #8804 at (l=520.0, t=1304.0, r=552.0, b=1336.0)px
+                        Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'

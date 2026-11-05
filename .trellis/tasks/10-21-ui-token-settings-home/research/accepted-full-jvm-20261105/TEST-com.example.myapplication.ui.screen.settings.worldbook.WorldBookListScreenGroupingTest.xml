@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:48:04.867Z" hostname="LUCKY" time="0.008">
+  <properties/>
+  <testcase name="buildWorldBookBooks_skipsEntryWithBothBookIdAndNameBlank" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest" time="0.007"/>
+  <testcase name="buildWorldBookBooks_groupsByBookNameAndPreservesEntryOrder" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest" time="0.001"/>
+  <testcase name="buildWorldBookBooks_groupsEntryWithBlankSourceBookNameByBookId" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

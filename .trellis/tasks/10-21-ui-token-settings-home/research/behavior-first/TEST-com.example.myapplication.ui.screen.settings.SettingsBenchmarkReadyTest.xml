@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsBenchmarkReadyTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:46:06.611Z" hostname="LUCKY" time="0.036">
+  <properties/>
+  <testcase name="isSettingsBenchmarkReady_defaultStateIsNotReady" classname="com.example.myapplication.ui.screen.settings.SettingsBenchmarkReadyTest" time="0.028"/>
+  <testcase name="isSettingsBenchmarkReady_requiresHydratedSelectedProvider" classname="com.example.myapplication.ui.screen.settings.SettingsBenchmarkReadyTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

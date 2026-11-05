@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:57:14.178Z" hostname="LUCKY" time="13.447">
+  <properties/>
+  <testcase name="onlineNarrowLargeFont_stopRemainsNamedAndReachable" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="9.096"/>
+  <testcase name="assistantsNarrowLargeFont_searchSelectionAndMoreMenu_workOnRealViewModel" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="0.777"/>
+  <testcase name="phoneNarrowLargeFont_tabsFitAndExposeSelection_andNewConversationRemainsReachable" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="1.692"/>
+  <testcase name="onlineAiHelper_primaryActionUsesAccessibleTouchTarget_whenExpandedAtLargeFont" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="0.186"/>
+  <testcase name="onlineJumpActions_scrollToRealFirstAndLastMessages_withAccessibleTargets" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="0.289"/>
+  <testcase name="onlineNarrowLargeFont_headerMessagesAndInputDoNotOverlap_andActionsStillWork" classname="com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest" time="0.628"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

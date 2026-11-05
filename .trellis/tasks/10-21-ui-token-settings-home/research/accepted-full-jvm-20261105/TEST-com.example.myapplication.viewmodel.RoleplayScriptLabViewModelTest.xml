@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:48:22.261Z" hostname="LUCKY" time="0.049">
+  <properties/>
+  <testcase name="saveScript_rejectsNonGlobalScriptWithoutOwnerId" classname="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" time="0.014"/>
+  <testcase name="runScriptTest_exposesExecutionResult" classname="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" time="0.014"/>
+  <testcase name="saveScript_persistsGlobalScriptAndClearsOwnerId" classname="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" time="0.007"/>
+  <testcase name="selectAndDeleteScript_resetsDraftAndRemovesRepositoryItem" classname="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" time="0.008"/>
+  <testcase name="applyTemplate_updatesDraftPermissionsAndTestEvent" classname="com.example.myapplication.viewmodel.RoleplayScriptLabViewModelTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

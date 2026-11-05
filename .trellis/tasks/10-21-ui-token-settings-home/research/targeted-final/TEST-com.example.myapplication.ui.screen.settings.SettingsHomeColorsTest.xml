@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsHomeColorsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:25:32.054Z" hostname="LUCKY" time="2.973">
+  <properties/>
+  <testcase name="home_textAndPrimaryAction_followActualSurfacesAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.SettingsHomeColorsTest" time="0.609"/>
+  <testcase name="themeSheet_selectedAndOrdinaryLabelsPairWithRenderedContainersAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.SettingsHomeColorsTest" time="0.589"/>
+  <testcase name="displaySheet_headersScaleAndSwitchTextRemainReadableAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.SettingsHomeColorsTest" time="1.225"/>
+  <testcase name="modeSheet_selectedAndOrdinaryLabelsPairWithRenderedContainersAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.SettingsHomeColorsTest" time="0.545"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

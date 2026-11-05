@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsHomeAccessibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:46:06.973Z" hostname="LUCKY" time="10.392">
+  <properties/>
+  <testcase name="applicationRows_narrowLargeFont_adjacentTouchEdgesDoNotTriggerOtherActions" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAccessibilityTest" time="9.074"/>
+  <testcase name="home_narrowLargeFont_longTextAndEveryVisibleDestinationRemainReachable" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAccessibilityTest" time="0.555"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

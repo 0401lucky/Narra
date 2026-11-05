@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:20.713Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="normalized_clampsBubbleValuesToSafeRanges" classname="com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" time="0.0"/>
+  <testcase name="normalized_disabledBackgroundGlass_preservesValidThemeAndBubbleValues" classname="com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" time="0.0"/>
+  <testcase name="defaultSkin_usesNarraPresetAndExpectedBubbleValues" classname="com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" time="0.0"/>
+  <testcase name="presetStorageValue_resolvesAllBuiltInPresets" classname="com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

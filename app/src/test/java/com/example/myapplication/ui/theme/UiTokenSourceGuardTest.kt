@@ -199,6 +199,34 @@ class UiTokenSourceGuardTest {
         assertTrue(issues.single().contains("padding(12.dp)"))
     }
 
+    @Test
+    fun audit_explicitOverloads_scanEitherBodyAndRejectMissingExtraOrStaleCount() {
+        val scope = UiTokenSourceGuard.Scope(
+            Path,
+            scannedDeclarations = setOf("SettingsGroup"),
+            expectedDeclarationCounts = mapOf("SettingsGroup" to 2),
+        )
+        fun check(source: String, checkedScope: UiTokenSourceGuard.Scope = scope) =
+            UiTokenSourceGuard.audit(mapOf(Path to source), listOf(checkedScope))
+        val first = "fun SettingsGroup() { Modifier.padding(NarraUi.space8) }"
+        val second = "fun SettingsGroup(title: String) { Modifier.padding(NarraUi.space16) }"
+        assertTrue(check("$first\n$second").isEmpty())
+        listOf(
+            "${first.replace("NarraUi.space8", "8.dp")}\n$second",
+            "$first\n${second.replace("NarraUi.space16", "16.dp")}",
+        ).forEach { source ->
+            val issues = check(source)
+            assertEquals(1, issues.size)
+            assertTrue(issues.single().contains("新增硬编码") && issues.single().contains("SettingsGroup"))
+        }
+        assertTrue(check(first).any { "数量必须为 2" in it })
+        assertTrue(check("$first\n$second\nfun SettingsGroup(x: Int) = Unit").any { "数量必须为 2" in it })
+        assertTrue(check("$first\n$second", scope.copy(expectedDeclarationCounts = emptyMap()))
+            .any { "必须存在且唯一" in it })
+        assertTrue(check("$first\n$second", scope.copy(expectedDeclarationCounts = mapOf("RemovedGroup" to 2)))
+            .any { "无效的声明数量登记" in it && "RemovedGroup" in it })
+    }
+
     private fun scan(source: String) = UiTokenSourceGuard.scan(Path, source)
 
     private fun audit(source: String, exceptions: List<UiTokenSourceGuard.Exception> = emptyList()) =

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:07.397Z" hostname="LUCKY" time="0.036">
+  <properties/>
+  <testcase name="upsertEntry_preservesExplicitTimestamps" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.007"/>
+  <testcase name="upsertEntry_clampsProbabilityToValidRange" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.003"/>
+  <testcase name="listAccessibleEnabledEntries_returnsGlobalAlwaysAndScopedEntries" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_preservesTrailingNewlineInTitleAndContent" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_persistsProbabilityWithinRange" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_fillsTimestampsWhenZero" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_stillTrimsSourceBookNameAndScopeId" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.003"/>
+  <testcase name="upsertEntry_usesCreatedAtAsFallbackForUpdatedAt" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_persistsExtrasJsonAsIs" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="upsertEntry_normalizesOversizedFieldsAndExtrasBeforePersisting" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.003"/>
+  <testcase name="upsertEntry_normalizesKeywordListsBeforePersisting" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.003"/>
+  <testcase name="upsertEntry_dropsUnsafeRegexKeywordsBeforePersisting" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="toDomain_fallsBackToEmptyObjectWhenExtrasBlank" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.002"/>
+  <testcase name="listAccessibleEnabledEntries_withoutAssistantOnlyReturnsGlobal" classname="com.example.myapplication.data.repository.context.WorldBookRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

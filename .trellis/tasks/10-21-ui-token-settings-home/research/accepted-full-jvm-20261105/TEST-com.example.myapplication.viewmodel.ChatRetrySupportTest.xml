@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ChatRetrySupportTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:48:20.905Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="resolveRetry_forCompletedAssistant_buildsReplaceSnapshotPlan" classname="com.example.myapplication.viewmodel.ChatRetrySupportTest" time="0.002"/>
+  <testcase name="resolveRetry_forImageEditingPreservesReferenceImages" classname="com.example.myapplication.viewmodel.ChatRetrySupportTest" time="0.001"/>
+  <testcase name="resolveRetry_forImageGenerationWithoutPrompt_returnsError" classname="com.example.myapplication.viewmodel.ChatRetrySupportTest" time="0.001"/>
+  <testcase name="resolveRetry_forUnknownMessage_returnsNoOp" classname="com.example.myapplication.viewmodel.ChatRetrySupportTest" time="0.0"/>
+  <testcase name="resolveRetry_forFailedMessage_buildsUpsertPlan" classname="com.example.myapplication.viewmodel.ChatRetrySupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

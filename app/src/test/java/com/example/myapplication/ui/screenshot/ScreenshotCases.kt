@@ -25,7 +25,7 @@ data class ScreenshotCase(
 }
 
 /**
- * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04。
+ * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04 / E05 / E10。
  *
  * 测试、基准计数守卫与运行清单都从这里取数据；新增/删除用例必须同步更新
  * [expectedFamilyCounts]，守卫会在数量不符时失败。
@@ -211,8 +211,26 @@ object ScreenshotCases {
         }
     }
 
+    private val e10Cases: List<ScreenshotCase> = buildList {
+        themeTokens.forEach { theme ->
+            shadeTokens.forEach { shade ->
+                add(case("SettingsHomeScreenshotE10Test", "E10_home-$theme-$shade.png",
+                    "P10 设置首页与固定长摘要 · $theme · $shade"))
+            }
+        }
+        shadeTokens.forEach { shade ->
+            add(case("SettingsHomeScreenshotE10Test", "E10_home-dynamic-$shade.png",
+                "P10 设置首页 · 固定动态色 · $shade"))
+            listOf("home-narrow", "theme-sheet", "mode-sheet", "display-sheet").forEach { scene ->
+                add(case("SettingsHomeScreenshotE10Test", "E10_$scene-$shade.png",
+                    "P10 真实首页 / 外观窗口 · $scene · $shade · 200%",
+                    NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+            }
+        }
+    }
+
     val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
-        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases
+        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases + e10Cases
 
     /** 冻结的分族数量：缺场景、零测试或静默删减都会让守卫失败。 */
     val expectedFamilyCounts: Map<String, Int> = mapOf(
@@ -227,6 +245,7 @@ object ScreenshotCases {
         "C01" to 2,
         "E04" to 14,
         "E05" to 18,
+        "E10" to 16,
     )
 
     private val byId: Map<String, ScreenshotCase> = all.associateBy { it.id }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:48:06.650Z" hostname="LUCKY" time="2.28">
+  <properties/>
+  <testcase name="e04_scene_matcha_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.108"/>
+  <testcase name="e04_scene_vanilla_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.089"/>
+  <testcase name="e04_scene_narrow_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.309"/>
+  <testcase name="e04_scene_suggestions" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.092"/>
+  <testcase name="e04_reading_mixed_background" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.265"/>
+  <testcase name="e04_scene_ocean_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.097"/>
+  <testcase name="e04_reading_empty_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.15"/>
+  <testcase name="e04_scene_vanilla_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.085"/>
+  <testcase name="e04_scene_empty" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.096"/>
+  <testcase name="e04_reading_narrow_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.374"/>
+  <testcase name="e04_scene_matcha_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.095"/>
+  <testcase name="e04_scene_ocean_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.094"/>
+  <testcase name="e04_scene_narrow_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.327"/>
+  <testcase name="e04_scene_background" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.096"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

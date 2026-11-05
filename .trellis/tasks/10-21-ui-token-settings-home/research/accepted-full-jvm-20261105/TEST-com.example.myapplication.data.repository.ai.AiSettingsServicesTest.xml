@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:06.601Z" hostname="LUCKY" time="0.009">
+  <properties/>
+  <testcase name="settingsEditor_rejectsGeminiNativeGenerateContentBaseUrl" classname="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" time="0.002"/>
+  <testcase name="settingsRepository_exposesSettingsFlow" classname="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" time="0.001"/>
+  <testcase name="settingsEditor_savesDisplayTranslationHistoryAndAssistants" classname="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" time="0.002"/>
+  <testcase name="settingsEditor_normalizesProviderBaseUrlBeforeSaving" classname="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" time="0.001"/>
+  <testcase name="settingsEditor_normalizesAssistantImportFieldsBeforeSaving" classname="com.example.myapplication.data.repository.ai.AiSettingsServicesTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

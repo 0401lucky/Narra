@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.ModelInfoTest" tests="65" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:20.692Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="vision_qwen37" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_qwenVl" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="imageGeneration_gemini25FlashImagePreview" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_qwen37_allThree" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_gpt4Turbo" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedModelIds_prefersModelsField" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_claudeHaiku45" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_claudeSonnet" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="imageGeneration_grokImagineVersionedModel" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_gpt4o" classname="com.example.myapplication.model.ModelInfoTest" time="0.001"/>
+  <testcase name="vision_qwen3" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_gemini35Flash_allThree" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_o3_reasoningAndTool" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolveModelAbilities_prefersStoredModelInfo" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="modelInfo_withAbilityOverride_marksCustomized" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_gpt35Turbo" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="modelInfo_withAbilityOverride_nullRestoresAutoInference" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_geminiThinking" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_gpt5" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_deepseekR1" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_gpt4o_visionAndTool" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_qwq" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_claude3Opus" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_qwenMax" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_o1" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_o3" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_claude4" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_qwen3_allThree" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_qwen3" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_llama3" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_grok" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="imageEditing_gptImage1" classname="com.example.myapplication.model.ModelInfoTest" time="0.001"/>
+  <testcase name="tool_moonshot" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_gpt4o" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noReasoning_claude35Sonnet" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noAbilities_unknownModel" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="sortedForModelListDisplay_keepsUnknownFamiliesNearTheirOriginalSection" classname="com.example.myapplication.model.ModelInfoTest" time="0.003"/>
+  <testcase name="reasoning_qwen37" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noVision_deepseekChat" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noVision_gpt35" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noReasoning_gpt4o" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noReasoning_grok2" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedModelIds_fallsBackToAvailableModels" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedModels_fromModelInfosWhenPresent" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_claudeSonnet_allThree" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_claude3Sonnet" classname="com.example.myapplication.model.ModelInfoTest" time="0.001"/>
+  <testcase name="reasoning_claudeOpus" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_gpt5" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="mergeModelInfosPreservingOverrides_keepsCustomizedAbilities" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="combined_gemini35FlashDisplayName_allThree" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_gemini35FlashDisplayName" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_qwenMax" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="noReasoning_deepseekChat" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_grok4Beta" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_deepseekChat" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedModels_infersFromAvailableModelsWhenModelsNull" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_gemini35Flash" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_mistralLarge" classname="com.example.myapplication.model.ModelInfoTest" time="0.001"/>
+  <testcase name="vision_gemini" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="tool_geminiPro" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="sortedForModelListDisplay_groupsAppendedDeepSeekModelsWithDeepSeekFamily" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="reasoning_gemini25" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="providerSettings_resolveModelAbilities_fallsBackToRegistry" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="imageGeneration_gpt5Image" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <testcase name="vision_o3Mini" classname="com.example.myapplication.model.ModelInfoTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

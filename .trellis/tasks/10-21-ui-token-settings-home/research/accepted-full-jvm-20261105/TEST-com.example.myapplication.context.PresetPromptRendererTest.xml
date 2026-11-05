@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.context.PresetPromptRendererTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:03.003Z" hostname="LUCKY" time="0.042">
+  <properties/>
+  <testcase name="render_respectsChatHistoryInsertionPointAndPostHistoryInstruction" classname="com.example.myapplication.context.PresetPromptRendererTest" time="0.031"/>
+  <testcase name="render_mapsDynamicPresetSlotsBackToOriginalContextSources" classname="com.example.myapplication.context.PresetPromptRendererTest" time="0.006"/>
+  <testcase name="render_absoluteEntriesBecomeHistoryInjectionsAndRespectOrdering" classname="com.example.myapplication.context.PresetPromptRendererTest" time="0.003"/>
+  <testcase name="render_treatsDollarMacrosInSlotValuesAsLiteralText" classname="com.example.myapplication.context.PresetPromptRendererTest" time="0.001"/>
+  <testcase name="render_skipsDisabledEntriesAndReplacesDynamicSlots" classname="com.example.myapplication.context.PresetPromptRendererTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,28 @@
+{
+  "commandExitCode": 0,
+  "command": ".\\gradlew.bat :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --console=plain",
+  "duration": "4m 58s",
+  "gradleTasks": {
+    "executed": 13,
+    "upToDate": 47
+  },
+  "lintSeverityCounts": {
+    "Warning": 58,
+    "Hint": 3
+  },
+  "lintAnalyzed": true,
+  "debugPackaged": true,
+  "androidTestKotlinCompiled": true,
+  "mainKotlinCompilation": "UP-TO-DATE (compiled by earlier P10 runs)",
+  "apks": [
+    {
+      "file": "Narra-v2.2.12-dev-20212-dev.apk",
+      "versionName": "2.2.12-dev",
+      "versionCode": 20212,
+      "size": 82090993,
+      "sha256": "1c64a573bb506798d137e96df61f3a827695871bdc8dd6192ef26b78e549f018"
+    }
+  ],
+  "acceptedPngHashesUnchanged": 110,
+  "deviceTestsRun": false
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:58.888Z" hostname="LUCKY" time="1.865">
+  <properties/>
+  <testcase name="themeSheet_narrowLargeFont_everySelectionIsNamedAndDispatchesOnceThenDismisses" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" time="0.362"/>
+  <testcase name="allThreeSheets_dismissOnlyClosesWindowWithoutUpdatingSettings" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" time="0.506"/>
+  <testcase name="displaySheet_narrowLargeFont_sliderAndAllSwitchLabelsHaveIndependentSingleCallbacks" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" time="0.399"/>
+  <testcase name="modeSheet_narrowLargeFont_everySelectionIsNamedAndDispatchesOnceThenDismisses" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" time="0.355"/>
+  <testcase name="missingWindow_neverFallsBackToCapturingSettingsPage" classname="com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest" time="0.239"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

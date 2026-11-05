@@ -2,9 +2,11 @@ package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,8 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -35,14 +36,21 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.AudioLines
 import com.composables.icons.lucide.Bug
@@ -68,6 +76,9 @@ import com.example.myapplication.system.performance.BenchmarkReadyIds
 import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.performance.benchmarkActionTag
 import com.example.myapplication.ui.performance.benchmarkReadyTag
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,6 +166,9 @@ fun SettingsScreen(
                     else -> onOpenHome
                 },
                 actionEnabled = !uiState.isSaving,
+                horizontalPadding = NarraUi.space16,
+                titleMaxLines = Int.MAX_VALUE,
+                titleIsHeading = true,
             )
         },
         containerColor = palette.background,
@@ -167,38 +181,38 @@ fun SettingsScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = SettingsScreenPadding,
-                    top = 4.dp,
-                    end = SettingsScreenPadding,
-                    bottom = 32.dp,
+                    start = NarraUi.space16,
+                    top = NarraUi.space4,
+                    end = NarraUi.space16,
+                    bottom = NarraUi.space32,
                 ),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space24),
             ) {
                 item {
-                    SettingsGroup(title = stringResource(R.string.settings_section_model_service)) {
-                        SettingsListRow(
+                    SettingsHomeGroup(title = stringResource(R.string.settings_section_model_service)) {
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Sparkles, contentDescription = null, tint = palette.accent) },
                             title = stringResource(R.string.settings_default_model_prompt),
                             supportingText = uiState.selectedModel.ifBlank { "尚未选择模型" },
                             onClick = onOpenModelSettings,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Server, contentDescription = null, tint = palette.accent) },
                             title = stringResource(R.string.settings_provider),
                             supportingText = providerSummary,
                             onClick = onOpenProviderSettings,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             modifier = Modifier.benchmarkActionTag(BenchmarkActionIds.OPEN_VOICE_SYNTHESIS),
                             leadingContent = { Icon(Lucide.AudioLines, contentDescription = null, tint = palette.accent) },
                             title = "MiMo 语音合成",
                             supportingText = voiceSummary,
                             onClick = onOpenVoiceSynthesisSettings,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Mic, contentDescription = null, tint = palette.accent) },
                             title = "语音识别",
                             supportingText = voiceRecognitionSummary,
@@ -207,23 +221,23 @@ fun SettingsScreen(
                     }
                 }
                 item {
-                    SettingsGroup(title = "外观与显示") {
-                        SettingsListRow(
+                    SettingsHomeGroup(title = "外观与显示") {
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Palette, contentDescription = null, tint = palette.accent) },
                             title = "主题色调",
                             supportingText = uiState.appColorTheme.label,
                             onClick = { showAppColorThemeSheet = true },
                             trailingContent = { ThemeSwatchSummary(theme = uiState.appColorTheme) },
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Sun, contentDescription = null, tint = palette.accent) },
                             title = stringResource(R.string.settings_color_mode),
                             supportingText = uiState.themeMode.label,
                             onClick = { showThemeModeSheet = true },
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.SlidersHorizontal, contentDescription = null, tint = palette.accent) },
                             title = stringResource(R.string.settings_display),
                             supportingText = displaySummary,
@@ -232,26 +246,26 @@ fun SettingsScreen(
                     }
                 }
                 item {
-                    SettingsGroup(title = "应用") {
-                        SettingsListRow(
+                    SettingsHomeGroup(title = "应用") {
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Download, contentDescription = null, tint = palette.accent) },
                             title = stringResource(R.string.settings_version_update),
                             onClick = onOpenUpdateSettings,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.FileText, contentDescription = null, tint = palette.accent) },
                             title = "使用条款与年龄限制",
                             onClick = onOpenComplianceSettings,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Bug, contentDescription = null, tint = palette.accent) },
                             title = "本地诊断",
                             onClick = onOpenDiagnostics,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
+                        SettingsHomeDivider()
+                        SettingsHomeRow(
                             leadingContent = { Icon(Lucide.Code, contentDescription = null, tint = palette.accent) },
                             title = "脚本实验室",
                             onClick = onOpenRoleplayScripts,
@@ -316,6 +330,61 @@ internal fun isSettingsBenchmarkReady(uiState: SettingsUiState): Boolean {
         uiState.providers.any { provider -> provider.id == selectedProviderId }
 }
 
+@Composable
+private fun SettingsHomeGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+        SettingsHomeSectionHeader(title)
+        SettingsGroup(
+            shape = NarraShapes.medium,
+            contentPadding = PaddingValues(vertical = NarraUi.space8),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun SettingsHomeSectionHeader(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier
+            .padding(horizontal = NarraUi.space4, vertical = NarraUi.space4)
+            .semantics { heading() },
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun SettingsHomeRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    supportingText: String = "",
+    leadingContent: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null,
+) {
+    SettingsListRow(
+        title = title,
+        supportingText = supportingText,
+        modifier = modifier.semantics { role = Role.Button },
+        leadingContent = leadingContent,
+        onClick = onClick,
+        trailingContent = trailingContent,
+        shape = NarraShapes.medium,
+        contentPadding = PaddingValues(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+        horizontalSpacing = NarraUi.space12,
+        textSpacing = NarraUi.space4,
+        titleMaxLines = Int.MAX_VALUE,
+        supportingTextMaxLines = Int.MAX_VALUE,
+    )
+}
+
+@Composable
+private fun SettingsHomeDivider() {
+    SettingsGroupDivider(contentPadding = PaddingValues(horizontal = NarraUi.space16))
+}
+
 @androidx.compose.material3.ExperimentalMaterial3Api
 @Composable
 private fun ThemeModeSheet(
@@ -324,8 +393,11 @@ private fun ThemeModeSheet(
     onSelectMode: (ThemeMode) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        shape = NarraShapes.large,
         containerColor = palette.surface,
     ) {
         Column(
@@ -334,12 +406,13 @@ private fun ThemeModeSheet(
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .selectableGroup()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .padding(bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12)
+                .padding(bottom = NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Text(
                 text = stringResource(R.string.settings_color_mode),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleLarge,
                 color = palette.title,
             )
@@ -355,39 +428,42 @@ private fun ThemeModeSheet(
                     ThemeMode.DARK -> "始终使用深色背景"
                 }
                 val selected = themeMode == selectedMode
+                val optionText = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else palette.title
+                val supportingText = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else palette.body
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .heightIn(min = NarraMinimumTouchTarget)
+                        .clip(NarraShapes.medium)
                         .selectable(
                             selected = selected,
                             role = Role.RadioButton,
                             onClick = { onSelectMode(themeMode) },
                         ),
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (selected) palette.accentSoft.copy(alpha = 0.72f) else palette.surface,
+                    shape = NarraShapes.medium,
+                    color = if (selected) palette.accentSoft else palette.surface,
                     border = BorderStroke(
                         width = if (selected) 1.25.dp else 0.75.dp,
                         color = if (selected) palette.accent.copy(alpha = 0.72f) else palette.border,
                     ),
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (selected) palette.accent else palette.body,
+                            tint = supportingText,
                             modifier = Modifier.size(24.dp),
                         )
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(themeMode.label, style = MaterialTheme.typography.titleMedium, color = palette.title)
-                            Text(description, style = MaterialTheme.typography.bodySmall, color = palette.body)
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+                            Text(themeMode.label, style = MaterialTheme.typography.titleMedium, color = optionText)
+                            Text(description, style = MaterialTheme.typography.bodySmall, color = supportingText)
                         }
                         if (selected) {
-                            Icon(Lucide.Check, contentDescription = null, tint = palette.accent)
+                            Icon(Lucide.Check, contentDescription = null, tint = optionText)
                         }
                     }
                 }
@@ -420,6 +496,7 @@ private fun DisplaySettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
+        shape = NarraShapes.large,
         containerColor = palette.surface,
     ) {
         Column(
@@ -428,22 +505,26 @@ private fun DisplaySettingsSheet(
                 .imePadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space8)
+                .padding(bottom = NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space24),
         ) {
             Text(
                 text = stringResource(R.string.settings_display),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleLarge,
+                color = palette.title,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+                val scaleLabel = stringResource(R.string.settings_message_text_scale)
+                val sliderInteractionSource = remember { MutableInteractionSource() }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.settings_message_text_scale),
+                        text = scaleLabel,
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -454,13 +535,22 @@ private fun DisplaySettingsSheet(
                     )
                 }
                 Slider(
+                    modifier = Modifier.semantics { contentDescription = scaleLabel },
                     value = messageTextScale,
                     onValueChange = onMessageTextScaleChange,
                     valueRange = 0.85f..1.25f,
+                    interactionSource = sliderInteractionSource,
+                    thumb = {
+                        // M3 1.4 的进度语义区跟随内部滑块高度，外层最小尺寸不能扩大它。
+                        SliderDefaults.Thumb(
+                            interactionSource = sliderInteractionSource,
+                            modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                        )
+                    },
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                SettingsSectionHeader("思考内容", "")
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+                SettingsHomeSectionHeader("思考内容")
                 DisplaySwitchRow(
                     title = stringResource(R.string.settings_thinking_default_expanded),
                     checked = reasoningExpandedByDefault,
@@ -477,8 +567,8 @@ private fun DisplaySettingsSheet(
                     onCheckedChange = onAutoCollapseThinkingChange,
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                SettingsSectionHeader("图片与代码", "")
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+                SettingsHomeSectionHeader("图片与代码")
                 DisplaySwitchRow(
                     title = stringResource(R.string.settings_auto_preview_images),
                     checked = autoPreviewImages,
@@ -506,16 +596,15 @@ private fun DisplaySwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
+    val stackSwitch = LocalDensity.current.fontScale >= 1.5f
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .heightIn(min = NarraMinimumTouchTarget)
+        .clip(NarraShapes.medium)
+        .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+        .padding(vertical = NarraUi.space8)
+    val label: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
@@ -528,10 +617,21 @@ private fun DisplaySwitchRow(
                 )
             }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = null,
-        )
+    }
+    if (stackSwitch) {
+        Column(modifier = rowModifier, verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+            label(Modifier.fillMaxWidth())
+            Switch(checked = checked, onCheckedChange = null, modifier = Modifier.align(Alignment.End))
+        }
+    } else {
+        Row(
+            modifier = rowModifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
+        ) {
+            label(Modifier.weight(1f))
+            Switch(checked = checked, onCheckedChange = null)
+        }
     }
 }
 
@@ -552,8 +652,11 @@ private fun AppColorThemeSheet(
     onSelectTheme: (AppColorTheme) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        shape = NarraShapes.large,
         containerColor = palette.surface,
     ) {
         Column(
@@ -562,46 +665,49 @@ private fun AppColorThemeSheet(
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .selectableGroup()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = NarraUi.space16)
+                .padding(bottom = NarraUi.space32),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text(
                 text = "选择主题色调",
                 style = MaterialTheme.typography.titleLarge,
                 color = palette.title,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = NarraUi.space8).semantics { heading() },
             )
             AppColorTheme.entries.forEach { appColorTheme ->
                 val selected = appColorTheme == selectedTheme
+                val optionText = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else palette.title
+                val supportingText = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else palette.body
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .heightIn(min = NarraMinimumTouchTarget)
+                        .clip(NarraShapes.medium)
                         .selectable(
                             selected = selected,
                             role = Role.RadioButton,
                             onClick = { onSelectTheme(appColorTheme) },
                         ),
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (selected) palette.accentSoft.copy(alpha = 0.62f) else palette.surface,
+                    shape = NarraShapes.medium,
+                    color = if (selected) palette.accentSoft else palette.surface,
                     border = BorderStroke(
                         width = if (selected) 1.25.dp else 0.75.dp,
                         color = if (selected) themeAccent(appColorTheme) else palette.border,
                     ),
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                     ) {
                         ThemeSwatch(theme = appColorTheme, size = 40.dp)
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(appColorTheme.label, style = MaterialTheme.typography.titleMedium, color = palette.title)
-                            Text(themeDescription(appColorTheme), style = MaterialTheme.typography.bodySmall, color = palette.body)
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+                            Text(appColorTheme.label, style = MaterialTheme.typography.titleMedium, color = optionText)
+                            Text(themeDescription(appColorTheme), style = MaterialTheme.typography.bodySmall, color = supportingText)
                         }
                         if (selected) {
-                            Icon(Lucide.Check, contentDescription = null, tint = palette.accent)
+                            Icon(Lucide.Check, contentDescription = null, tint = optionText)
                         }
                     }
                 }
@@ -612,7 +718,7 @@ private fun AppColorThemeSheet(
 
 @Composable
 private fun ThemeSwatchSummary(theme: AppColorTheme) {
-    Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space4), verticalAlignment = Alignment.CenterVertically) {
         ThemeSwatch(theme = theme, size = 18.dp)
         Icon(Lucide.ChevronDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -625,12 +731,12 @@ private fun ThemeSwatch(theme: AppColorTheme, size: androidx.compose.ui.unit.Dp)
     Surface(
         modifier = Modifier
             .size(size)
-            .clip(CircleShape),
-        shape = CircleShape,
+            .clip(NarraShapes.pill),
+        shape = NarraShapes.pill,
         color = soft,
         border = BorderStroke(1.dp, accent.copy(alpha = 0.5f)),
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(size / 3).clip(CircleShape).background(accent))
+        Box(modifier = Modifier.fillMaxSize().padding(size / 3).clip(NarraShapes.pill).background(accent))
     }
 }
 

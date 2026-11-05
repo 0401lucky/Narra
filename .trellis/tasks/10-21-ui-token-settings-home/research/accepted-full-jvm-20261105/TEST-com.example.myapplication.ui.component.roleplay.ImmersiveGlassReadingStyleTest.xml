@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:21.229Z" hostname="LUCKY" time="0.021">
+  <properties/>
+  <testcase name="resolveImmersiveReadingGlassSpec_mainSceneContentDoesNotBlurBackdrop" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.009"/>
+  <testcase name="resolveImmersiveReadingGlassSpec_panelKeepsOverlayThin" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <testcase name="adjustImmersiveReadingOverlayColor_brightBackgroundGetsStrongerTint" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.011"/>
+  <testcase name="resolveImmersiveReadingGlassSpec_chromeIsStrongerThanCard" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <testcase name="resolveImmersiveReadingGlassSpec_readingContentDoesNotBlurBackdrop" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <testcase name="resolveImmersiveReadingScrimAlpha_increasesWithBrightnessAndClamps" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <testcase name="resolveImmersiveReadingScrimAlpha_detailIsHeavierThanDiaryList" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <testcase name="adjustImmersiveReadingContentDarkenAlpha_brightBackgroundGetsStrongerContrast" classname="com.example.myapplication.ui.component.roleplay.ImmersiveGlassReadingStyleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

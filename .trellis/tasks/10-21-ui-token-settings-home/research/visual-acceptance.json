@@ -1,0 +1,23 @@
+{
+  "accepted": true,
+  "date": "2026-11-05",
+  "user_confirmation": "接纳这16组效果（推荐）",
+  "candidates": {
+    "E10_display-sheet-dark": "596b3b434c646e83468bfe6174367d6a5b2ddce5cc36e3152facd915e6896a83",
+    "E10_display-sheet-light": "eb1878e5a5666e4724e8b582c33d4305c8b776c898a6ded9faf5357f402b2491",
+    "E10_home-dynamic-dark": "e3a7c288879bde422f66678b9139d42092876f620b7979bdb912190f6b7f870f",
+    "E10_home-dynamic-light": "1b9e26296d6619923ae8da6fe8e894ea36353031ed4a4a1e20d28a961996cb7c",
+    "E10_home-matcha-dark": "6612e4683db23ee374afef628af51dee10549e2254747117bbdceafe511d09f1",
+    "E10_home-matcha-light": "928314b7fec2bebc14cd836e4de0160ffd3812994af392cb01531431a1c1f70b",
+    "E10_home-narrow-dark": "33b438efa77c53518eeb81c7a69c1d41defe80cc3b66380bf7b33ba98aee8942",
+    "E10_home-narrow-light": "0ba496a2e50a3e2d62bac0b1fd399f1c93c28f78e5618b9b6059b4391d79b41b",
+    "E10_home-ocean-dark": "9c2a9b6481ce522e4ce42d0fcf3337ef85a0a449d124ea82ae0f8b5a7d504b69",
+    "E10_home-ocean-light": "93ec7ae56889dad4e22fd201ac3b720829628922ad865dd629b44a1f2b0b4b97",
+    "E10_home-vanilla-dark": "52fca236d60e6fa7df581f0bc0639e4b26974d45ad5e96c307ad417923f6b886",
+    "E10_home-vanilla-light": "ce9dc7b64fac0f4abdf00c869797e17151b249ab9b2727ec12cc323af8b33b41",
+    "E10_mode-sheet-dark": "a14c9d0babb77803c62986f13dd9e70f5e95ba852b9fd388db42ebd9bae31aef",
+    "E10_mode-sheet-light": "cf08c80d07fff136b17c438739951650556fe8e1097df078913e83182e58f397",
+    "E10_theme-sheet-dark": "fe50d58b8fdaf3f83d74a89dd3c936d899a792b01a16f21df27bea9792a280d8",
+    "E10_theme-sheet-light": "f4cb9e9026cd550474121518ac675a5158ba21b11bf6f10ad431a7f43dbc76bb"
+  }
+}

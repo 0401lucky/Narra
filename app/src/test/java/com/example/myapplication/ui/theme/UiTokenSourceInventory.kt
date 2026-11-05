@@ -20,6 +20,7 @@ internal object UiTokenSourceInventory {
         Scope("component/roleplay/RoleplayOnlinePhoneBubbles.kt", setOf("OnlinePhoneNarrationBubble", "OnlinePhoneThoughtBubble")),
         Scope("screen/immersive/ImmersivePhoneShell.kt", setOf("ImmersivePhoneShell", "ImmersiveBottomBar", "ChatSummaryRow")),
         Scope("screen/settings/AssistantListScreen.kt", setOf("AssistantListScreen", "AssistantCardMinimal")),
+        Scope("screen/settings/SettingsScreen.kt", setOf("SettingsScreen", "ThemeModeSheet", "AppColorThemeSheet", "DisplaySettingsSheet", "DisplaySwitchRow")),
         Scope("screen/roleplay/RoleplayOnlinePhoneContent.kt", setOf("RoleplayOnlinePhoneContent", "rememberOnlinePhoneColors")),
         Scope("screen/roleplay/RoleplayScreen.kt", setOf("RoleplayScreen")),
         Scope("screen/roleplay/RoleplayScreenCallbacks.kt", setOf("RoleplayScreenCallbacks")),
@@ -58,11 +59,12 @@ internal object UiTokenSourceInventory {
         ),
         Scope(
             "screen/settings/SettingsComponents.kt",
-            scannedDeclarations = setOf("SettingsTopBar"),
+            scannedDeclarations = setOf("SettingsTopBar", "SettingsGroup", "SettingsGroupDivider", "SettingsListRow"),
+            expectedDeclarationCounts = mapOf("SettingsGroup" to 2),
             legacyDeclarations = setOf(
                 "SettingsScreenPadding", "SettingsGroupSpacing", "SettingsGroupRadius", "SettingsAvatarRadius", "SettingsPalette",
                 "rememberSettingsPalette", "SettingsPageIntro", "SettingsHelpButton", "SettingsDescriptionDialog", "SettingsSectionHeader",
-                "SettingsGroup", "SettingsGroupDivider", "SettingsListRow", "SettingsPlaceholderRow", "SettingsStatusPill", "SettingsHintCard",
+                "SettingsPlaceholderRow", "SettingsStatusPill", "SettingsHintCard",
                 "SettingsNoticeCard", "SettingsLetterAvatar", "SettingsModelAvatar", "SettingsModelOptionRow", "AnimatedSettingButton",
                 "rememberSettingsSnackbarHostState", "rememberSettingsOutlineColors",
             ),
@@ -70,6 +72,14 @@ internal object UiTokenSourceInventory {
     )
 
     val exceptions: List<Exception> = listOf(
+        Exception("screen/settings/SettingsComponents.kt", "SettingsGroup", Rule.SPACING,
+            "PaddingValues(vertical = 8.dp)", "两个重载保留旧组内边距；P10显式传入NarraUi，不改变其他消费者", 2),
+        Exception("screen/settings/SettingsComponents.kt", "SettingsGroupDivider", Rule.SPACING,
+            "PaddingValues(start = 56.dp, end = 18.dp)", "旧分隔线默认缩进；P10使用显式令牌内边距"),
+        Exception("screen/settings/SettingsComponents.kt", "SettingsListRow", Rule.SPACING,
+            "PaddingValues(horizontal = 16.dp, vertical = 12.dp)", "旧行默认内边距；P10显式传入令牌"),
+        Exception("screen/settings/SettingsComponents.kt", "SettingsListRow", Rule.COLOR,
+            "Color.Transparent", "未高亮的共享行继承实际父容器表面"),
         Exception("screen/roleplay/RoleplaySettingsScreen.kt", "RoleplaySettingsScreen", Rule.COLOR, "Color.Black", "侧栏外的场景遮罩，保留原背景对比意图"),
         Exception("screen/roleplay/RoleplaySettingsSidebarPanel.kt", "RoleplaySettingsMainPanel", Rule.COLOR, "Color.Transparent", "主列表继承实际面板背景"),
         Exception("screen/roleplay/RoleplaySettingsSidebarPanel.kt", "ScenarioPresetPickRow", Rule.COLOR, "Color.Transparent", "未选择的预设行继承Sheet背景"),
@@ -116,7 +126,11 @@ internal object UiTokenSourceInventory {
         Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.Transparent", "复算实际玻璃sheen透明端点"),
         Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.Black", "复算实际正文加深与背景最暗端点", 2),
         Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.White", "复算背景最亮端点"),
-    ) + colors("theme/ChatAppTheme.kt", "resolveAppColorScheme", """
+    ) + colors("screen/settings/SettingsScreen.kt", "themeAccent", "FF326B58 FF79552D FF326692",
+        "主题色调的固定预览圆点与边框，不用于文字配色") +
+        colors("screen/settings/SettingsScreen.kt", "themeSoft", "FFDDEFE2 FFF3E8D8 FFDCEAF5",
+            "主题色调的固定预览圆底，不承载阅读文字") +
+        colors("theme/ChatAppTheme.kt", "resolveAppColorScheme", """
         FF326B58 FF79552D FF326692 FF141617 FFF5F6F7 FFE6E8E9 FF212628 FF191C1D
         FFE6E8E9 FF212628 FF303638 FFE9EDEF FFB9C1C4 FF566267 FF101213 FF1D2123
         FFF9FAFB FF222729 FFF0F3F4 FF2A3032 FFE9EDEF FF343B3D FFE2E7E9 FF899498

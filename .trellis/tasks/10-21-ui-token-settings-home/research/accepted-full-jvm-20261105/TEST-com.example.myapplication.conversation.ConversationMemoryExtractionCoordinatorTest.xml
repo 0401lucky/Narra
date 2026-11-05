@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T03:47:03.562Z" hostname="LUCKY" time="0.043">
+  <properties/>
+  <testcase name="updateRoleplayMemories_persistsAssistantAndConversationScopes" classname="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" time="0.022"/>
+  <testcase name="updateChatMemories_prunesGlobalCapacityKeepingPinnedAndImportant" classname="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" time="0.007"/>
+  <testcase name="updateChatMemories_persistsAssistantScopedMemories" classname="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" time="0.003"/>
+  <testcase name="updateChatMemories_respectsConfiguredAssistantLimitWhenCondensing" classname="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" time="0.005"/>
+  <testcase name="updateChatMemories_invokesPruneWithConfiguredMemoryCapacity" classname="com.example.myapplication.conversation.ConversationMemoryExtractionCoordinatorTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

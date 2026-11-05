@@ -1,0 +1,25 @@
+{
+  "commandExitCode": 1,
+  "suites": 9,
+  "tests": 34,
+  "failures": 3,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeAppearanceTest",
+      "test": "displaySheet_narrowLargeFont_sliderAndAllSwitchLabelsHaveIndependentSingleCallbacks",
+      "message": "java.lang.AssertionError: 真实点击高度不足48dp：Rect.fromLTRB(12.0, 366.0, 628.0, 454.0)"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeEntryTest",
+      "test": "realPhoneProfile_settingsEntryDispatchesOnlySettingsCallback",
+      "message": "java.lang.AssertionError: Failed to assert the following: (Role = 'Button')\nSemantics of the node:\nNode #1880 at (l=0.0, t=1464.0, r=720.0, b=1600.0)px\nFocused = 'false'\nText = '[设置]'\nActions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]\nMergeDescendants = 'true'\nHas 24 siblings\nSelector used: ((Text + InputText + EditableText contains '设置' (ignoreCase: false)) && (OnClick is defined))\n"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomePersistenceTest",
+      "test": "explicitSave_successDisablesDuplicatesAndOpensOnlyAfterPersistence",
+      "message": "java.lang.AssertionError: expected:<false> but was:<true>"
+    }
+  ]
+}

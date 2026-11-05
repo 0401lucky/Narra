@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -54,6 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -123,6 +127,8 @@ fun SettingsTopBar(
     onAction: (() -> Unit)? = null,
     actionEnabled: Boolean = true,
     horizontalPadding: Dp = SettingsScreenPadding,
+    titleMaxLines: Int = 1,
+    titleIsHeading: Boolean = false,
 ) {
     val palette = rememberSettingsPalette()
 
@@ -153,10 +159,11 @@ fun SettingsTopBar(
             ) {
                 Text(
                     text = title,
+                    modifier = if (titleIsHeading) Modifier.semantics { heading() } else Modifier,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = palette.title,
-                    maxLines = 1,
+                    maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (!subtitle.isNullOrBlank()) {
@@ -300,23 +307,27 @@ fun SettingsSectionHeader(
 fun SettingsGroup(
     title: String,
     subtitle: String? = null,
+    shape: Shape = RoundedCornerShape(SettingsGroupRadius),
+    contentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SettingsGroupSpacing)) {
         SettingsSectionHeader(title = title, description = subtitle.orEmpty())
-        SettingsGroup(content = content)
+        SettingsGroup(shape = shape, contentPadding = contentPadding, content = content)
     }
 }
 
 @Composable
 fun SettingsGroup(
+    shape: Shape = RoundedCornerShape(SettingsGroupRadius),
+    contentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val palette = rememberSettingsPalette()
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(SettingsGroupRadius),
+        shape = shape,
         color = palette.surface,
         border = BorderStroke(
             width = 0.75.dp,
@@ -327,18 +338,20 @@ fun SettingsGroup(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(contentPadding),
             content = content,
         )
     }
 }
 
 @Composable
-fun SettingsGroupDivider() {
+fun SettingsGroupDivider(
+    contentPadding: PaddingValues = PaddingValues(start = 56.dp, end = 18.dp),
+) {
     val palette = rememberSettingsPalette()
 
     HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp, end = 18.dp),
+        modifier = Modifier.padding(contentPadding),
         color = palette.border.copy(alpha = 0.44f),
     )
 }
@@ -354,6 +367,12 @@ fun SettingsListRow(
     highlighted: Boolean = false,
     trailingContent: @Composable (() -> Unit)? = null,
     showArrow: Boolean = onClick != null && trailingContent == null,
+    shape: Shape = RoundedCornerShape(SettingsGroupRadius),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    horizontalSpacing: Dp = 14.dp,
+    textSpacing: Dp = 5.dp,
+    titleMaxLines: Int = 2,
+    supportingTextMaxLines: Int = 2,
 ) {
     val palette = rememberSettingsPalette()
     val containerColor = if (highlighted) {
@@ -373,7 +392,7 @@ fun SettingsListRow(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(SettingsGroupRadius))
+            .clip(shape)
             .then(
                 if (enabled && onClick != null) {
                     Modifier.clickable(onClick = onClick)
@@ -385,22 +404,22 @@ fun SettingsListRow(
         contentColor = headlineColor,
     ) {
         Row(
-            modifier = Modifier.heightIn(min = 56.dp).padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.heightIn(min = 56.dp).padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
         ) {
             if (leadingContent != null) {
                 leadingContent()
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
+                verticalArrangement = Arrangement.spacedBy(textSpacing),
             ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = headlineColor,
-                    maxLines = 2,
+                    maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (supportingText.isNotBlank()) {
@@ -408,7 +427,7 @@ fun SettingsListRow(
                         text = supportingText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = supportingColor,
-                        maxLines = 2,
+                        maxLines = supportingTextMaxLines,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
