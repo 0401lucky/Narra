@@ -1,6 +1,6 @@
 # P05 技术设计
 
-共享契约见 [父设计](../10-21-ui-token-accessibility-expansion/design.md)，源码证据与完整消费者见 [侧栏研究](../10-21-ui-token-accessibility-expansion/research/sidebar-entry.md)。
+共享契约见 [父设计](../../../10-21-ui-token-accessibility-expansion/design.md)，源码证据与完整消费者见 [侧栏研究](../../../10-21-ui-token-accessibility-expansion/research/sidebar-entry.md)。
 
 ## 文件所有权与数据流
 
