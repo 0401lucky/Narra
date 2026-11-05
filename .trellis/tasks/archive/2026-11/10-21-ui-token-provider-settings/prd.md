@@ -2,11 +2,11 @@
 
 ## Goal
 
-让提供商列表、详情 Config / Models 页签与实际可达弹层扩入 v2.3 令牌和无障碍契约，确保长表单、长模型名与大字体操作可用。归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，复用 P10 已验收的兼容接口。
+让提供商列表、详情 Config / Models 页签与实际可达弹层扩入 v2.3 令牌和无障碍契约，确保长表单、长模型名与大字体操作可用。归属 [扩面父任务](../10-21-ui-token-accessibility-expansion/prd.md)，复用 P10 已验收的兼容接口。
 
 ## Background
 
-[P11 研究](../../../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口来自 P10 及 P05 的提供商回调。已有设备测试主要为 Config / 模型卡直接渲染，尚无整页或实际弹层截图。独立 SettingsModelScreen 与 ModelPickerSheet 的共享消费者不等于本批整页迁移对象。
+[P11 研究](../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口来自 P10 及 P05 的提供商回调。已有设备测试主要为 Config / 模型卡直接渲染，尚无整页或实际弹层截图。独立 SettingsModelScreen 与 ModelPickerSheet 的共享消费者不等于本批整页迁移对象。
 
 ## Requirements
 

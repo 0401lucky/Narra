@@ -1,0 +1,66 @@
+{
+  "checked_at_utc": "2026-11-05T12:43:36.690727+00:00",
+  "parent_started": false,
+  "children_completed": "4/4",
+  "batches": [
+    {
+      "batch": "P04",
+      "path": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay",
+      "status": "completed",
+      "work_commits": [
+        "4c93ae27",
+        "2cf55f1f"
+      ],
+      "journal_present": true,
+      "new_pngs": 14
+    },
+    {
+      "batch": "P05",
+      "path": ".trellis/tasks/archive/2026-11/10-21-ui-token-session-sidebar",
+      "status": "completed",
+      "work_commits": [
+        "4d32dabf",
+        "0c272255"
+      ],
+      "journal_present": true,
+      "new_pngs": 18
+    },
+    {
+      "batch": "P10",
+      "path": ".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home",
+      "status": "completed",
+      "work_commits": [
+        "b7aad3e6",
+        "76adadc9"
+      ],
+      "journal_present": true,
+      "new_pngs": 16
+    },
+    {
+      "batch": "P11",
+      "path": ".trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings",
+      "status": "completed",
+      "work_commits": [
+        "75b9a28d",
+        "ce7eb322"
+      ],
+      "journal_present": true,
+      "new_pngs": 32
+    }
+  ],
+  "new_pngs": 80,
+  "prior_pngs": 78,
+  "total_pngs": 158,
+  "final_screenshots": 159,
+  "final_full_jvm": 1826,
+  "png_inventory_sha256": "b31439fd162a2323a62edc0fea0bc289b827635a15dbc45d3cd6899f2c7e1ec7",
+  "all_work_commits_in_journal": true,
+  "protected_build_update_and_settings_defaults_unchanged": true,
+  "historical_tests_rerun_for_this_review": false,
+  "unverified": [
+    "physical TalkBack/system return/outside touch/IME/system bars/material effects",
+    "physical performance",
+    "new-visual remote CI"
+  ],
+  "conclusion": "EA1-EA4 satisfied within the approved host-validation scope; v2.3 remains unreleased."
+}

@@ -12,7 +12,7 @@
 
 定向检查优先 `RoleplaySceneContentTest` / `RoleplayScreenQuickActionsTest` 对应宿主覆盖、新增阅读与 P04 无障碍测试、`RoleplaySemanticColorsTest`、`RoleplayThemeSwitchUiTest`、`UiTokenSourceGuardTest`；未改的玻璃 / 滚动算法只复用原回归，不写常量镜像测试。
 
-最终命令与停止 / 回退规则以 [父执行编排](../../../10-21-ui-token-accessibility-expansion/implement.md) 为准；新增截图类为 `OfflineRoleplayScreenshotE04Test`，每登记一图对应一个 `@Test` 方法。没有实际执行前不写通过；失败先定向复验，完整试点结果不重复用作本批结论。
+最终命令与停止 / 回退规则以 [父执行编排](../../2026-11/10-21-ui-token-accessibility-expansion/implement.md) 为准；新增截图类为 `OfflineRoleplayScreenshotE04Test`，每登记一图对应一个 `@Test` 方法。没有实际执行前不写通过；失败先定向复验，完整试点结果不重复用作本批结论。
 
 ## 2026-10-22 交付状态
 

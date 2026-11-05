@@ -7,8 +7,8 @@
 {"file":".trellis/spec/backend/logging-guidelines.md","reason":"API Key及Provider错误不得泄漏到日志或候选图"}
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"最小充分验证截图守卫和结果诚实性"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享修改先枚举定义与全部消费者"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"本批真实入口共享所有者覆盖缺口与候选矩阵"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"真实窗口捕获before-after接纳及后续队列边界"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"真实窗口捕获before-after接纳及后续队列边界"}
 {"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/verification.md","reason":"P10最终接纳与前置验收，不把旧结果当作P11已通过"}
 {"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/check-summary-20261105.md","reason":"实际touch bounds、完整滚尾、精确重载守卫及独立检查教训"}
 {"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/implementation-summary-20261105.md","reason":"核对实际共享opt-in接口，过程记录不覆盖P10最终接纳状态"}

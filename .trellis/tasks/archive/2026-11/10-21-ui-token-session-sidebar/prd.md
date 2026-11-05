@@ -2,11 +2,11 @@
 
 ## Goal
 
-将真实会话设置侧栏及其现有弹层扩入 v2.3 默认令牌与无障碍契约，让长规则、窄屏大字体和个性化设置可操作。归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，在 P04 验收后串行实施；2026-10-22 已按用户明确授权启动现有任务。
+将真实会话设置侧栏及其现有弹层扩入 v2.3 默认令牌与无障碍契约，让长规则、窄屏大字体和个性化设置可操作。归属 [扩面父任务](../10-21-ui-token-accessibility-expansion/prd.md)，在 P04 验收后串行实施；2026-10-22 已按用户明确授权启动现有任务。
 
 ## Background
 
-[P05 研究](../../../10-21-ui-token-accessibility-expansion/research/sidebar-entry.md) 核实唯一链路为 RoleplayNavGraph → Screen → Content → SidebarContent。本体为普通路由内的自适应右侧面板；仅内部 Sheet / AlertDialog 是独立窗口。现有局部设备测试不等于整页 200% 或设备运行通过，尚无 P05 截图登记。
+[P05 研究](../10-21-ui-token-accessibility-expansion/research/sidebar-entry.md) 核实唯一链路为 RoleplayNavGraph → Screen → Content → SidebarContent。本体为普通路由内的自适应右侧面板；仅内部 Sheet / AlertDialog 是独立窗口。现有局部设备测试不等于整页 200% 或设备运行通过，尚无 P05 截图登记。
 
 ## Requirements
 

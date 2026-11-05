@@ -12,7 +12,7 @@
 
 复用 `SettingsViewModelTest`、`SettingsPersistenceCoordinatorTest`、`AppSettingsStoreTest`、`RoleplayNoBackgroundSkinSettingsTest` 与已有 P05 AndroidTest 的实际行为；新增完整 Screen / 窗口 / 保存桥接宿主测试。截图类建议 `SessionSidebarScreenshotE05Test`，逐图独立方法。
 
-必要 ModelPickerSheet / SettingsHelpButton 共享改动必须先核定所有消费者与唯一所有者；无法稳定捕获真实窗口时，该批视觉验收未完成，先解决捕获，不伪造弹层或放松门禁。其他命令、失败与回退规则见 [父计划](../../../10-21-ui-token-accessibility-expansion/implement.md)。
+必要 ModelPickerSheet / SettingsHelpButton 共享改动必须先核定所有消费者与唯一所有者；无法稳定捕获真实窗口时，该批视觉验收未完成，先解决捕获，不伪造弹层或放松门禁。其他命令、失败与回退规则见 [父计划](../10-21-ui-token-accessibility-expansion/implement.md)。
 
 ## 当前执行记录
 

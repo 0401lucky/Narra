@@ -5,7 +5,7 @@
 {"file":".trellis/spec/backend/error-handling.md","reason":"审查取消与失败反馈边界不得由视觉迁移改变"}
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"审查：最小充分验证截图守卫和结果诚实性"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"审查：共享修改先枚举定义与全部消费者"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/offline-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/sidebar-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"审查：真实窗口捕获before-after接纳及后续队列边界"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/offline-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/sidebar-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"审查：真实窗口捕获before-after接纳及后续队列边界"}

@@ -1,6 +1,6 @@
 # P11 技术设计
 
-沿用 [父设计](../../../10-21-ui-token-accessibility-expansion/design.md)；完整入口、字段 / 保存 / ID 边界与 Fake 证据见 [提供商研究](../../../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md)。
+沿用 [父设计](../10-21-ui-token-accessibility-expansion/design.md)；完整入口、字段 / 保存 / ID 边界与 Fake 证据见 [提供商研究](../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md)。
 
 ## 所有权与真实状态
 

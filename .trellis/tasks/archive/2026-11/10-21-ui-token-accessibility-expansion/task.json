@@ -1,0 +1,53 @@
+{
+  "id": "ui-token-accessibility-expansion",
+  "name": "ui-token-accessibility-expansion",
+  "title": "v2.3 设计令牌与无障碍扩面",
+  "description": "v2.3四批设计令牌与无障碍扩面的协调及跨批总验收，P04/P05/P10/P11全部完成，功能未发布。",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": "ui",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-10-21",
+  "completedAt": "2026-11-05",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "ce7eb322",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-21-ui-token-offline-roleplay",
+    "10-21-ui-token-session-sidebar",
+    "10-21-ui-token-settings-home",
+    "10-21-ui-token-provider-settings"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "四批全部独立提交、归档并记录journal，4/4完成；父任务EA1–EA4跨批总验收通过并已归档，未执行start。最终80新增/158总PNG，159/159截图、1826/1826完整JVM与必要Lint通过，无新增警告。P11工作75b9a28d、ce7eb322，归档61f4628e、journal9f6f00e8。构建/更新2.2.12-dev未变，v2.3未发布，未推送发包；设备/物理性能/新视觉CI待补，后续队列未启动。",
+  "meta": {
+    "version": "2.3",
+    "source_task": ".trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot",
+    "planning_only": false,
+    "review_status": "accepted_and_verified",
+    "approval": "2026-10-21 用户回复“可以”，批准四批方案并先启动第一批",
+    "planned_new_screenshots": 80,
+    "role": "coordination_parent",
+    "work_commits": [
+      "4c93ae27",
+      "2cf55f1f",
+      "4d32dabf",
+      "0c272255",
+      "b7aad3e6",
+      "76adadc9",
+      "75b9a28d",
+      "ce7eb322"
+    ],
+    "final_new_screenshots": 80,
+    "final_accepted_pngs": 158,
+    "final_screenshot_checks": 159,
+    "final_jvm_tests": 1826
+  }
+}

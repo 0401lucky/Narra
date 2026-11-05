@@ -1,6 +1,6 @@
 # P04 技术设计
 
-沿用 [父设计](../../../10-21-ui-token-accessibility-expansion/design.md) 的令牌、兼容、截图和所有权契约。源码依据为 [线下研究](../../../10-21-ui-token-accessibility-expansion/research/offline-entry.md)，其中每项风险均需运行时测量再定修复。
+沿用 [父设计](../../2026-11/10-21-ui-token-accessibility-expansion/design.md) 的令牌、兼容、截图和所有权契约。源码依据为 [线下研究](../../2026-11/10-21-ui-token-accessibility-expansion/research/offline-entry.md)，其中每项风险均需运行时测量再定修复。
 
 ## 文件所有权与检查点
 

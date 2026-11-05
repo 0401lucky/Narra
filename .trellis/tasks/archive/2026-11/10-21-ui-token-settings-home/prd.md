@@ -2,11 +2,11 @@
 
 ## Goal
 
-让设置首页及三类外观 Sheet 显式采用 v2.3 统一令牌和无障碍契约，同时保留其他共享设置调用方的默认行为。2026-11-05按既有批准方案启动，归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，排在 P05 后、P11 前。
+让设置首页及三类外观 Sheet 显式采用 v2.3 统一令牌和无障碍契约，同时保留其他共享设置调用方的默认行为。2026-11-05按既有批准方案启动，归属 [扩面父任务](../10-21-ui-token-accessibility-expansion/prd.md)，排在 P05 后、P11 前。
 
 ## Background
 
-[设置与提供商研究](../../../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口为手机主壳 Profile“设置”→ SettingsNavGraph → SettingsScreen。共享设置符号命中约 45 个 UI 文件（含定义），不能全局改默认尺寸。现有测试主要为直接回调和 160% 局部 Sheet，尚无 P10 整页基准。
+[设置与提供商研究](../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口为手机主壳 Profile“设置”→ SettingsNavGraph → SettingsScreen。共享设置符号命中约 45 个 UI 文件（含定义），不能全局改默认尺寸。现有测试主要为直接回调和 160% 局部 Sheet，尚无 P10 整页基准。
 
 ## Requirements
 

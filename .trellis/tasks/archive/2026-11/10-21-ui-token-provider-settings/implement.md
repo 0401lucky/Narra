@@ -10,7 +10,7 @@
 6. 派 `trellis-check` 检查 / 定向修复；展示 32 个 after / diff 与共享旧图变化，人工确认后才接纳 PNG / manifest。
 7. 全包已接纳截图 verify、所需单测、Lint / dev 构建与 AndroidTest 编译。主会话更新版本记录 / spec，审阅具体提交后独立归档 / journal，再由父任务跨批收口。
 
-建议截图类 `ProviderSettingsScreenshotE11Test`，每图独立 `@Test`。不在图中录真实 key / key 明文，不以更改自动检测触发条件换确定性。其他验证命令、失败 / 回退与设备 / CI / 性能边界见 [父计划](../../../10-21-ui-token-accessibility-expansion/implement.md)。
+建议截图类 `ProviderSettingsScreenshotE11Test`，每图独立 `@Test`。不在图中录真实 key / key 明文，不以更改自动检测触发条件换确定性。其他验证命令、失败 / 回退与设备 / CI / 性能边界见 [父计划](../10-21-ui-token-accessibility-expansion/implement.md)。
 
 ## 执行记录（2026-11-05）
 

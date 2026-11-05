@@ -2,11 +2,11 @@
 
 ## Goal
 
-将真实线下扮演及既有会话阅读入口扩入 v2.3 默认令牌和无障碍契约，使大字体、读屏与日常操作可用；保留线上试点和个性化行为。归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，2026-10-21 用户在最终摘要后回复“可以”，批准先实施本批。
+将真实线下扮演及既有会话阅读入口扩入 v2.3 默认令牌和无障碍契约，使大字体、读屏与日常操作可用；保留线上试点和个性化行为。归属 [扩面父任务](../../2026-11/10-21-ui-token-accessibility-expansion/prd.md)，2026-10-21 用户在最终摘要后回复“可以”，批准先实施本批。
 
 ## Background
 
-真实入口及源码锚点见 [P04 研究](../../../10-21-ui-token-accessibility-expansion/research/offline-entry.md)：相同 `roleplay/play/{scenarioId}` 路由按 ONLINE_PHONE 与线下分支选择内容，线下包括 OFFLINE_DIALOGUE / OFFLINE_LONGFORM；会话阅读是既有独立路由，不是 P14 日记。研究阶段B04线下两张只有组件覆盖，本批新增E04整页 / 阅读基准并完成接纳；运行结果见 [验证记录](verification.md)。
+真实入口及源码锚点见 [P04 研究](../../2026-11/10-21-ui-token-accessibility-expansion/research/offline-entry.md)：相同 `roleplay/play/{scenarioId}` 路由按 ONLINE_PHONE 与线下分支选择内容，线下包括 OFFLINE_DIALOGUE / OFFLINE_LONGFORM；会话阅读是既有独立路由，不是 P14 日记。研究阶段B04线下两张只有组件覆盖，本批新增E04整页 / 阅读基准并完成接纳；运行结果见 [验证记录](verification.md)。
 
 ## Requirements
 

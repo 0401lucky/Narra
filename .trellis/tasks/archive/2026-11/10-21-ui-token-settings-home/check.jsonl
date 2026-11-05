@@ -5,8 +5,8 @@
 {"file":".trellis/spec/backend/error-handling.md","reason":"审查显式保存与立即pop返回的不同失败边界"}
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"审查：最小充分验证截图守卫和结果诚实性"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"审查：共享修改先枚举定义与全部消费者"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"审查：真实窗口捕获before-after接纳及后续队列边界"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"审查：真实窗口捕获before-after接纳及后续队列边界"}
 {"file":"app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotStageTest.kt","reason":"审查确定性舞台、真实比较与零像素门禁未放宽"}
 {"file":"app/src/test/java/com/example/myapplication/ui/screenshot/SessionSidebarRenderTest.kt","reason":"核对P05窗口捕获及共享测试接口兼容"}
 {"file":".trellis/tasks/archive/2026-11/10-21-ui-token-session-sidebar/verification.md","reason":"核对前置已归档，110张旧PNG必须保持兼容"}
