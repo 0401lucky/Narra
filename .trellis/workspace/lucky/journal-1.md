@@ -280,3 +280,37 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 ### Next Steps
 
 - 启动已批准的P10设置首页，先冻结现有基准并取得16张迁移前证据。
+
+
+## Session 10: v2.3 P10设置首页提交归档
+
+**Date**: 2026-11-05
+**Task**: v2.3 P10设置首页提交归档
+**Branch**: `main`
+
+### Summary
+
+用户回复可以，确认P10具体提交清单；完成b7aad3e6实现/测试/规范/证据及76adadc9接纳基准两笔工作提交，归档cbe1c195，父任务3/4完成。沿用已通过的1755项完整JVM、127项真实截图及Lint/dev构建/AndroidTest实际编译结果；本轮仅核对126张PNG哈希、提交范围和归档引用，没有重复全测。原有历史改动及manifest旧CI文字保留。P11提供商配置仍待实施，版本仍2.2.12-dev，未推送发包，真机/物理性能/新视觉CI待补。
+
+### Main Changes
+
+- 完成P10两笔工作提交、任务归档及父任务/版本/审阅页引用同步。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b7aad3e6` | (see git log) |
+| `76adadc9` | (see git log) |
+
+### Testing
+
+- [OK] 1755/1755完整JVM、127/127真实截图已通过；本次核对126张PNG不变、范围和Markdown链接有效。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- P11提供商配置为下一批，当前保持planning；真机、物理性能及新视觉远端CI待补。
