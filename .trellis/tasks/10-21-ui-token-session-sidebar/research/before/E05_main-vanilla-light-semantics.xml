@@ -1,0 +1,89 @@
+<semantics id="E05_main-vanilla-light" fontScale="1.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #1134 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #1137 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+ | Shape = 'RectangleShape'
+ |-Node #1138 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+ | Shape = 'RectangleShape'
+ |-Node #1141 at (l=64.0, t=20.0, r=696.0, b=1580.0)px
+   IsContainer = 'true'
+   Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |-Node #1142 at (l=64.0, t=20.0, r=696.0, b=1580.0)px
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |-Node #1143 at (l=64.0, t=20.0, r=696.0, b=1580.0)px
+       | Shape = 'RectangleShape'
+       |-Node #1145 at (l=84.0, t=36.0, r=676.0, b=181.0)px
+       | IsContainer = 'true'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |  |-Node #1146 at (l=84.0, t=36.0, r=676.0, b=181.0)px
+       |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |     |-Node #1147 at (l=84.0, t=36.0, r=676.0, b=181.0)px
+       |     | Shape = 'RectangleShape'
+       |     |-Node #1149 at (l=100.0, t=61.0, r=196.0, b=157.0)px
+       |     | ContentDescription = '[返回]'
+       |     | Focused = 'false'
+       |     | Role = 'Button'
+       |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     | Actions = [OnClick, RequestFocus]
+       |     | MergeDescendants = 'true'
+       |     |-Node #1153 at (l=216.0, t=56.0, r=392.0, b=121.0)px
+       |     |  |-Node #1154 at (l=216.0, t=56.0, r=392.0, b=121.0)px
+       |     |    Text = '[会话设定]'
+       |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |     |-Node #1155 at (l=216.0, t=125.0, r=640.0, b=161.0)px
+       |       Text = '[雨夜的旧书店与一段需要完整保留的很长很长的会话标题]'
+       |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #1158 at (l=64.0, t=197.0, r=696.0, b=1580.0)px
+          |-Node #1159 at (l=88.0, t=197.0, r=672.0, b=1580.0)px, Tag: 'roleplay_settings_list'
+            CollectionInfo = 'CollectionInfo(rowCount=9, columnCount=1)'
+            ContentDescription = '[苏晚]'
+            IsContainer = 'true'
+            IsTraversalGroup = 'true'
+            Shape = 'RectangleShape'
+            Text = '[苏晚, 会话设定]'
+            VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+            [Disabled]
+            Actions = [ClearTextSubstitution, GetScrollViewportLength, GetTextLayoutResult, IndexForKey, OnClick, ScrollBy, ScrollByOffset, ScrollToIndex, SetTextSubstitution, ShowTextSubstitution]
+            MergeDescendants = 'true'
+             |-Node #1172 at (l=548.0, t=261.0, r=628.0, b=341.0)px
+             | ContentDescription = '[添加成员]'
+             | Focused = 'false'
+             | Role = 'Button'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             | Actions = [OnClick, RequestFocus]
+             | MergeDescendants = 'true'
+             |-Node #1183 at (l=88.0, t=508.0, r=672.0, b=661.0)px
+             | Focused = 'false'
+             | Text = '[情景设定, 线上模式]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1190 at (l=88.0, t=663.0, r=672.0, b=816.0)px
+             | Focused = 'false'
+             | Text = '[用户身份, 面具1：在漫长雨夜中旅行的记录者]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1197 at (l=88.0, t=818.0, r=672.0, b=971.0)px
+             | Focused = 'false'
+             | Text = '[本会话预设, 跟随全局]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1204 at (l=88.0, t=973.0, r=672.0, b=1126.0)px
+             | Focused = 'false'
+             | Text = '[背景与立绘, 默认视觉]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1216 at (l=88.0, t=1158.0, r=672.0, b=1311.0)px
+             | Focused = 'false'
+             | Text = '[主题, Narra · 边到边]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1223 at (l=88.0, t=1313.0, r=672.0, b=1498.0)px
+             | Focused = 'false'
+             | Text = '[快捷切换, fixture-model-长上下文与细腻情绪叙事完整模型名称]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #1231 at (l=88.0, t=1530.0, r=672.0, b=1626.0)px
+               Focused = 'false'
+               Text = '[高级选项, 展开]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+               MergeDescendants = 'true']]></semantics>

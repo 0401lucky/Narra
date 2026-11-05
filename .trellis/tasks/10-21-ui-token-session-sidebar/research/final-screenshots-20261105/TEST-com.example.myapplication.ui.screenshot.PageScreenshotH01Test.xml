@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-05T01:57:46.764Z" hostname="LUCKY" time="3.712">
+  <properties/>
+  <testcase name="h01_p02_assistants_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.481"/>
+  <testcase name="h01_p02_assistants_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.164"/>
+  <testcase name="h01_p01_messages_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.297"/>
+  <testcase name="h01_p03_online_play_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.255"/>
+  <testcase name="h01_p01_messages_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.213"/>
+  <testcase name="h01_p01_messages_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.19"/>
+  <testcase name="h01_p01_messages_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.152"/>
+  <testcase name="h01_p01_messages_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.15"/>
+  <testcase name="h01_p02_assistants_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.209"/>
+  <testcase name="h01_p01_messages_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.153"/>
+  <testcase name="h01_p02_assistants_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.147"/>
+  <testcase name="h01_p03_online_play_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.198"/>
+  <testcase name="h01_p02_assistants_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.137"/>
+  <testcase name="h01_p03_online_play_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.202"/>
+  <testcase name="h01_p02_assistants_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.154"/>
+  <testcase name="h01_p03_online_play_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.213"/>
+  <testcase name="h01_p03_online_play_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.199"/>
+  <testcase name="h01_p03_online_play_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.188"/>
+  <system-out><![CDATA[Roborazzi: H01_p02-assistants-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p02-assistants-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p02-assistants-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p01-messages-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p02-assistants-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p02-assistants-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p02-assistants-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H01_p03-online-roleplay-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

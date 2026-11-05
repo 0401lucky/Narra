@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:13:11.761Z" hostname="LUCKY" time="4.983">
+  <properties/>
+  <testcase name="narraSuggestionErrorAndText_themeSwitchAndFixedDynamicSchemes_readActualSurface" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" time="1.635"/>
+  <testcase name="whiteBackdropSceneGlass_hasReadableCharacterAndUser_andOfflineIgnoresOnlineGlassSwitch" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" time="0.391"/>
+  <testcase name="sceneMoodScrimAndMessageGlass_readActualSyntheticBackdrop" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" time="0.189"/>
+  <testcase name="liquidSuggestionErrorAndText_readActualLightAndDarkSurfaces" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" time="1.504"/>
+  <testcase name="noirSuggestionErrorAndText_readActualLightAndDarkSurfaces" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest" time="1.258"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

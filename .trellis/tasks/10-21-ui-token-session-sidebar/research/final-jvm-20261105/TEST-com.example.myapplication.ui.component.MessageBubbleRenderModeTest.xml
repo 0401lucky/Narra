@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:23.206Z" hostname="LUCKY" time="0.011">
+  <properties/>
+  <testcase name="shouldRenderWithMarkdownDuringScrolling_returnsFalseForPlainParagraph" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.002"/>
+  <testcase name="shouldRenderWithMarkdownDuringScrolling_keepsInlineMarkdownLayoutStable" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="shouldRenderWithMarkdown_returnsTrueForTaskList" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="shouldRenderWithMarkdown_returnsTrueForStructuredMarkdown" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.001"/>
+  <testcase name="shouldRenderWithMarkdown_returnsTrueForMarkdownTableWithoutLeadingPipe" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="normalizeCitationMarkdownForDisplay_rewritesCitationSyntax" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.008"/>
+  <testcase name="shouldRenderWithMarkdownDuringScrolling_keepsStructuredMarkdown" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="shouldRenderWithMarkdown_returnsTrueForInlineMarkdownHints" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="shouldRenderWithMarkdown_returnsFalseForPlainParagraph" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <testcase name="shouldRenderWithMarkdown_returnsTrueForBlockquote" classname="com.example.myapplication.ui.component.MessageBubbleRenderModeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

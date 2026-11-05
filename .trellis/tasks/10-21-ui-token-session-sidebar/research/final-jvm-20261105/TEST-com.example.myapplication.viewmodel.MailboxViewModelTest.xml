@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.MailboxViewModelTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:26.031Z" hostname="LUCKY" time="0.117">
+  <properties/>
+  <testcase name="sendLetter_blocksAutoReplyWhilePreviousReplyIsGenerating" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.042"/>
+  <testcase name="cancelGeneration_stopsProactiveLetterWithoutCreatingIncomingMail" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.018"/>
+  <testcase name="proactiveFrequency_enabled_generatesIncomingRoleplayEventLetter" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.009"/>
+  <testcase name="sendLetter_withConfiguredProvider_usesAiReplyAndClearsFilters" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.016"/>
+  <testcase name="relatedContextExposesDiaryAndPhoneClues" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.013"/>
+  <testcase name="sendLetter_withLocalReply_insertsSentAndIncomingLetters" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.009"/>
+  <testcase name="filtersBySearchTagAndUnreadOnly" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.005"/>
+  <testcase name="mailboxSettings_updateComposerDefaults" classname="com.example.myapplication.viewmodel.MailboxViewModelTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

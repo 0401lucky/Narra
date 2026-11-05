@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.RoleplayViewModelTest" tests="68" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:26.445Z" hostname="LUCKY" time="1.746">
+  <properties/>
+  <testcase name="createChatForAssistant_usesAssistantGreetingAsOpeningNarration" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.063"/>
+  <testcase name="onlineCompensation_emptyModelOutputRemovesPlaceholderAndKeepsBucketReusable_whenProactiveReplyEnabled" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.061"/>
+  <testcase name="sendMessage_inOnlineModeSettlesLooseTransferReceiptText" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.046"/>
+  <testcase name="generateDraftInput_usesChatSuggestionProviderWhenConfigured" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.013"/>
+  <testcase name="dismissAssistantMismatchDialog_withSuppression_persistsPreference" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.007"/>
+  <testcase name="sendMessage_groupChatMiddleTurnFailureContinuesRemainingMember" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.052"/>
+  <testcase name="sendSpecialPlay_sendsPunishCardForRoleplay" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.035"/>
+  <testcase name="cancelSending_oldGroupRunDoesNotRemoveNewRunLoading" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.039"/>
+  <testcase name="sendMessageWithImage_blocksTextOnlyModel" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.007"/>
+  <testcase name="onlineCompensation_enterScenarioDoesNotAutoStartFromLoadedHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.007"/>
+  <testcase name="switchingScenario_clearsQuotedReplyBeforeSending" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.03"/>
+  <testcase name="deleteMessage_removesAllDerivedBubblesAndClearsMatchingQuote" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.015"/>
+  <testcase name="sendMessageWithImage_passesImagePartToVisionModel" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.021"/>
+  <testcase name="sendMessage_groupChatPreservesQuotedReplyOnUserMessage" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.014"/>
+  <testcase name="deleteMessage_otherTargetKeepsCurrentQuote" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.013"/>
+  <testcase name="sendMessage_withStaleConversationSummary_keepsIntermediateMessages" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.044"/>
+  <testcase name="sendMessage_groupChatAllTurnsFailFinishesWithErrorWithoutLoading" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.063"/>
+  <testcase name="approvePendingMemoryProposal_savesMemoryAndClearsProposal" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.014"/>
+  <testcase name="sendMessage_switchingFromOnlineToLongformUsesLongformPromptAndStripsOnlineProtocolFromHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.075"/>
+  <testcase name="sendSpecialPlay_generatesGiftImageForRoleplayGiftCard" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.049"/>
+  <testcase name="removeGroupParticipant_whenOnlyOneMemberRemainsConvertsToSingleChat" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="deleteMessage_inProgressBlocksSendRetryEditAndRecallUntilCommit" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="deleteMessage_loadingMessageIsRejectedBeforeRepositoryCall" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.005"/>
+  <testcase name="generateDraftInput_longformModeRequestsNovelStyleDraft" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="updateInput_cancelsGeneratingSuggestions" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.01"/>
+  <testcase name="sendTransferPlay_inOnlineModeAcceptsPendingTransferViaDirective" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.019"/>
+  <testcase name="generateSuggestions_showsClearMessageWhenSuggestionModelDisabled" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.007"/>
+  <testcase name="cancelCleanup_completesEvenWhenStoreSuspends" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.018"/>
+  <testcase name="sendMessage_groupChatPostProcessFailureKeepsCompletedReplyWithoutRetry" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.026"/>
+  <testcase name="sendMessage_switchingOnlineVideoBackToLongformStripsStaleLongformTagsAndOnlineDirectorContext" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.087"/>
+  <testcase name="sendMessage_switchingFromOnlineToDialogueKeepsProtocolFormatting" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.056"/>
+  <testcase name="generateSuggestions_updatesUiStateAndUsesSuggestionModel" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.018"/>
+  <testcase name="cancelSending_removesLoadingAssistantMessage" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="sendMessage_condensesExtractedMemoriesIntoCompactScopeEntries" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.039"/>
+  <testcase name="sendMessage_switchingBackFromLongformKeepsHistoryFormatAndRequestContext" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.058"/>
+  <testcase name="hangupVideoCall_recordsEndedEventAndClearsState" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.013"/>
+  <testcase name="generateDraftInput_showsSuggestionsWithoutWritingConversationHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="sendMessage_groupMemberReadFailureRestoresSendingState" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.009"/>
+  <testcase name="startVideoCall_immediatelyAfterEnterScenario_switchesOfflineScenarioAndConnects" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.006"/>
+  <testcase name="sendMessage_updatesWorldBookHitCountFromLatestInputAndThenResetsNextTurn" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.034"/>
+  <testcase name="updateCurrentScenarioUserPersonaMask_onlyRebindsCurrentScenario" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.009"/>
+  <testcase name="deleteMessage_repositoryFailureKeepsMessageAndUsesSafeError" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.013"/>
+  <testcase name="refreshCurrentConversationSummary_forceRefreshesShortRoleplayHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.015"/>
+  <testcase name="sendMessage_duringVideoCallUsesVideoCallPrompt" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.047"/>
+  <testcase name="cancelMidStream_withPartialContent_keepsPartialAsCompleted" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.013"/>
+  <testcase name="refreshCurrentConversationSummary_manuallyExtractsRoleplayMemories" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.015"/>
+  <testcase name="sendMessage_switchingFromLongformToOnlineUsesOnlinePromptAndSanitizedHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.044"/>
+  <testcase name="sendVoiceMessage_sendsVoiceActionForOnlineRoleplay" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.03"/>
+  <testcase name="removeGroupRunLoadingMessages_onlyRemovesTrackedLoading" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.0"/>
+  <testcase name="updateCurrentScenarioUserPersonaMask_blankIdClearsRoleBindingAndFallsBackToGlobalDefault" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.006"/>
+  <testcase name="addGroupParticipant_singleChatConvertsToGroupAndSyncsConversationAssistant" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.007"/>
+  <testcase name="sendMessage_clearsSuggestionsBeforeSending" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.017"/>
+  <testcase name="generateDraftInput_doesNotFillMalformedStructuredPayload" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.008"/>
+  <testcase name="refreshCurrentConversationSummary_rebuildsContextGovernanceImmediately" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.01"/>
+  <testcase name="confirmTransferReceipt_updatesPendingTransferStatus" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.008"/>
+  <testcase name="sendTransferPlay_persistsTransferPartAndMapsTransferCard" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.04"/>
+  <testcase name="sendMessage_longformModeMapsAssistantReplyToLongformMessage" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.033"/>
+  <testcase name="enterScenario_ignoresStaleStartResultFromPreviousScenario" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.03"/>
+  <testcase name="enterScenario_withResidualLoadingMessage_doesNotTriggerOnlineCompensation" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.01"/>
+  <testcase name="generateDraftInput_longformModeSanitizesOnlineVideoHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.012"/>
+  <testcase name="hangupVideoCall_thenImmediateSend_usesOnlineChatPromptAndNoTaggedVideoEvents" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.039"/>
+  <testcase name="sendMessage_longformModeStripsInternalRenderTagsFromVisibleContent" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.03"/>
+  <testcase name="editUserMessage_rewindsConversationAndRestoresInput" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="startVideoCall_recordsConnectedEventWithoutAutoReply" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.008"/>
+  <testcase name="retryTurn_regeneratesAssistantReplyFromSelectedTurn" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.043"/>
+  <testcase name="sendMessage_groupUserPersistenceFailureRestoresSendingState" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.011"/>
+  <testcase name="onlineProactiveReply_enabledAllowsCompensationFromLoadedHistory" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.036"/>
+  <testcase name="sendMessage_groupChatRetriesFailedTurnThenContinuesNextMember" classname="com.example.myapplication.viewmodel.RoleplayViewModelTest" time="0.068"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

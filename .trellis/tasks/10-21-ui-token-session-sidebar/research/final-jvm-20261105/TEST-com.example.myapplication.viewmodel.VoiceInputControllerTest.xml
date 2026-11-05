@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.VoiceInputControllerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:28.381Z" hostname="LUCKY" time="0.083">
+  <properties/>
+  <testcase name="startRecording_remoteWithoutCredentialShowsGuidanceAndDoesNotRecord" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.01"/>
+  <testcase name="remoteChannel_failureLandsInFailedPhaseAndDismissReturnsToIdle" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.008"/>
+  <testcase name="appendRecognizedText_insertsSpaceOnlyBetweenAsciiWords" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.002"/>
+  <testcase name="updateSettings_disabledHidesButtonAndMissingCredentialDisablesIt" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.003"/>
+  <testcase name="appendRecognizedText_appendsWithoutSeparatorForChinese" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.002"/>
+  <testcase name="remoteChannel_happyPathAppendsTextAndDeletesAudioFile" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.004"/>
+  <testcase name="remoteChannel_recorderFailureShowsMicrophoneGuidance" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.004"/>
+  <testcase name="appendRecognizedText_respectsExistingTrailingWhitespaceAndEmptyInputs" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.001"/>
+  <testcase name="startRecording_whenDisabledDoesNothing" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.003"/>
+  <testcase name="startRecording_whileBusyIsIgnored" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.01"/>
+  <testcase name="blankFinalTextIsTreatedAsFailureInsteadOfEmptyAppend" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.004"/>
+  <testcase name="recordingLongerThanLimitStopsAutomaticallyWithNotice" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.008"/>
+  <testcase name="systemChannel_partialsPreviewLevelsDriveAmplitudeAndReleaseYieldsFinalText" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.01"/>
+  <testcase name="remoteChannel_tooShortRecordingIsDiscardedWithoutTranscribing" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.006"/>
+  <testcase name="cancel_producesNoTextAndLeavesNoAudioFile" classname="com.example.myapplication.viewmodel.VoiceInputControllerTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,25 @@
+{
+  "accepted": true,
+  "date": "2026-11-05",
+  "user_confirmation": "接纳侧栏，完成收尾后做设置首页",
+  "candidates": {
+    "E05_group-narrow-light": "7452b52eac210967ea5648920cb39d9f07f9410c5c9c26d1cdb573acefa66183",
+    "E05_help-dialog-dark": "18555cea0262302f963ba61e1f9a54ce4e2f7dc7930b2c6df16c3b67690bcd6e",
+    "E05_main-dynamic-dark": "e3461a82a956dc28a894f3b4edc2ae893dec176986fefc4c3308736b94abdbf9",
+    "E05_main-dynamic-light": "f58f8610c107247bb65477b89ab272c0a264d5009dc5440bd873ad266a5ef420",
+    "E05_main-matcha-dark": "6720c91541a7d0ab2412a68edba54709994f187ce2df3033f635ee9b2ab85d54",
+    "E05_main-matcha-light": "300cf3452d589e26c65942784f26281bc4cb6ffebbddf0266aa470a06f31db20",
+    "E05_main-narrow-dark": "bcc8c1dc38ab0ef07445d021f408136a6bf81f6ba7562f30af45b5d468b7581c",
+    "E05_main-narrow-light": "4595d87ef1d6ad729a5ed8d92b9e4049aae6c9da83e4d4a019e7198eddb47cf3",
+    "E05_main-ocean-dark": "703ec3801837377608e7fda66c6fa2e2d0cb7b2e81e2570ace0a004731fe8e4c",
+    "E05_main-ocean-light": "08fbe193a4b74045e3410f629b0ff835cc83748bf9d14a5107d030e0f7a83cce",
+    "E05_main-vanilla-dark": "46ab93806d17bafca7c75bd01ffaa4b9b40cdf660023dfcb058532e0c0180203",
+    "E05_main-vanilla-light": "4d0eae8822e820cae6525003671351edb92c0512175cde1a5dfd8ece2eb02e25",
+    "E05_mask-sheet-dark": "a65156ca161a50d38f93c4e067fb14fe390442589fa789b81d5d58b453c3992c",
+    "E05_model-sheet-light": "018d00829dba058eca713fb37f54396ff548ad87967908c90c1e85154a6c3a6b",
+    "E05_preset-sheet-light": "89c974f82b48f5d3dd271eb869299a32108519fde28b9baae4d694403234157b",
+    "E05_reset-dialog-dark": "ea3bd90891a96c34c28a0aa8912875146c9b99fedfe804e49bec0fdc13aede7a",
+    "E05_theme-narrow-dark": "1f2e2f2811508d7d413289535da6382ab0f969efdd51b7c643a08e7f556a17a4",
+    "E05_theme-narrow-light": "a123b3969ead539f751e34f3e679333aefe1ccdbfe74845527f2fe97fc916144"
+  }
+}

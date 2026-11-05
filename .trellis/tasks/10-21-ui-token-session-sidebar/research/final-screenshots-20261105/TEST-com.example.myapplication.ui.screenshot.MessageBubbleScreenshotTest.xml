@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T01:57:41.402Z" hostname="LUCKY" time="0.448">
+  <properties/>
+  <testcase name="chatUserMessageBubble_matchaLight_rendersContentAndMatchesBaseline" classname="com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest" time="0.212"/>
+  <testcase name="roleplayCharacterBubble_glassWithLoadedBackdrop_rendersContentAndMatchesBaseline" classname="com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest" time="0.231"/>
+  <system-out><![CDATA[Roborazzi: chat-user-message-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: roleplay-character-bubble-glass.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

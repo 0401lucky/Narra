@@ -1,0 +1,33 @@
+<semantics id="E05_reset-dialog-dark" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #2550 at (l=0.0, t=0.0, r=640.0, b=620.0)px
+ |-Node #2551 at (l=0.0, t=0.0, r=640.0, b=620.0)px
+   [IsDialog]
+    |-Node #2552 at (l=0.0, t=0.0, r=640.0, b=620.0)px
+      PaneTitle = '对话框'
+       |-Node #2553 at (l=0.0, t=0.0, r=640.0, b=620.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #2556 at (l=48.0, t=48.0, r=336.0, b=156.0)px
+          | Text = '[清空剧情]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #2558 at (l=48.0, t=188.0, r=592.0, b=415.0)px
+          | Text = '[会保留场景配置，只清空当前剧情消息。此操作不可撤销。]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #2561 at (l=168.0, t=463.0, r=320.0, b=572.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #2563 at (l=192.0, t=479.0, r=296.0, b=556.0)px
+          |    Text = '[取消]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #2564 at (l=336.0, t=463.0, r=592.0, b=572.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #2566 at (l=360.0, t=479.0, r=568.0, b=556.0)px
+               Text = '[确定清空]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

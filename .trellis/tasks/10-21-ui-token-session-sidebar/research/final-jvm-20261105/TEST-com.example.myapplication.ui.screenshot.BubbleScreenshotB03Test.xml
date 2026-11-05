@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:08.449Z" hostname="LUCKY" time="0.967">
+  <properties/>
+  <testcase name="b03_tail_on" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.09"/>
+  <testcase name="b03_padding_horizontal_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.118"/>
+  <testcase name="b03_padding_horizontal_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.11"/>
+  <testcase name="b03_padding_vertical_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.095"/>
+  <testcase name="b03_padding_vertical_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.092"/>
+  <testcase name="b03_radius_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.098"/>
+  <testcase name="b03_radius_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.09"/>
+  <testcase name="b03_width_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.087"/>
+  <testcase name="b03_width_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.089"/>
+  <testcase name="b03_tail_off" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.094"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

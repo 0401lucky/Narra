@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.MessageContentFormatterTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:23.219Z" hostname="LUCKY" time="0.019">
+  <properties/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_wrapsCommandLinesIntoCodeFence" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.001"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_keepsBlockquoteUntouched" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_keepsStructuredMarkdownUntouched" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_keepsExistingParagraphBreaks" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="extractAssistantVisualContent_extractsMarkdownImagesAndKeepsText" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.002"/>
+  <testcase name="extractAssistantVisualContent_keepsPlainWebUrlAsText" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="extractAssistantVisualContent_extractsHtmlAndDataImages" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_wrapsWholeLineInlineCommandsIntoCodeFence" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="parseSafeHtmlTextBlocks_removesDangerousBlocksAndKeepsPlainText" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.002"/>
+  <testcase name="extractAssistantVisualContent_extractsContentSchemeImage" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_keepsTaskListUntouched" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_wrapsContinuationLinesIntoCodeFence" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="extractAssistantVisualContent_extractsSingleSignedUrlWithoutSuffix" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_keepsMarkdownTableUntouched" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.001"/>
+  <testcase name="parseSafeHtmlTextBlocks_rendersParagraphStyleAndContentWrapperSafely" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.013"/>
+  <testcase name="normalizeAssistantMarkdownForDisplay_insertsBlankLinesBetweenPlainLines" classname="com.example.myapplication.ui.component.MessageContentFormatterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

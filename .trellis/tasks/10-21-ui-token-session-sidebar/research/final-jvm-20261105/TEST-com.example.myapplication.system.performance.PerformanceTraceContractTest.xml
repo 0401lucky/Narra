@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.performance.PerformanceTraceContractTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:23.157Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="f3Replay_requiresPumpMappingStatePublicationAndAutoScrollTraces" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.005"/>
+  <testcase name="n1Navigation_requiresThemeProjectionAndSettingsViewModelSync" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.0"/>
+  <testcase name="startupScenarios_keepAggregateAndRequireIndependentStartupTasks" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.001"/>
+  <testcase name="catalog_declaresEmitterOwnerForEverySection" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.0"/>
+  <testcase name="p1Profile_requiresSettingsAndMessageMappingTraces" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.0"/>
+  <testcase name="startupAndSettingsSectionNames_keepStableNarraContract" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.0"/>
+  <testcase name="evaluate_zeroDurationEmission_isPresent_butMissingEmissionIsReported" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.001"/>
+  <testcase name="sectionNames_areUniqueStaticShortAndPrivacySafe" classname="com.example.myapplication.system.performance.PerformanceTraceContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

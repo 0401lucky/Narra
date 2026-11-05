@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -48,12 +51,15 @@ import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsHelpButton
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 internal const val TAG_ROLEPLAY_SETTINGS_LIST = "roleplay_settings_list"
 
@@ -241,20 +247,13 @@ internal fun RoleplayRestartConfirmDialog(
 ) {
     if (!showConfirmRestartDialog) return
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(id = R.string.roleplay_restart_dialog_title)) },
-        text = { Text(stringResource(id = R.string.roleplay_restart_dialog_body)) },
-        confirmButton = {
-            NarraTextButton(onClick = onConfirm) {
-                Text(stringResource(id = R.string.roleplay_restart_dialog_confirm))
-            }
-        },
-        dismissButton = {
-            NarraTextButton(onClick = onDismissRequest) {
-                Text(stringResource(id = R.string.common_cancel))
-            }
-        },
+    NarraAlertDialog(
+        onDismiss = onDismissRequest,
+        onConfirm = onConfirm,
+        title = stringResource(id = R.string.roleplay_restart_dialog_title),
+        message = stringResource(id = R.string.roleplay_restart_dialog_body),
+        confirmLabel = stringResource(id = R.string.roleplay_restart_dialog_confirm),
+        dismissLabel = stringResource(id = R.string.common_cancel),
     )
 }
 
@@ -266,23 +265,14 @@ internal fun RoleplayResetConfirmDialog(
 ) {
     if (!showConfirmResetDialog) return
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(id = R.string.roleplay_reset_dialog_title)) },
-        text = { Text(stringResource(id = R.string.roleplay_reset_dialog_body)) },
-        confirmButton = {
-            NarraTextButton(onClick = onConfirm) {
-                Text(
-                    stringResource(id = R.string.roleplay_reset_dialog_confirm),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        dismissButton = {
-            NarraTextButton(onClick = onDismissRequest) {
-                Text(stringResource(id = R.string.common_cancel))
-            }
-        },
+    NarraAlertDialog(
+        onDismiss = onDismissRequest,
+        onConfirm = onConfirm,
+        title = stringResource(id = R.string.roleplay_reset_dialog_title),
+        message = stringResource(id = R.string.roleplay_reset_dialog_body),
+        confirmLabel = stringResource(id = R.string.roleplay_reset_dialog_confirm),
+        dismissLabel = stringResource(id = R.string.common_cancel),
+        isDestructive = true,
     )
 }
 
@@ -409,19 +399,29 @@ internal fun RoleplaySettingSwitchRow(
     statusText: String = "",
     checked: Boolean,
     switchModifier: Modifier = Modifier,
-    horizontalPadding: Dp = 16.dp,
+    horizontalPadding: Dp = NarraUi.space16,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val stackSwitch = LocalDensity.current.fontScale >= 1.5f
+    val switchControl: @Composable () -> Unit = {
+        Switch(
+            modifier = switchModifier
+                .heightIn(min = NarraMinimumTouchTarget)
+                .semantics { contentDescription = title },
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = horizontalPadding, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = horizontalPadding, vertical = NarraUi.space12),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             icon()
             Text(
@@ -434,11 +434,12 @@ internal fun RoleplaySettingSwitchRow(
             if (supportingText.isNotBlank()) {
                 SettingsHelpButton(title = title, description = supportingText)
             }
-            Switch(
-                modifier = switchModifier.heightIn(min = 48.dp),
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-            )
+            if (!stackSwitch) switchControl()
+        }
+        if (stackSwitch) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                switchControl()
+            }
         }
         if (statusText.isNotBlank()) {
             Text(
@@ -458,7 +459,7 @@ internal fun ImmersiveSettingsCard(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         overlayColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(

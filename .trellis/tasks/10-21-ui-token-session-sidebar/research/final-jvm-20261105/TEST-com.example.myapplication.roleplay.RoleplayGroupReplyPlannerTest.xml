@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:22.725Z" hostname="LUCKY" time="0.009">
+  <properties/>
+  <testcase name="manualOnly_requiresMention" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.002"/>
+  <testcase name="groupParser_rejectsOnlyForbiddenActionOutput" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.0"/>
+  <testcase name="allMembers_usesOrderAndExcludesMutedMembers" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.002"/>
+  <testcase name="groupStreamingPreview_includesVoiceAndText" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.0"/>
+  <testcase name="groupParser_acceptsOnlyPhotoOutput" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.0"/>
+  <testcase name="groupParser_keepsTextVoiceAndPhotoBubbles" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.001"/>
+  <testcase name="natural_excludesMutedMembers" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.0"/>
+  <testcase name="speakerDirectorNote_includesMemberProfilesAndGroupMode" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.004"/>
+  <testcase name="natural_prefersMentionedMembersAndAllowsMultipleReplies" classname="com.example.myapplication.roleplay.RoleplayGroupReplyPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

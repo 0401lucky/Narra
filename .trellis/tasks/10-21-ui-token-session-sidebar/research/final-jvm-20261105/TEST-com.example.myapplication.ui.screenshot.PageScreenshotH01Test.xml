@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:12.971Z" hostname="LUCKY" time="1.773">
+  <properties/>
+  <testcase name="h01_p02_assistants_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.084"/>
+  <testcase name="h01_p02_assistants_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.073"/>
+  <testcase name="h01_p01_messages_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.084"/>
+  <testcase name="h01_p03_online_play_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.111"/>
+  <testcase name="h01_p01_messages_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.08"/>
+  <testcase name="h01_p01_messages_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.083"/>
+  <testcase name="h01_p01_messages_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.088"/>
+  <testcase name="h01_p01_messages_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.076"/>
+  <testcase name="h01_p02_assistants_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.109"/>
+  <testcase name="h01_p01_messages_matcha_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.105"/>
+  <testcase name="h01_p02_assistants_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.091"/>
+  <testcase name="h01_p03_online_play_vanilla_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.105"/>
+  <testcase name="h01_p02_assistants_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.079"/>
+  <testcase name="h01_p03_online_play_matcha_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.119"/>
+  <testcase name="h01_p02_assistants_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.079"/>
+  <testcase name="h01_p03_online_play_vanilla_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.117"/>
+  <testcase name="h01_p03_online_play_ocean_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.112"/>
+  <testcase name="h01_p03_online_play_ocean_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH01Test" time="0.174"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

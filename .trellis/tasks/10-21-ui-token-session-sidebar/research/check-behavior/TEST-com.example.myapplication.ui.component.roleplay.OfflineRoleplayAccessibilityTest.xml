@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:12:56.577Z" hostname="LUCKY" time="15.175">
+  <properties/>
+  <testcase name="generatingSuggestion_cancelKeepsInputAndMessageAccessible" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="10.848"/>
+  <testcase name="suggestions_applyRefreshCollapse_areNamedAndInvokeRealCallbacks" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.47"/>
+  <testcase name="headerActions_haveDistinctTouchTargetsAndCallbacks_andRestoreChrome" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.479"/>
+  <testcase name="dialogueList_scrollsFromFirstMessageToEnd_withInputStillReachable" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.344"/>
+  <testcase name="longformSending_stopAndCancelRemainReachable_withPresence" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.298"/>
+  <testcase name="speakingPortrait_largeFont_keepsNameFallbackAndStatusApart" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.282"/>
+  <testcase name="expandedSuggestionsAndQuickActions_withProposal_keepReadableViewportAndSendReachable" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.436"/>
+  <testcase name="collapsedSuggestion_generates_andSendingLongform_canStopAndCancel" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.216"/>
+  <testcase name="inputSendQuickActionAndMemoryProposal_keepCallbacksAndIndependentTargets" classname="com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest" time="0.565"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

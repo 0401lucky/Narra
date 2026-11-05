@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.GatewayToolingOptionsTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:22.656Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="searchOnly_preservesSearchEnabledCompatibility" classname="com.example.myapplication.model.GatewayToolingOptionsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

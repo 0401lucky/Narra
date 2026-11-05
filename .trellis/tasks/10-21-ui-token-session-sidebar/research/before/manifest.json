@@ -1,0 +1,296 @@
+{
+  "phase": "before",
+  "commandExitCode": 1,
+  "expectedMissingBaselines": 18,
+  "acceptedPngHashesUnchanged": 92,
+  "cases": [
+    {
+      "id": "E05_group-narrow-light",
+      "file": "E05_group-narrow-light_actual.png",
+      "sha256": "a0c59923a00f749e2e8060462c016234c1fa443a1924d123c6489fdbd3f31d27",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_help-dialog-dark",
+      "file": "E05_help-dialog-dark_actual.png",
+      "sha256": "f9075c7d3b28513a46eb7aaa7495c9918ee693368f079916687293c6c109e8ae",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=线上背景玻璃气泡\noperation=知道了\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 705.0)\n"
+    },
+    {
+      "id": "E05_main-dynamic-dark",
+      "file": "E05_main-dynamic-dark_actual.png",
+      "sha256": "66dbeaf4549c173dc2621c973fc0501635aeb2acdb12dd8bc9ad2e3749649572",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-dynamic-light",
+      "file": "E05_main-dynamic-light_actual.png",
+      "sha256": "71d0cfc53a9ef477a2c6b806f5e7d30e978f0228a2b566a038a67f723b4e36a8",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-matcha-dark",
+      "file": "E05_main-matcha-dark_actual.png",
+      "sha256": "051172b93efb0a9bd8ad8dd59640fc8de85fa5dd58b2498329781e869f976245",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-matcha-light",
+      "file": "E05_main-matcha-light_actual.png",
+      "sha256": "616f4b5b2138ff8c47f1335abe9dafacee460e345505270ad5959f9ea8784ba0",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-narrow-dark",
+      "file": "E05_main-narrow-dark_actual.png",
+      "sha256": "e4cb6331b5309bc2d1a80d13ccbffa046ece0a369a2c23c7ce47713ec4dc4ce8",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-narrow-light",
+      "file": "E05_main-narrow-light_actual.png",
+      "sha256": "abe5d6f5edaf83a7d36a6f744c8ecfff109ebadcbdbadcea3a94e20702246007",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-ocean-dark",
+      "file": "E05_main-ocean-dark_actual.png",
+      "sha256": "e35b369a401ae278a4f2470456417386ffaca6b376a77ddb8bbf7a831c8bd580",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-ocean-light",
+      "file": "E05_main-ocean-light_actual.png",
+      "sha256": "e4b9b7cd11adaf7a0ff0fd3ef9d82227ce7e0bf4c1fd56d07cb5172d61d8e265",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-vanilla-dark",
+      "file": "E05_main-vanilla-dark_actual.png",
+      "sha256": "d3777fc10c1c9067eefa41c72ca12378aa9887061b203d46bb07d0df911e9e7d",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_main-vanilla-light",
+      "file": "E05_main-vanilla-light_actual.png",
+      "sha256": "bf0da5364ec584f449635539c91bcc0ffcec5b9aa3614aa44b1d12a86a21973e",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "stageDp": [
+        360,
+        800
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_mask-sheet-dark",
+      "file": "E05_mask-sheet-dark_actual.png",
+      "sha256": "3d40c742ee6a0db331d7daa4cea5533b2bcc81ee461fb7cde6e151eca263e7ed",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=本角色面具\noperation=管理面具\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E05_model-sheet-light",
+      "file": "E05_model-sheet-light_actual.png",
+      "sha256": "018d00829dba058eca713fb37f54396ff548ad87967908c90c1e85154a6c3a6b",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=选择模型\noperation=fixture-model-长上下文与细腻情绪叙事完整模型名称\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E05_preset-sheet-light",
+      "file": "E05_preset-sheet-light_actual.png",
+      "sha256": "90f626815cb71175f2514cdac3ea0db03d276070b53e054a14f977f06c78dc68",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=本会话预设\noperation=管理预设库\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n"
+    },
+    {
+      "id": "E05_reset-dialog-dark",
+      "file": "E05_reset-dialog-dark_actual.png",
+      "sha256": "f29177c1464d28391d62a0502718279f5115dfd19d72eb7e2f8756afac771d9c",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "independent-dialog-root",
+      "window": "title=清空剧情\noperation=取消\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 620.0)\n"
+    },
+    {
+      "id": "E05_theme-narrow-dark",
+      "file": "E05_theme-narrow-dark_actual.png",
+      "sha256": "18bf632ad5cb6b4f768c24b54a2a4bdeee507f20e60bf009abd8afdfa5a6be15",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    },
+    {
+      "id": "E05_theme-narrow-light",
+      "file": "E05_theme-narrow-light_actual.png",
+      "sha256": "e4b1a0259a8e3ff8eb8e6ff2d05956ca1e1b5838738917f523ac69cb399c092c",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "target": "screenshot_stage",
+      "window": null
+    }
+  ]
+}

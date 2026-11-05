@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:13:36.141Z" hostname="LUCKY" time="3.653">
+  <properties/>
+  <testcase name="longformDigits_editSanitizesAndCallsUpdateOnce" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.292"/>
+  <testcase name="modelSheet_providerAndModelCallbacks_preserveSelectionTiming" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.61"/>
+  <testcase name="reset_cancelDoesNothingAndConfirmWaitsForSuccessCallback" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.46"/>
+  <testcase name="maskSheet_lastChoiceAndManageAndDismiss_doNotSaveGlobalSettings" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.461"/>
+  <testcase name="presetSheet_selectLastAndManageAndDismiss_haveSeparateCallbacks" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.381"/>
+  <testcase name="groupMuteAndRemove_cancelAndConfirmOnlyAffectNamedMember" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.329"/>
+  <testcase name="addMember_actualDialogCancelAndSelection_areIndependent" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.335"/>
+  <testcase name="restart_cancelDoesNothingAndConfirmWaitsForSuccessCallback" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.425"/>
+  <testcase name="portraitUrl_keepsImmediateScenarioCallbackAndGlobalDraftUntouched" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest" time="0.354"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

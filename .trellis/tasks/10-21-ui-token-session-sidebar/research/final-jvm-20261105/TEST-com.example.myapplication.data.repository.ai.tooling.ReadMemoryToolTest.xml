@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.tooling.ReadMemoryToolTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:07.330Z" hostname="LUCKY" time="0.009">
+  <properties/>
+  <testcase name="execute_ignoresInvalidLimitType" classname="com.example.myapplication.data.repository.ai.tooling.ReadMemoryToolTest" time="0.005"/>
+  <testcase name="execute_returnsRoleplayGroupedMemories" classname="com.example.myapplication.data.repository.ai.tooling.ReadMemoryToolTest" time="0.002"/>
+  <testcase name="execute_filtersByQueryWithinAccessibleScope" classname="com.example.myapplication.data.repository.ai.tooling.ReadMemoryToolTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

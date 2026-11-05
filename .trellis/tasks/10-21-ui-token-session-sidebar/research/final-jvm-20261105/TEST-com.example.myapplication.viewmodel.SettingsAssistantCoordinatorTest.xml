@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:28.192Z" hostname="LUCKY" time="0.011">
+  <properties/>
+  <testcase name="addAssistant_appendsAssistantAndPreservesSelection" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.004"/>
+  <testcase name="selectAssistant_persistsSelectionOnly" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.002"/>
+  <testcase name="duplicateAssistant_preservesSourcePreset" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.001"/>
+  <testcase name="removeAssistant_fallsBackToDefaultSelection" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.001"/>
+  <testcase name="addAssistant_inheritsGlobalDefaultPreset" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.001"/>
+  <testcase name="duplicateAssistant_createsNonBuiltinCopy" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.001"/>
+  <testcase name="updateAssistant_replacesExistingAssistant" classname="com.example.myapplication.viewmodel.SettingsAssistantCoordinatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

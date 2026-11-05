@@ -1,0 +1,31 @@
+title=线上背景玻璃气泡
+operation=知道了
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 705.0)
+Printing with useUnmergedTree = 'true'
+Node #1751 at (l=0.0, t=0.0, r=640.0, b=705.0)px
+ |-Node #1752 at (l=0.0, t=0.0, r=640.0, b=705.0)px
+   [IsDialog]
+    |-Node #1753 at (l=0.0, t=0.0, r=640.0, b=705.0)px
+      PaneTitle = '对话框'
+       |-Node #1754 at (l=0.0, t=0.0, r=640.0, b=705.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          |-Node #1757 at (l=48.0, t=48.0, r=592.0, b=241.0)px
+          | Text = '[线上背景玻璃气泡]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1759 at (l=48.0, t=273.0, r=592.0, b=500.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1f4e26a0'
+          | Text = '[作用于所有线上聊天；关闭后保留背景图，气泡使用所选主题。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1762 at (l=388.0, t=548.0, r=592.0, b=657.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #1764 at (l=412.0, t=564.0, r=568.0, b=641.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

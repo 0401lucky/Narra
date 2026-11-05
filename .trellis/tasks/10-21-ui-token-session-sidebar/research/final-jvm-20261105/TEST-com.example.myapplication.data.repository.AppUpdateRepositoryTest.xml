@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.AppUpdateRepositoryTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:04.593Z" hostname="LUCKY" time="0.095">
+  <properties/>
+  <testcase name="checkForUpdates_rejectsHttpMetadataBaseUrlBeforeFetching" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.015"/>
+  <testcase name="checkForUpdates_rejectsNewVersionWithoutApkSha256" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.01"/>
+  <testcase name="checkForUpdates_skipsAutoRequestWithinThrottleWindowAndUsesCachedOutcome" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.01"/>
+  <testcase name="checkForUpdates_returnsCachedOptionalUpdateOnNetworkFailure" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.006"/>
+  <testcase name="checkForUpdates_rejectsUntrustedApkHost" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.006"/>
+  <testcase name="checkForUpdates_rejectsApkPathOutsideChannel" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.007"/>
+  <testcase name="checkForUpdates_returnsDisabledWhenBaseUrlMissing" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.005"/>
+  <testcase name="checkForUpdates_rejectsHttpApkUrl" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.008"/>
+  <testcase name="checkForUpdates_cachesUpToDateMetadataAndReusesItWithinThrottleWindow" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.007"/>
+  <testcase name="checkForUpdates_rejectsUntrustedMetadataHostBeforeFetching" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.007"/>
+  <testcase name="checkForUpdates_stillReturnsOptionalUpdateWhenMinimumSupportedVersionIsHigherThanCurrentVersion" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.006"/>
+  <testcase name="checkForUpdates_returnsOptionalUpdateWhenRemoteVersionIsNewer" classname="com.example.myapplication.data.repository.AppUpdateRepositoryTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

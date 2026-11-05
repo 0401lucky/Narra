@@ -1,0 +1,13 @@
+{
+  "command_exit": 0,
+  "gradle_duration": "7s",
+  "lint_severities": {
+    "Warning": 55,
+    "Hint": 3
+  },
+  "lint_analysis_reused": true,
+  "dev_build_reused": true,
+  "android_test_compile_reused": true,
+  "accepted_pngs_unchanged": 110,
+  "review_acceptance_matches_approved_hashes": true
+}

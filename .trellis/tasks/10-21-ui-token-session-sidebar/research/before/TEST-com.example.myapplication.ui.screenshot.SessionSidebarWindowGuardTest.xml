@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SessionSidebarWindowGuardTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-22T08:40:02.360Z" hostname="LUCKY" time="0.292">
+  <properties/>
+  <testcase name="unopenedWindow_failsInsteadOfCapturingStage" classname="com.example.myapplication.ui.screenshot.SessionSidebarWindowGuardTest" time="0.286"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeColorsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:26:41.726Z" hostname="LUCKY" time="6.661">
+  <properties/>
+  <testcase name="actualReadingSurfaces_allThemesAndFixedDynamicSchemes_keepMixedTextReadable" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeColorsTest" time="5.703"/>
+  <testcase name="highContrastAndSavedLineHeight_areAppliedToRealReadingText" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeColorsTest" time="0.229"/>
+  <testcase name="actualSyntheticBackdrop_mixedReadingText_passesContrast" classname="com.example.myapplication.ui.component.roleplay.RoleplayReadingModeColorsTest" time="0.724"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

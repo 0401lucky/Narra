@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
@@ -41,6 +40,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -73,6 +75,9 @@ import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsListRow
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
 import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import kotlin.math.roundToInt
 
 /**
@@ -149,8 +154,8 @@ internal fun RoleplaySettingsPluginSection(
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text(
                 text = "场景插件",
@@ -270,8 +275,8 @@ internal fun RoleplaySettingsInteractionSection(
         scenario?.longformModeEnabled == true
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text(
                 text = stringResource(id = R.string.roleplay_settings_interaction_mode_title),
@@ -292,7 +297,7 @@ internal fun RoleplaySettingsInteractionSection(
                 palette = palette,
                 onSelect = onUpdateScenarioInteractionMode,
                 enabled = scenario != null,
-                itemHorizontalPadding = 8.dp,
+                itemHorizontalPadding = NarraUi.space8,
             )
         }
     }
@@ -301,13 +306,13 @@ internal fun RoleplaySettingsInteractionSection(
         val replyRange = scenario?.normalizedOnlineReplyRange() ?: 1..3
         ImmersiveSettingsCard(backdropState) {
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Tune,
@@ -324,7 +329,7 @@ internal fun RoleplaySettingsInteractionSection(
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                 ) {
                     OnlineReplyCountField(
                         value = replyRange.first.toString(),
@@ -353,13 +358,13 @@ internal fun RoleplaySettingsInteractionSection(
     } else if (isLongformMode) {
         ImmersiveSettingsCard(backdropState) {
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                 ) {
                     Icon(
                         imageVector = Icons.Default.TextFields,
@@ -378,7 +383,7 @@ internal fun RoleplaySettingsInteractionSection(
                     value = longformCharsText,
                     onValueChange = onLongformCharsTextChange,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = NarraShapes.small,
                     label = { Text(stringResource(id = R.string.roleplay_settings_longform_default_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = roleplaySettingsOutlinedTextFieldColors(),
@@ -418,7 +423,7 @@ private fun OnlineReplyCountField(
                 commitDraft()
             }
         },
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = roleplaySettingsOutlinedTextFieldColors(),
@@ -451,7 +456,7 @@ internal fun RoleplayNoBackgroundThemeSection(
     onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
 ) {
     val skin = settings.roleplayNoBackgroundSkin.normalized()
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space16)) {
         RoleplaySkinPreviewCard(
             backdropState = backdropState,
             skin = skin,
@@ -497,12 +502,12 @@ private fun RoleplaySkinPreviewCard(
             modifier = Modifier
                 .testTag("roleplay_skin_preview")
                 .background(spec.background.copy(alpha = spec.background.alpha.coerceAtLeast(0.78f)))
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
             ) {
                 Text(
                     text = "实时预览 · 无背景",
@@ -518,7 +523,7 @@ private fun RoleplaySkinPreviewCard(
             }
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val previewMaxWidth = maxWidth * spec.maxWidthFraction
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.CenterStart,
@@ -575,8 +580,8 @@ private fun RoleplaySkinPresetSection(
 ) {
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text(
                 text = "预设皮肤",
@@ -587,7 +592,7 @@ private fun RoleplaySkinPresetSection(
             RoleplayNoBackgroundSkinPreset.entries.chunked(2).forEach { rowPresets ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                 ) {
                     rowPresets.forEach { preset ->
                         RoleplaySkinPresetTile(
@@ -619,9 +624,9 @@ private fun RoleplaySkinPresetTile(
     Surface(
         modifier = modifier
             .testTag("roleplay_skin_preset_${preset.storageValue}")
-            .selectable(selected = selected, onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .heightIn(min = 64.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
@@ -629,8 +634,8 @@ private fun RoleplaySkinPresetTile(
         ),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space12, vertical = NarraUi.space12),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Text(
                 text = preset.displayName,
@@ -638,7 +643,7 @@ private fun RoleplaySkinPresetTile(
                 fontWeight = FontWeight.SemiBold,
                 color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else RoleplaySettingsPanelTitleColor,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                 listOf(spec.userBubble, spec.characterBubble, spec.accent).forEach { color ->
                     Box(
                         modifier = Modifier
@@ -659,8 +664,8 @@ private fun RoleplaySkinBubbleSection(
 ) {
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -681,7 +686,7 @@ private fun RoleplaySkinBubbleSection(
                             ),
                         )
                     },
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(NarraMinimumTouchTarget),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
@@ -768,7 +773,7 @@ private fun RoleplaySkinSliderRow(
     testTag: String,
     onValueChange: (Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -787,7 +792,7 @@ private fun RoleplaySkinSliderRow(
             )
         }
         Slider(
-            modifier = Modifier.testTag(testTag),
+            modifier = Modifier.testTag(testTag).semantics { contentDescription = label },
             value = value.toFloat(),
             onValueChange = { onValueChange(it.roundToInt()) },
             valueRange = range,
@@ -807,8 +812,8 @@ internal fun RoleplaySettingsReadabilitySection(
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text(
                 text = stringResource(id = R.string.roleplay_readability_section_title),
@@ -816,7 +821,7 @@ internal fun RoleplaySettingsReadabilitySection(
                 fontWeight = FontWeight.Bold,
                 color = RoleplaySettingsPanelTitleColor,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                 Text(
                     text = stringResource(id = R.string.roleplay_immersive_mode_title),
                     style = MaterialTheme.typography.titleSmall,
@@ -855,7 +860,7 @@ internal fun RoleplaySettingsReadabilitySection(
                 onCheckedChange = onUpdateRoleplayHighContrast,
             )
             HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                 Text(
                     text = stringResource(id = R.string.roleplay_line_height_title),
                     style = MaterialTheme.typography.titleSmall,
@@ -888,8 +893,8 @@ internal fun RoleplaySettingsMemoryHistorySection(
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text(
                 text = stringResource(id = R.string.roleplay_settings_memory_history_title),
@@ -901,9 +906,9 @@ internal fun RoleplaySettingsMemoryHistorySection(
                 if (index > 0) {
                     HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         SettingsStatusPill(
@@ -1008,8 +1013,8 @@ internal fun RoleplaySettingsDangerousSection(
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             AnimatedSettingButton(
                 text = stringResource(id = R.string.roleplay_settings_action_restart),
@@ -1042,7 +1047,7 @@ internal fun RoleplaySettingsDangerousSection(
 @Composable
 private fun SectionDivider(palette: ImmersiveGlassPalette) {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp, end = 18.dp),
+        modifier = Modifier.padding(start = 56.dp, end = NarraUi.space16),
         color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f),
     )
 }

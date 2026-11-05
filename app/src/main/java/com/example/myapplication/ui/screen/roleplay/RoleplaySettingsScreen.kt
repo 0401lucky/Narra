@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +31,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,9 +55,10 @@ import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.system.performance.BenchmarkReadyIds
 import com.example.myapplication.ui.performance.benchmarkReadyTag
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,7 +162,7 @@ fun RoleplaySettingsScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = NarraUi.space12, vertical = NarraUi.space12),
             contentAlignment = Alignment.CenterEnd,
         ) {
             val panelWidth = (maxWidth * if (maxWidth > 560.dp) 0.66f else 0.94f)
@@ -170,7 +172,7 @@ fun RoleplaySettingsScreen(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(panelWidth),
-                shape = RoundedCornerShape(8.dp),
+                shape = NarraShapes.small,
                 blurRadius = 22.dp,
                 overlayColor = MaterialTheme.colorScheme.surface,
             ) {
@@ -179,15 +181,15 @@ fun RoleplaySettingsScreen(
                         backdropState = backdropState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(8.dp),
+                            .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                        shape = NarraShapes.small,
                         blurRadius = 16.dp,
                         overlayColor = MaterialTheme.colorScheme.surface,
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 10.dp),
+                                .padding(horizontal = NarraUi.space8, vertical = NarraUi.space12),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             NarraIconButton(
@@ -208,8 +210,8 @@ fun RoleplaySettingsScreen(
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(horizontal = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                                    .padding(horizontal = NarraUi.space12),
+                                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                             ) {
                                 AnimatedContent(
                                     targetState = activePage,
@@ -231,10 +233,9 @@ fun RoleplaySettingsScreen(
                                             RoleplaySettingsPanelPage.REGEX -> "正则"
                                         },
                                         style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.semantics { heading() },
                                         fontWeight = FontWeight.SemiBold,
                                         color = RoleplaySettingsPanelTitleColor,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                                 Text(
@@ -271,9 +272,6 @@ fun RoleplaySettingsScreen(
                             onLongformCharsTextChange = { raw ->
                                 val digits = raw.filter(Char::isDigit).take(4)
                                 longformCharsText = digits
-                                digits.toIntOrNull()?.let { value ->
-                                    onUpdateRoleplayLongformTargetChars(value)
-                                }
                             },
                             onNavigateToPage = { activePage = it },
                             onOpenReadingMode = onOpenReadingMode,

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:22.742Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="resolveContentOutputFormat_unspecifiedThoughtOnlyStillFallsBackToLongform" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <testcase name="resolveContentOutputFormat_doesNotTreatJsonPatchAsOnlineProtocol" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <testcase name="resolveMessageInteractionMode_legacyOnlinePartsStillResolveToOnlinePhone" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <testcase name="resolveContentOutputFormat_detectsLooseOnlineJsonProtocol" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <testcase name="resolveContentOutputFormat_protocolThoughtDoesNotMisclassifyAsLongform" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.001"/>
+  <testcase name="resolveMessageInteractionMode_onlineFallbackKeepsLegacyThoughtMarkupInOnlineMode" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <testcase name="resolveMessageInteractionMode_prefersStoredModeOverCurrentScene" classname="com.example.myapplication.roleplay.RoleplayMessageFormatSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

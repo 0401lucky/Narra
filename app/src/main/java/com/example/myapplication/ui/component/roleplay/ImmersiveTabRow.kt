@@ -1,15 +1,19 @@
 package com.example.myapplication.ui.component.roleplay
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,12 +23,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 /**
  * 沉浸式玻璃态选项 Tab 行。
@@ -51,11 +60,11 @@ internal fun <T> ImmersiveTabRow(
     modifier: Modifier = Modifier,
     testTagPrefix: String? = null,
     enabled: Boolean = true,
-    itemHorizontalPadding: Dp = 12.dp,
+    itemHorizontalPadding: Dp = NarraUi.space8,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min).selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
     ) {
         entries.forEach { entry ->
             val isSelected = entry == selected
@@ -68,11 +77,11 @@ internal fun <T> ImmersiveTabRow(
                 },
                 label = "immersive_tab_border_$key",
             )
-            val bgAlpha by animateFloatAsState(
+            val backgroundColor by animateColorAsState(
                 targetValue = if (isSelected) {
-                    RoleplayGlassTokens.TabSelectedBgAlpha
+                    MaterialTheme.colorScheme.secondaryContainer
                 } else {
-                    RoleplayGlassTokens.TabUnselectedBgAlpha
+                    MaterialTheme.colorScheme.surfaceContainerLow
                 },
                 label = "immersive_tab_bg_$key",
             )
@@ -88,8 +97,13 @@ internal fun <T> ImmersiveTabRow(
             )
             val tabModifier = Modifier
                 .weight(1f)
+                .fillMaxHeight()
+                .heightIn(min = NarraMinimumTouchTarget)
                 .scale(selectionScale)
-                .semantics { this.selected = isSelected }
+                .semantics {
+                    this.selected = isSelected
+                    role = Role.Tab
+                }
                 .let { base ->
                     if (testTagPrefix != null) {
                         base.testTag("${testTagPrefix}_$key")
@@ -100,8 +114,8 @@ internal fun <T> ImmersiveTabRow(
             Surface(
                 modifier = tabModifier,
                 onClick = { onSelect(entry) },
-                shape = RoundedCornerShape(RoleplayGlassTokens.TabCornerRadius),
-                color = palette.panelTintStrong.copy(alpha = bgAlpha),
+                shape = NarraShapes.small,
+                color = backgroundColor,
                 enabled = enabled,
                 border = BorderStroke(
                     width = if (isSelected) RoleplayGlassTokens.TabSelectedBorderWidth else 0.dp,
@@ -112,13 +126,16 @@ internal fun <T> ImmersiveTabRow(
                     text = label(entry),
                     modifier = Modifier.padding(
                         horizontal = itemHorizontalPadding,
-                        vertical = 12.dp,
+                        vertical = NarraUi.space12,
                     ),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) palette.characterAccent else palette.onGlassMuted,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
                 )
             }
         }

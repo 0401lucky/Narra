@@ -3,7 +3,7 @@
   "name": "ui-token-session-sidebar",
   "title": "v2.3 扩面二：会话设置侧栏",
   "description": "P05实际侧栏路由、表单和现有Sheet/Dialog的令牌与无障碍迁移。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "frontend",
   "scope": "ui",
   "package": null,
@@ -21,11 +21,13 @@
   "children": [],
   "parent": "10-21-ui-token-accessibility-expansion",
   "relatedFiles": [],
-  "notes": "四批摘要已由2026-10-21用户回复“可以”批准；P04独立验收后再启动P05，本体为route面板，内部窗口须真实捕获。",
+  "notes": "2026-11-05用户明确接纳18组侧栏视觉，要求完成收尾后做设置首页。18张E05已按审阅后的SHA-256接纳，旧92张不变，共110张PNG；最终111/111真实截图、1719/1719完整JVM通过，Lint/dev构建/AndroidTest编译命令成功，独立检查无遗留代码问题。等待具体提交清单确认后提交归档，再按既有批准方案启动P10；不启动P11，不发包或推送。",
   "meta": {
     "version": "2.3",
     "batch": "2",
-    "review_status": "approved_awaiting_predecessor",
+    "review_status": "accepted_and_verified",
+    "visual_acceptance": "2026-11-05 用户回复：接纳侧栏，完成收尾后做设置首页",
+    "review_artifact": ".trellis/tasks/10-21-ui-token-session-sidebar/review/index.html",
     "predecessor": "10-21-ui-token-offline-roleplay",
     "planned_new_screenshots": 18
   }

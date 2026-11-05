@@ -1,0 +1,11 @@
+{
+  "suites": 13,
+  "tests": 111,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "pngs_verified_unchanged": 110,
+  "command_exit": 0,
+  "gradle_duration": "1m 5s",
+  "test_task_executed": true
+}

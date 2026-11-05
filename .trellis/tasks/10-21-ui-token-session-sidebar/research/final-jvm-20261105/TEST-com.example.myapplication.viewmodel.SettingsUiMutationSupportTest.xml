@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:28.247Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="deleteProvider_updatesSelectionAndClearsMessage" classname="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" time="0.0"/>
+  <testcase name="beginSaving_setsSavingAndClearsMessage" classname="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" time="0.0"/>
+  <testcase name="applyLoadModelsSuccess_updatesPendingModelsAndMessage" classname="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" time="0.0"/>
+  <testcase name="applyMessageError_setsFailureMessage" classname="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" time="0.0"/>
+  <testcase name="applyPersistenceSuccess_updatesProvidersAndSelectionWhenPresent" classname="com.example.myapplication.viewmodel.SettingsUiMutationSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

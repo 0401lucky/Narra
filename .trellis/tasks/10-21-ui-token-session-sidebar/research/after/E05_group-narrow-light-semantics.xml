@@ -1,0 +1,157 @@
+<semantics id="E05_group-narrow-light" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #5550 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #5553 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ | Shape = 'RectangleShape'
+ |-Node #5554 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ | Shape = 'RectangleShape'
+ |-Node #5557 at (l=60.0, t=24.0, r=616.0, b=1256.0)px
+   IsContainer = 'true'
+   Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |-Node #5558 at (l=60.0, t=24.0, r=616.0, b=1256.0)px
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |-Node #5559 at (l=60.0, t=24.0, r=616.0, b=1256.0)px
+       | Shape = 'RectangleShape'
+       |-Node #5561 at (l=84.0, t=40.0, r=592.0, b=270.0)px
+       | IsContainer = 'true'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |  |-Node #5562 at (l=84.0, t=40.0, r=592.0, b=270.0)px
+       |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |     |-Node #5563 at (l=84.0, t=40.0, r=592.0, b=270.0)px
+       |     | Shape = 'RectangleShape'
+       |     |-Node #5565 at (l=100.0, t=107.0, r=196.0, b=203.0)px
+       |     | ContentDescription = '[返回]'
+       |     | Focused = 'false'
+       |     | Role = 'Button'
+       |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     | Actions = [OnClick, RequestFocus]
+       |     | MergeDescendants = 'true'
+       |     |-Node #5661 at (l=220.0, t=64.0, r=500.0, b=167.0)px
+       |     |  |-Node #5662 at (l=220.0, t=64.0, r=500.0, b=167.0)px
+       |     |    Text = '[群聊设置]'
+       |     |    [Heading]
+       |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |     |-Node #5571 at (l=220.0, t=175.0, r=552.0, b=246.0)px
+       |       Text = '[雨夜的旧书店与一段需要完整保留的很长很长的会话标题]'
+       |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #5663 at (l=60.0, t=286.0, r=616.0, b=1256.0)px
+          |-Node #5664 at (l=60.0, t=286.0, r=616.0, b=1256.0)px, Tag: 'roleplay_settings_list'
+            CollectionInfo = 'CollectionInfo(rowCount=3, columnCount=1)'
+            IsTraversalGroup = 'true'
+            Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@ecc446c'
+            VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+            Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+             |-Node #5666 at (l=92.0, t=302.0, r=584.0, b=862.0)px
+             | IsContainer = 'true'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |-Node #5667 at (l=92.0, t=302.0, r=584.0, b=862.0)px
+             |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     |-Node #5668 at (l=92.0, t=302.0, r=584.0, b=862.0)px
+             |     | Shape = 'RectangleShape'
+             |     |-Node #5671 at (l=124.0, t=334.0, r=404.0, b=437.0)px
+             |     | Text = '[群聊设置]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #5672 at (l=124.0, t=453.0, r=552.0, b=830.0)px
+             |       Text = '[管理成员禁言、移除和回复模式。主题、记忆和高级选项仍在侧栏其它分区里。]'
+             |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #5676 at (l=108.0, t=945.0, r=420.0, b=1028.0)px
+             | Text = '[群成员（3）]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #5677 at (l=420.0, t=894.0, r=568.0, b=1078.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             | Text = '[添加]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #5680 at (l=92.0, t=1102.0, r=584.0, b=1936.0)px
+               IsContainer = 'true'
+               Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+                |-Node #5681 at (l=92.0, t=1102.0, r=584.0, b=1936.0)px
+                  Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+                   |-Node #5682 at (l=92.0, t=1102.0, r=584.0, b=1936.0)px
+                   | Shape = 'RectangleShape'
+                   |-Node #5686 at (l=124.0, t=1209.0, r=208.0, b=1293.0)px
+                   | IsContainer = 'true'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 14.0.dp), topEnd = CornerSize(size = 14.0.dp), bottomEnd = CornerSize(size = 14.0.dp), bottomStart = CornerSize(size = 14.0.dp))'
+                   |  |-Node #5688 at (l=144.0, t=1229.0, r=188.0, b=1273.0)px
+                   |    ContentDescription = '[苏晚：名字很长的群聊参与成员]'
+                   |    Role = 'Image'
+                   |-Node #5690 at (l=232.0, t=1170.0, r=376.0, b=1253.0)px
+                   | Text = '[苏晚：名字很长的群聊参与成员]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5691 at (l=232.0, t=1261.0, r=376.0, b=1332.0)px
+                   | Text = '[可自然接话]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5693 at (l=400.0, t=1142.0, r=552.0, b=1251.0)px
+                   | ContentDescription = '[苏晚：名字很长的群聊参与成员：禁言]'
+                   | Focused = 'false'
+                   | Role = 'Button'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | Text = '[禁言]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #5696 at (l=400.0, t=1251.0, r=552.0, b=1360.0)px
+                   | ContentDescription = '[苏晚：名字很长的群聊参与成员：移除成员]'
+                   | Focused = 'false'
+                   | Role = 'Button'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | Text = '[移除]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #5701 at (l=124.0, t=1477.0, r=208.0, b=1561.0)px
+                   | IsContainer = 'true'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 14.0.dp), topEnd = CornerSize(size = 14.0.dp), bottomEnd = CornerSize(size = 14.0.dp), bottomStart = CornerSize(size = 14.0.dp))'
+                   |  |-Node #5703 at (l=144.0, t=1497.0, r=188.0, b=1541.0)px
+                   |    ContentDescription = '[林澈：名字很长的群聊参与成员]'
+                   |    Role = 'Image'
+                   |-Node #5705 at (l=232.0, t=1438.0, r=376.0, b=1521.0)px
+                   | Text = '[林澈：名字很长的群聊参与成员]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5706 at (l=232.0, t=1529.0, r=376.0, b=1600.0)px
+                   | Text = '[已禁言]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5708 at (l=400.0, t=1410.0, r=552.0, b=1519.0)px
+                   | ContentDescription = '[林澈：名字很长的群聊参与成员：解除禁言]'
+                   | Focused = 'false'
+                   | Role = 'Button'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | Text = '[解除]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #5711 at (l=400.0, t=1519.0, r=552.0, b=1628.0)px
+                   | ContentDescription = '[林澈：名字很长的群聊参与成员：移除成员]'
+                   | Focused = 'false'
+                   | Role = 'Button'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | Text = '[移除]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #5716 at (l=124.0, t=1745.0, r=208.0, b=1829.0)px
+                   | IsContainer = 'true'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 14.0.dp), topEnd = CornerSize(size = 14.0.dp), bottomEnd = CornerSize(size = 14.0.dp), bottomStart = CornerSize(size = 14.0.dp))'
+                   |  |-Node #5718 at (l=144.0, t=1765.0, r=188.0, b=1809.0)px
+                   |    ContentDescription = '[夏栀：名字很长的群聊参与成员]'
+                   |    Role = 'Image'
+                   |-Node #5720 at (l=232.0, t=1706.0, r=376.0, b=1789.0)px
+                   | Text = '[夏栀：名字很长的群聊参与成员]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5721 at (l=232.0, t=1797.0, r=376.0, b=1868.0)px
+                   | Text = '[可自然接话]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #5723 at (l=400.0, t=1678.0, r=552.0, b=1787.0)px
+                   | ContentDescription = '[夏栀：名字很长的群聊参与成员：禁言]'
+                   | Focused = 'false'
+                   | Role = 'Button'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | Text = '[禁言]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #5726 at (l=400.0, t=1787.0, r=552.0, b=1896.0)px
+                     ContentDescription = '[夏栀：名字很长的群聊参与成员：移除成员]'
+                     Focused = 'false'
+                     Role = 'Button'
+                     Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                     Text = '[移除]'
+                     Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                     MergeDescendants = 'true']]></semantics>

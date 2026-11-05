@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:07.292Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="stringValue_returnsEmptyForMissingField" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsEmptyForNullReceiver" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsStringFormForNumberPrimitive" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsEmptyForJsonObjectField" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsTrimmedStringForPrimitive" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsStringFormForBooleanPrimitive" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsEmptyForJsonArrayField" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <testcase name="stringValue_returnsEmptyForJsonNullField" classname="com.example.myapplication.data.repository.ai.PromptExtrasCoreStringValueTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

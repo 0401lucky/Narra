@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ComplianceViewModelTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:25.821Z" hostname="LUCKY" time="0.014">
+  <properties/>
+  <testcase name="acceptCurrentPolicy_failure_keepsGateAndShowsSafeMessage" classname="com.example.myapplication.viewmodel.ComplianceViewModelTest" time="0.008"/>
+  <testcase name="acceptCurrentPolicy_success_marksAcceptedAndPersistsVersion" classname="com.example.myapplication.viewmodel.ComplianceViewModelTest" time="0.002"/>
+  <testcase name="initialState_withoutConsent_requiresAcceptance" classname="com.example.myapplication.viewmodel.ComplianceViewModelTest" time="0.002"/>
+  <testcase name="existingConsent_withOlderVersion_requiresReconfirmation" classname="com.example.myapplication.viewmodel.ComplianceViewModelTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

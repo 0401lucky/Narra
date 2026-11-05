@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:26:48.458Z" hostname="LUCKY" time="0.808">
+  <properties/>
+  <testcase name="noirMentionPanelOnLightTheme_usesMaterialContentAndSelectionCallback" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.099"/>
+  <testcase name="liquidSkinWithGlassDisabled_darkWhiteImage_readsActualScrimmedTransparentSurfaces" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.279"/>
+  <testcase name="glassDialogueText_meetsContrastOnActualScrimSheenAndDarkenedSurface_forWhiteGrayBlackImages" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.053"/>
+  <testcase name="realGlassPage_whiteImage_renderedBubbleSurfaceAndTextPassContrast_includingOpaqueError" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.218"/>
+  <testcase name="realOnlinePage_fixedDynamicSchemeControlsUserBubbleText" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.057"/>
+  <testcase name="paletteCacheKey_sameUriAndDimensions_invalidatesImageGenerationAndActualThemeWithoutRetainingBitmap" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.031"/>
+  <testcase name="realOnlinePage_recomposesBubbleTextOnSameCompositionThemeSwitch" classname="com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest" time="0.067"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

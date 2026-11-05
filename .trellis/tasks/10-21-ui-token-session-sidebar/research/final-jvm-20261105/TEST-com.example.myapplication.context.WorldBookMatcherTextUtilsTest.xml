@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:03.347Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="cjkPattern_hitsInsideCjkRun" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <testcase name="emptyPattern_returnsFalse" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <testcase name="cjkPattern_hitsAtBoundary" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <testcase name="latinPattern_requiresWordBoundary" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <testcase name="mixedPattern_cjkHeadLatinTail_requiresTailBoundary" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.001"/>
+  <testcase name="caseSensitive_isRespected" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <testcase name="latinPattern_allowsCjkAsBoundary" classname="com.example.myapplication.context.WorldBookMatcherTextUtilsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

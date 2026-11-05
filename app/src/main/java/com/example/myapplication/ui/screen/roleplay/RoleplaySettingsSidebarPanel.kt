@@ -12,6 +12,8 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -57,7 +58,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.example.myapplication.ui.component.NarraTextButton as TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,6 +68,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -102,7 +107,9 @@ import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.performance.benchmarkActionTag
 import com.example.myapplication.ui.performance.benchmarkReadyTag
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import java.net.URI
 import kotlinx.coroutines.launch
 
@@ -263,12 +270,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 DetailIntroCard(
@@ -301,12 +308,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 DetailIntroCard(
@@ -356,12 +363,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 DetailIntroCard(
@@ -405,12 +412,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 RoleplayNoBackgroundThemeSection(
@@ -430,12 +437,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 DetailIntroCard(
@@ -485,12 +492,12 @@ internal fun RoleplaySettingsSidebarContent(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 DetailIntroCard(
@@ -524,25 +531,25 @@ internal fun RoleplaySettingsSidebarContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = sheetMaxHeight)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = NarraUi.space12),
             ) {
                 Text(
                     text = "本角色面具",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
                 )
                 Text(
                     text = "只影响当前角色，不改动全局默认，也不影响其他角色。",
                     style = MaterialTheme.typography.bodySmall,
                     color = RoleplaySettingsPanelBodyColor,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space4),
                 )
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f, fill = false),
-                    contentPadding = PaddingValues(bottom = 8.dp),
+                    contentPadding = PaddingValues(bottom = NarraUi.space8),
                 ) {
                     item(key = "follow_global") {
                         ScenarioPresetPickRow(
@@ -579,7 +586,7 @@ internal fun RoleplaySettingsSidebarContent(
                     },
                     modifier = Modifier
                         .align(Alignment.End)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
                 ) {
                     Text("管理面具")
                 }
@@ -612,10 +619,10 @@ private fun RoleplaySettingsVisualPanel(
                 .fillMaxSize()
                 .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 8.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space8,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
         ) {
             item {
@@ -714,12 +721,12 @@ private fun RoleplaySettingsVisualPanel(
             .fillMaxSize()
             .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
         contentPadding = PaddingValues(
-            start = SettingsScreenPadding,
-            top = 8.dp,
-            end = SettingsScreenPadding,
-            bottom = 28.dp,
+            start = NarraUi.space16,
+            top = NarraUi.space8,
+            end = NarraUi.space16,
+            bottom = NarraUi.space32,
         ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         item {
             DetailIntroCard(
@@ -789,14 +796,14 @@ private fun VisualFieldRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
                 Text(title, fontWeight = FontWeight.SemiBold, color = RoleplaySettingsPanelTitleColor)
                 Text(
                     text = if (value.isBlank()) "未设置" else "已设置",
@@ -804,9 +811,15 @@ private fun VisualFieldRow(
                     color = RoleplaySettingsPanelBodyColor,
                 )
             }
-            TextButton(onClick = onPick) { Text("选择") }
+            TextButton(
+                onClick = onPick,
+                modifier = Modifier.semantics { contentDescription = "$title：选择图片" },
+            ) { Text("选择") }
             if (value.isNotBlank()) {
-                TextButton(onClick = onClear) { Text("清除") }
+                TextButton(
+                    onClick = onClear,
+                    modifier = Modifier.semantics { contentDescription = "$title：清除图片" },
+                ) { Text("清除") }
             }
         }
         if (onUrlChange != null) {
@@ -910,13 +923,13 @@ private fun RoleplaySettingsMainPanel(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = NarraUi.space12)
             .background(Color.Transparent)
             .clickable(enabled = false) {}
-            .padding(top = 8.dp)
+            .padding(top = NarraUi.space8)
             .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
-        contentPadding = PaddingValues(bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = NarraUi.space32),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         item(key = "overview") {
             Column(modifier = Modifier.animateItem()) {
@@ -1019,7 +1032,7 @@ private fun RoleplaySettingsMainPanel(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
                 ) {
                     ImmersiveSettingsCard(backdropState) {
                         SummaryLinkRow(
@@ -1144,25 +1157,25 @@ private fun RoleplaySettingsMainPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = sheetMaxHeight)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = NarraUi.space12),
             ) {
                 Text(
                     text = "本会话预设",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
                 )
                 Text(
                     text = "仅影响当前会话；清空后回退角色默认，再回退全局默认。",
                     style = MaterialTheme.typography.bodySmall,
                     color = RoleplaySettingsPanelBodyColor,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space4),
                 )
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f, fill = false),
-                    contentPadding = PaddingValues(bottom = 8.dp),
+                    contentPadding = PaddingValues(bottom = NarraUi.space8),
                 ) {
                     item(key = "follow_role") {
                         ScenarioPresetPickRow(
@@ -1210,7 +1223,7 @@ private fun RoleplaySettingsMainPanel(
                     },
                     modifier = Modifier
                         .align(Alignment.End)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
                 ) {
                     Text("管理预设库")
                 }
@@ -1229,7 +1242,8 @@ private fun ScenarioPresetPickRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = NarraMinimumTouchTarget)
             .background(
                 if (selected) {
                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
@@ -1237,11 +1251,11 @@ private fun ScenarioPresetPickRow(
                     Color.Transparent
                 },
             )
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
             Text(title, fontWeight = FontWeight.SemiBold, color = RoleplaySettingsPanelTitleColor)
             if (summary.isNotBlank()) {
                 Text(
@@ -1256,7 +1270,7 @@ private fun ScenarioPresetPickRow(
         if (selected) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "已选中",
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
@@ -1276,11 +1290,11 @@ private fun RoleplaySettingsGroupMembersSection(
     val sortedParticipants = participants.sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
     val excludedAssistantIds = sortedParticipants.map { it.assistantId.trim() }.toSet()
     var showAddMemberDialog by rememberSaveable { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -1295,11 +1309,11 @@ private fun RoleplaySettingsGroupMembersSection(
             }
         }
         ImmersiveSettingsCard(backdropState) {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(vertical = NarraUi.space8)) {
                 if (sortedParticipants.isEmpty()) {
                     Text(
                         text = "还没有群成员",
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
                         style = MaterialTheme.typography.bodyMedium,
                         color = RoleplaySettingsPanelBodyColor,
                     )
@@ -1345,9 +1359,9 @@ private fun RoleplayGroupParticipantRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         AssistantAvatar(
             name = displayName,
@@ -1360,7 +1374,7 @@ private fun RoleplayGroupParticipantRow(
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
         ) {
             Text(
                 text = displayName,
@@ -1385,10 +1399,18 @@ private fun RoleplayGroupParticipantRow(
         Column(
             horizontalAlignment = Alignment.End,
         ) {
-            TextButton(onClick = { onToggleMuted(participant.id) }) {
+            TextButton(
+                onClick = { onToggleMuted(participant.id) },
+                modifier = Modifier.semantics {
+                    contentDescription = "$displayName：${if (participant.isMuted) "解除禁言" else "禁言"}"
+                },
+            ) {
                 Text(if (participant.isMuted) "解除" else "禁言")
             }
-            TextButton(onClick = { showRemoveConfirm = true }) {
+            TextButton(
+                onClick = { showRemoveConfirm = true },
+                modifier = Modifier.semantics { contentDescription = "$displayName：移除成员" },
+            ) {
                 Text("移除", color = MaterialTheme.colorScheme.error)
             }
         }
@@ -1424,20 +1446,21 @@ private fun RoleplaySettingsGroupReplyModeSection(
     onUpdateReplyMode: (RoleplayGroupReplyMode) -> Unit,
 ) {
     ImmersiveSettingsCard(backdropState) {
-        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(vertical = NarraUi.space8).selectableGroup()) {
             RoleplayGroupReplyMode.entries.forEachIndexed { index, mode ->
                 val selected = scenario?.groupReplyMode == mode
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onUpdateReplyMode(mode) }
-                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                        .selectable(selected = selected, role = Role.RadioButton, enabled = scenario != null) { onUpdateReplyMode(mode) }
+                        .heightIn(min = NarraMinimumTouchTarget)
+                        .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                     ) {
                         Text(
                             text = mode.displayName,
@@ -1453,13 +1476,13 @@ private fun RoleplaySettingsGroupReplyModeSection(
                     }
                     if (selected) {
                         Surface(
-                            shape = RoundedCornerShape(999.dp),
+                            shape = NarraShapes.pill,
                             color = RoleplaySettingsPanelAccentColor.copy(alpha = 0.16f),
                             contentColor = RoleplaySettingsPanelAccentColor,
                         ) {
                             Text(
                                 text = "当前",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = NarraUi.space12, vertical = NarraUi.space4),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -1503,12 +1526,12 @@ private fun RoleplaySettingsMembersOverviewCard(
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
         if (isGroupChat) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = NarraUi.space8),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -1526,7 +1549,7 @@ private fun RoleplaySettingsMembersOverviewCard(
                 if (sortedParticipants.isEmpty()) {
                     Text(
                         text = "还没有群成员",
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
                         style = MaterialTheme.typography.bodyMedium,
                         color = RoleplaySettingsPanelBodyColor,
                     )
@@ -1553,9 +1576,9 @@ private fun RoleplaySettingsMembersOverviewCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                        .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
                 ) {
                     AssistantAvatar(
                         name = displayName,
@@ -1618,9 +1641,9 @@ private fun RoleplayCompactMemberRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         AssistantAvatar(
             name = displayName,
@@ -1633,7 +1656,7 @@ private fun RoleplayCompactMemberRow(
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
         ) {
             Text(
                 text = displayName,
@@ -1660,7 +1683,7 @@ private fun RoleplayCompactMemberRow(
         IconButton(onClick = { showRemoveConfirm = true }) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "移除成员",
+                contentDescription = "$displayName：移除成员",
                 tint = RoleplaySettingsPanelBodyColor.copy(alpha = 0.82f),
             )
         }
@@ -1710,7 +1733,7 @@ private fun RoleplayAddMemberDialog(
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 360.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     items(candidates, key = { it.id }) { candidate ->
                         RoleplayAddMemberCandidateRow(
@@ -1738,10 +1761,11 @@ private fun RoleplayAddMemberCandidateRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = NarraMinimumTouchTarget)
+            .padding(vertical = NarraUi.space8),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         AssistantAvatar(
             name = assistant.name,
@@ -1752,7 +1776,7 @@ private fun RoleplayAddMemberCandidateRow(
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
         ) {
             Text(
                 text = assistant.name.ifBlank { "未命名角色" },
@@ -1793,8 +1817,8 @@ private fun RoleplayIdentitySummaryCard(
     val effectiveUserPersonaPrompt = effectiveUserPersona.personaPrompt
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text(
                 text = "当前身份概览",
@@ -1838,7 +1862,7 @@ private fun IdentityMetric(
     bodyColor: Color,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
     ) {
         Text(
             text = label,
@@ -1904,8 +1928,8 @@ private fun DetailIntroCard(
 ) {
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Text(
                 text = title,
@@ -1930,8 +1954,8 @@ private fun PlaceholderInfoCard(
 ) {
     ImmersiveSettingsCard(backdropState) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Text(
                 text = title,
@@ -1954,10 +1978,10 @@ private fun GroupLabel(
 ) {
     Text(
         text = title,
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = RoleplaySettingsPanelTitleColor.copy(alpha = 0.72f),
+        color = RoleplaySettingsPanelBodyColor,
     )
 }
 
@@ -1970,9 +1994,10 @@ private fun ExpandableGroupHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .heightIn(min = 48.dp)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .clickable(role = Role.Button, onClick = onToggle)
+            .semantics { stateDescription = if (expanded) "已展开" else "已折叠" }
+            .heightIn(min = NarraMinimumTouchTarget)
+            .padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -1981,7 +2006,7 @@ private fun ExpandableGroupHeader(
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = RoleplaySettingsPanelTitleColor.copy(alpha = 0.72f),
+            color = RoleplaySettingsPanelBodyColor,
         )
         Text(
             text = if (expanded) "收起" else "展开",
@@ -2006,10 +2031,11 @@ private fun SummaryLinkRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .heightIn(min = NarraMinimumTouchTarget)
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         if (loading) {
             CircularProgressIndicator(
@@ -2027,7 +2053,7 @@ private fun SummaryLinkRow(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
         ) {
             Text(
                 text = title,
@@ -2064,9 +2090,9 @@ private fun SummarySwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         Icon(
             imageVector = icon,
@@ -2076,7 +2102,7 @@ private fun SummarySwitchRow(
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
         ) {
             Text(
                 text = title,
@@ -2091,6 +2117,7 @@ private fun SummarySwitchRow(
             )
         }
         Switch(
+            modifier = Modifier.heightIn(min = NarraMinimumTouchTarget).semantics { contentDescription = title },
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
@@ -2101,7 +2128,7 @@ private fun SummarySwitchRow(
 @Composable
 private fun SummaryDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp, end = 18.dp),
+        modifier = Modifier.padding(start = 56.dp, end = NarraUi.space16),
         color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f),
     )
 }
@@ -2115,14 +2142,14 @@ private fun FooterActionRow(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         overlayColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             FooterActionButton(
                 title = "重启",
@@ -2148,7 +2175,7 @@ private fun FooterActionButton(
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.heightIn(min = NarraMinimumTouchTarget).clickable(role = Role.Button, onClick = onClick),
         shape = MaterialTheme.shapes.large,
         color = tint.copy(alpha = 0.12f),
         contentColor = tint,
@@ -2156,7 +2183,7 @@ private fun FooterActionButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 14.dp),
+                .padding(vertical = NarraUi.space16),
             contentAlignment = Alignment.Center,
         ) {
             Text(

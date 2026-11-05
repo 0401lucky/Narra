@@ -1,0 +1,351 @@
+<semantics id="E05_theme-narrow-light" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #2109 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #2112 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ | Shape = 'RectangleShape'
+ |-Node #2113 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ | Shape = 'RectangleShape'
+ |-Node #2116 at (l=60.0, t=20.0, r=616.0, b=1260.0)px
+   IsContainer = 'true'
+   Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |-Node #2117 at (l=60.0, t=20.0, r=616.0, b=1260.0)px
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |-Node #2118 at (l=60.0, t=20.0, r=616.0, b=1260.0)px
+       | Shape = 'RectangleShape'
+       |-Node #2120 at (l=80.0, t=36.0, r=596.0, b=254.0)px
+       | IsContainer = 'true'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |  |-Node #2121 at (l=80.0, t=36.0, r=596.0, b=254.0)px
+       |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |     |-Node #2122 at (l=80.0, t=36.0, r=596.0, b=254.0)px
+       |     | Shape = 'RectangleShape'
+       |     |-Node #2124 at (l=96.0, t=97.0, r=192.0, b=193.0)px
+       |     | ContentDescription = '[返回]'
+       |     | Focused = 'false'
+       |     | Role = 'Button'
+       |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     | Actions = [OnClick, RequestFocus]
+       |     | MergeDescendants = 'true'
+       |     |-Node #2204 at (l=212.0, t=56.0, r=352.0, b=159.0)px
+       |     |  |-Node #2205 at (l=212.0, t=56.0, r=352.0, b=159.0)px
+       |     |    Text = '[主题]'
+       |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |     |-Node #2130 at (l=212.0, t=163.0, r=560.0, b=234.0)px
+       |       Text = '[雨夜的旧书店与一段需要完整保留的很长很长的会话标题]'
+       |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #2206 at (l=60.0, t=270.0, r=616.0, b=1260.0)px
+          |-Node #2207 at (l=60.0, t=270.0, r=616.0, b=1260.0)px, Tag: 'roleplay_settings_list'
+            CollectionInfo = 'CollectionInfo(rowCount=1, columnCount=1)'
+            IsTraversalGroup = 'true'
+            Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1f4e26a0'
+            VerticalScrollAxisRange = 'ScrollAxisRange(value=4383.0, maxValue=4483.0, reverseScrolling=false)'
+            Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+             |-Node #2210 at (l=100.0, t=-4097.0, r=576.0, b=-3471.0)px
+             | IsContainer = 'true'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |-Node #2211 at (l=100.0, t=-4097.0, r=576.0, b=-3471.0)px
+             |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     |-Node #2212 at (l=100.0, t=-4097.0, r=576.0, b=-3471.0)px
+             |     | Shape = 'RectangleShape'
+             |     |-Node #2214 at (l=100.0, t=-4097.0, r=576.0, b=-3471.0)px, Tag: 'roleplay_skin_preview'
+             |       Shape = 'RectangleShape'
+             |        |-Node #2216 at (l=132.0, t=-4069.0, r=538.0, b=-3992.0)px
+             |        | Text = '[实时预览 · 无背景]'
+             |        | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |        |-Node #2217 at (l=132.0, t=-3984.0, r=379.0, b=-3927.0)px
+             |        | Text = '[Narra · 78%]'
+             |        | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |        |-Node #2418 at (l=132.0, t=-3903.0, r=453.0, b=-3711.0)px
+             |        | IsContainer = 'true'
+             |        | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 18.0.dp), bottomEnd = CornerSize(size = 18.0.dp), bottomStart = CornerSize(size = 18.0.dp))'
+             |        |  |-Node #2419 at (l=160.0, t=-3883.0, r=425.0, b=-3731.0)px
+             |        |    Text = '[你好呀，这是预览消息]'
+             |        |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |        |-Node #2421 at (l=223.0, t=-3691.0, r=544.0, b=-3499.0)px
+             |          IsContainer = 'true'
+             |          Shape = 'RoundedCornerShape(topStart = CornerSize(size = 18.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 18.0.dp), bottomStart = CornerSize(size = 18.0.dp))'
+             |           |-Node #2422 at (l=251.0, t=-3671.0, r=516.0, b=-3519.0)px
+             |             Text = '[短句会按内容收缩]'
+             |             Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #2219 at (l=100.0, t=-3439.0, r=576.0, b=-1679.0)px
+             | IsContainer = 'true'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |-Node #2220 at (l=100.0, t=-3439.0, r=576.0, b=-1679.0)px
+             |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     |-Node #2221 at (l=100.0, t=-3439.0, r=576.0, b=-1679.0)px
+             |     | Shape = 'RectangleShape'
+             |     |-Node #2224 at (l=136.0, t=-3407.0, r=360.0, b=-3324.0)px
+             |     | Text = '[预设皮肤]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2226 at (l=136.0, t=-3300.0, r=328.0, b=-3167.0)px, Tag: 'roleplay_skin_preset_narra'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'true'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[Narra]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2233 at (l=348.0, t=-3300.0, r=540.0, b=-3151.0)px, Tag: 'roleplay_skin_preset_wechat'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[微信]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2241 at (l=136.0, t=-3127.0, r=328.0, b=-2994.0)px, Tag: 'roleplay_skin_preset_qq'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[QQ]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2248 at (l=348.0, t=-3127.0, r=540.0, b=-2919.0)px, Tag: 'roleplay_skin_preset_telegram'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[Telegram]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2256 at (l=136.0, t=-2895.0, r=328.0, b=-2687.0)px, Tag: 'roleplay_skin_preset_kakao'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[KakaoTalk]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2263 at (l=348.0, t=-2895.0, r=540.0, b=-2762.0)px, Tag: 'roleplay_skin_preset_retro'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[Retro]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2271 at (l=136.0, t=-2663.0, r=328.0, b=-2439.0)px, Tag: 'roleplay_skin_preset_polkadot'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[波点复古]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2278 at (l=348.0, t=-2663.0, r=540.0, b=-2439.0)px, Tag: 'roleplay_skin_preset_pixel'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[复古像素]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2286 at (l=136.0, t=-2415.0, r=328.0, b=-2191.0)px, Tag: 'roleplay_skin_preset_rose'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[美丽少女]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2293 at (l=348.0, t=-2415.0, r=540.0, b=-2191.0)px, Tag: 'roleplay_skin_preset_noir'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[哥特夜诗]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2301 at (l=136.0, t=-2167.0, r=328.0, b=-2034.0)px, Tag: 'roleplay_skin_preset_y2k'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[Y2K]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2308 at (l=348.0, t=-2167.0, r=540.0, b=-1959.0)px, Tag: 'roleplay_skin_preset_imessage'
+             |     | Focused = 'false'
+             |     | IsContainer = 'true'
+             |     | Selected = 'false'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     | Text = '[iMessage]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2316 at (l=136.0, t=-1935.0, r=328.0, b=-1711.0)px, Tag: 'roleplay_skin_preset_liquidglass'
+             |       Focused = 'false'
+             |       IsContainer = 'true'
+             |       Selected = 'false'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |       Text = '[液态玻璃]'
+             |       Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             |       MergeDescendants = 'true'
+             |-Node #2324 at (l=100.0, t=-1647.0, r=576.0, b=299.0)px
+             | IsContainer = 'true'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |-Node #2325 at (l=100.0, t=-1647.0, r=576.0, b=299.0)px
+             |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     |-Node #2326 at (l=100.0, t=-1647.0, r=576.0, b=299.0)px
+             |     | Shape = 'RectangleShape'
+             |     |-Node #2330 at (l=136.0, t=-1608.0, r=360.0, b=-1525.0)px
+             |     | Text = '[气泡样式]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2331 at (l=444.0, t=-1615.0, r=540.0, b=-1519.0)px
+             |     | ContentDescription = '[重置气泡样式]'
+             |     | Focused = 'false'
+             |     | Role = 'Button'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     | Actions = [OnClick, RequestFocus]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2336 at (l=200.0, t=-1467.0, r=308.0, b=-845.0)px
+             |     | Text = '[线上背景玻璃气泡]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2337 at (l=324.0, t=-1204.0, r=420.0, b=-1108.0)px
+             |     | ContentDescription = '[线上背景玻璃气泡：查看说明]'
+             |     | Focused = 'false'
+             |     | Role = 'Button'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     | Actions = [OnClick, RequestFocus]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2339 at (l=436.0, t=-1204.0, r=540.0, b=-1108.0)px, Tag: 'roleplay_online_background_glass_switch'
+             |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+             |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@41f9252e'
+             |     | Focused = 'false'
+             |     | Role = 'Switch'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     | ToggleableState = 'Off'
+             |     | Actions = [OnClick, OnFillData, RequestFocus]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2343 at (l=136.0, t=-793.0, r=344.0, b=-716.0)px
+             |     | Text = '[最大宽度]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2344 at (l=451.0, t=-783.0, r=540.0, b=-726.0)px
+             |     | Text = '[78%]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2345 at (l=116.0, t=-700.0, r=560.0, b=-612.0)px, Tag: 'roleplay_skin_width_slider'
+             |     | Focused = 'false'
+             |     | ProgressBarRangeInfo = 'ProgressBarRangeInfo(current=78.0, range=64.0..92.0, steps=0)'
+             |     | StateDescription = '78.0'
+             |     | Actions = [RequestFocus, SetProgress]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2352 at (l=136.0, t=-580.0, r=240.0, b=-503.0)px
+             |     | Text = '[圆角]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2353 at (l=432.0, t=-570.0, r=540.0, b=-513.0)px
+             |     | Text = '[18dp]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2354 at (l=116.0, t=-487.0, r=560.0, b=-399.0)px, Tag: 'roleplay_skin_radius_slider'
+             |     | Focused = 'false'
+             |     | ProgressBarRangeInfo = 'ProgressBarRangeInfo(current=18.0, range=4.0..28.0, steps=0)'
+             |     | StateDescription = '18.0'
+             |     | Actions = [RequestFocus, SetProgress]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2361 at (l=136.0, t=-367.0, r=396.0, b=-290.0)px
+             |     | Text = '[横向内边距]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2362 at (l=432.0, t=-357.0, r=540.0, b=-300.0)px
+             |     | Text = '[14dp]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2363 at (l=116.0, t=-274.0, r=560.0, b=-186.0)px, Tag: 'roleplay_skin_padding_x_slider'
+             |     | Focused = 'false'
+             |     | ProgressBarRangeInfo = 'ProgressBarRangeInfo(current=14.0, range=8.0..20.0, steps=0)'
+             |     | StateDescription = '14.0'
+             |     | Actions = [RequestFocus, SetProgress]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2370 at (l=136.0, t=-154.0, r=396.0, b=-77.0)px
+             |     | Text = '[纵向内边距]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2371 at (l=432.0, t=-144.0, r=540.0, b=-87.0)px
+             |     | Text = '[10dp]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2372 at (l=116.0, t=-61.0, r=560.0, b=27.0)px, Tag: 'roleplay_skin_padding_y_slider'
+             |     | Focused = 'false'
+             |     | ProgressBarRangeInfo = 'ProgressBarRangeInfo(current=10.0, range=6.0..18.0, steps=0)'
+             |     | StateDescription = '10.0'
+             |     | Actions = [RequestFocus, SetProgress]
+             |     | MergeDescendants = 'true'
+             |     |-Node #2379 at (l=136.0, t=141.0, r=180.0, b=185.0)px
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     |-Node #2380 at (l=196.0, t=83.0, r=420.0, b=243.0)px
+             |     | Text = '[显示气泡尾巴]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #2381 at (l=436.0, t=115.0, r=540.0, b=211.0)px, Tag: 'roleplay_skin_tail_switch'
+             |       ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+             |       FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@9e1bc96'
+             |       Focused = 'false'
+             |       Role = 'Switch'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |       ToggleableState = 'On'
+             |       Actions = [OnClick, OnFillData, RequestFocus]
+             |       MergeDescendants = 'true'
+             |-Node #2383 at (l=100.0, t=331.0, r=576.0, b=1292.0)px
+               IsContainer = 'true'
+               Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+                |-Node #2384 at (l=100.0, t=331.0, r=576.0, b=1292.0)px
+                  Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+                   |-Node #2385 at (l=100.0, t=331.0, r=576.0, b=1292.0)px
+                   | Shape = 'RectangleShape'
+                   |-Node #2388 at (l=136.0, t=363.0, r=472.0, b=446.0)px
+                   | Text = '[沉浸与可读性]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #2390 at (l=136.0, t=478.0, r=344.0, b=555.0)px
+                   | Text = '[沉浸模式]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #2392 at (l=134.76001, t=573.76, r=258.76, b=697.76)px, Tag: 'roleplay_immersive_edge_to_edge'
+                   | Focused = 'false'
+                   | Selected = 'true'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                   | Text = '[边到边]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #2394 at (l=276.0, t=575.0, r=400.0, b=699.0)px, Tag: 'roleplay_immersive_hide_system_bars'
+                   | Focused = 'false'
+                   | Selected = 'false'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                   | Text = '[全屏]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #2396 at (l=416.0, t=575.0, r=540.0, b=699.0)px, Tag: 'roleplay_immersive_none'
+                   | Focused = 'false'
+                   | Selected = 'false'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                   | Text = '[标准]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #2402 at (l=200.0, t=789.0, r=420.0, b=949.0)px
+                   | Text = '[高对比度模式]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #2403 at (l=436.0, t=821.0, r=540.0, b=917.0)px, Tag: 'roleplay_high_contrast_switch'
+                   | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+                   | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@48dc51c4'
+                   | Focused = 'false'
+                   | Role = 'Switch'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+                   | ToggleableState = 'Off'
+                   | Actions = [OnClick, OnFillData, RequestFocus]
+                   | MergeDescendants = 'true'
+                   |-Node #2407 at (l=136.0, t=1039.0, r=344.0, b=1116.0)px
+                   | Text = '[行距档位]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                   |-Node #2409 at (l=136.0, t=1136.0, r=260.0, b=1260.0)px, Tag: 'roleplay_line_height_compact'
+                   | Focused = 'false'
+                   | Selected = 'false'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                   | Text = '[紧凑]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #2411 at (l=274.76, t=1134.76, r=398.76, b=1258.76)px, Tag: 'roleplay_line_height_normal'
+                   | Focused = 'false'
+                   | Selected = 'true'
+                   | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                   | Text = '[标准]'
+                   | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                   | MergeDescendants = 'true'
+                   |-Node #2413 at (l=416.0, t=1136.0, r=540.0, b=1260.0)px, Tag: 'roleplay_line_height_relaxed'
+                     Focused = 'false'
+                     Selected = 'false'
+                     Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                     Text = '[宽松]'
+                     Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+                     MergeDescendants = 'true']]></semantics>

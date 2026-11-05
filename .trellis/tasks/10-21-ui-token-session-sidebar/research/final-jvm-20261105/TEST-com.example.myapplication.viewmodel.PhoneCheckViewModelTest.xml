@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:26.229Z" hostname="LUCKY" time="0.047">
+  <properties/>
+  <testcase name="generateSnapshot_preservesSuccessfulBatchesWhenOneParallelBatchFails" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.027"/>
+  <testcase name="generateSnapshot_reportsErrorWhenModelReturnsCompletelyEmptyBatch" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.003"/>
+  <testcase name="generateSnapshot_includesConversationSummaryInPhoneSystemContext" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.005"/>
+  <testcase name="generateSnapshot_stagesMessagesBeforeParallelBatchesAndUsesDedicatedPhoneModel" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.004"/>
+  <testcase name="loadSnapshot_invalidatesStaleUserPhoneSnapshot" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.006"/>
+  <testcase name="refreshSections_fallsBackToDefaultChatModelWhenDedicatedPhoneModelMissing" classname="com.example.myapplication.viewmodel.PhoneCheckViewModelTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

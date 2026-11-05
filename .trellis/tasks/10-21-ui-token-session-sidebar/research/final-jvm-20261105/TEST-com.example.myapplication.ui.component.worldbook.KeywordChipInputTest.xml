@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:56.522Z" hostname="LUCKY" time="0.002">
+  <properties/>
+  <testcase name="regexLiteralDetector_accepts" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.002"/>
+  <testcase name="split_basicCommaDelimitedList" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <testcase name="split_regexWithEscapedSlashNotCut" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <testcase name="split_trimsAndDedupes" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <testcase name="split_handlesNewlineSeparator" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <testcase name="regexLiteralDetector_rejects" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <testcase name="split_preservesRegexLiteralContainingComma" classname="com.example.myapplication.ui.component.worldbook.KeywordChipInputTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

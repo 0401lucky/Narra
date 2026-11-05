@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:07.872Z" hostname="LUCKY" time="0.574">
+  <properties/>
+  <testcase name="b02_p03_background_load_failed" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.133"/>
+  <testcase name="b02_p03_background_glass_on" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.181"/>
+  <testcase name="b02_p03_no_background" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.131"/>
+  <testcase name="b02_p03_background_glass_off" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.126"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

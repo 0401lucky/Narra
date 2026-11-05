@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-23T00:24:59.026Z" hostname="LUCKY" time="5.945">
+  <properties/>
+  <testcase name="e04_scene_matcha_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.414"/>
+  <testcase name="e04_scene_vanilla_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.302"/>
+  <testcase name="e04_scene_narrow_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.757"/>
+  <testcase name="e04_scene_suggestions" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.363"/>
+  <testcase name="e04_reading_mixed_background" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.803"/>
+  <testcase name="e04_scene_ocean_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.373"/>
+  <testcase name="e04_reading_empty_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.399"/>
+  <testcase name="e04_scene_vanilla_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.246"/>
+  <testcase name="e04_scene_empty" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.269"/>
+  <testcase name="e04_reading_narrow_dark" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.666"/>
+  <testcase name="e04_scene_matcha_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.266"/>
+  <testcase name="e04_scene_ocean_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.254"/>
+  <testcase name="e04_scene_narrow_light" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.502"/>
+  <testcase name="e04_scene_background" classname="com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test" time="0.303"/>
+  <system-out><![CDATA[Roborazzi: E04_scene-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E04_scene-suggestions.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_reading-mixed-background.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_reading-empty-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-empty.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_reading-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E04_scene-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E04_scene-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E04_scene-background.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

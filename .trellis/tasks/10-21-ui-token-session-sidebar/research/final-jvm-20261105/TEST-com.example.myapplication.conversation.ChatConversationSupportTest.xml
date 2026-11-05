@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.ChatConversationSupportTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:03.358Z" hostname="LUCKY" time="0.028">
+  <properties/>
+  <testcase name="prepareUserEdit_rewindsConversationAndRestoresPendingParts" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.004"/>
+  <testcase name="buildUserMessageParts_mergesTextAndKeepsNonTextParts" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.001"/>
+  <testcase name="prepareOutgoingRoundTrip_ordersAssistantAfterUserWhenClockDoesNotAdvance" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.007"/>
+  <testcase name="prepareUserEdit_returnsNullForAssistantMessage" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.001"/>
+  <testcase name="buildConversationExcerpt_keepsLatestTailWhenSingleMessageTooLong" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.002"/>
+  <testcase name="supportsImageGeneration_usesProviderAbilities" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.004"/>
+  <testcase name="buildPromptAssemblyInput_usesLatestUserMessageText" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.002"/>
+  <testcase name="validateOutgoingParts_allowsImageForEditableImageGenerationModel" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.006"/>
+  <testcase name="validateOutgoingParts_requiresPromptForEditableImageGenerationModel" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.001"/>
+  <testcase name="buildConversationExcerpt_keepsLatestMessagesWithinLimit" classname="com.example.myapplication.conversation.ChatConversationSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

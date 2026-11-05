@@ -1,0 +1,98 @@
+<semantics id="E05_main-dynamic-light" fontScale="1.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #6581 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #6584 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+ | Shape = 'RectangleShape'
+ |-Node #6585 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+ | Shape = 'RectangleShape'
+ |-Node #6588 at (l=64.0, t=24.0, r=696.0, b=1576.0)px
+   IsContainer = 'true'
+   Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |-Node #6589 at (l=64.0, t=24.0, r=696.0, b=1576.0)px
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |-Node #6590 at (l=64.0, t=24.0, r=696.0, b=1576.0)px
+       | Shape = 'RectangleShape'
+       |-Node #6592 at (l=88.0, t=40.0, r=672.0, b=197.0)px
+       | IsContainer = 'true'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |  |-Node #6593 at (l=88.0, t=40.0, r=672.0, b=197.0)px
+       |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |     |-Node #6594 at (l=88.0, t=40.0, r=672.0, b=197.0)px
+       |     | Shape = 'RectangleShape'
+       |     |-Node #6596 at (l=104.0, t=71.0, r=200.0, b=167.0)px
+       |     | ContentDescription = '[返回]'
+       |     | Focused = 'false'
+       |     | Role = 'Button'
+       |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     | Actions = [OnClick, RequestFocus]
+       |     | MergeDescendants = 'true'
+       |     |-Node #6600 at (l=224.0, t=64.0, r=400.0, b=129.0)px
+       |     |  |-Node #6601 at (l=224.0, t=64.0, r=400.0, b=129.0)px
+       |     |    Text = '[会话设定]'
+       |     |    [Heading]
+       |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |     |-Node #6602 at (l=224.0, t=137.0, r=632.0, b=173.0)px
+       |       Text = '[雨夜的旧书店与一段需要完整保留的很长很长的会话标题]'
+       |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #6605 at (l=64.0, t=213.0, r=696.0, b=1576.0)px
+          |-Node #6606 at (l=88.0, t=213.0, r=672.0, b=1576.0)px, Tag: 'roleplay_settings_list'
+            CollectionInfo = 'CollectionInfo(rowCount=9, columnCount=1)'
+            ContentDescription = '[苏晚]'
+            IsContainer = 'true'
+            IsTraversalGroup = 'true'
+            Shape = 'RectangleShape'
+            Text = '[苏晚, 会话设定]'
+            VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+            [Disabled]
+            Actions = [ClearTextSubstitution, GetScrollViewportLength, GetTextLayoutResult, IndexForKey, OnClick, ScrollBy, ScrollByOffset, ScrollToIndex, SetTextSubstitution, ShowTextSubstitution]
+            MergeDescendants = 'true'
+             |-Node #6619 at (l=552.0, t=277.0, r=632.0, b=357.0)px
+             | ContentDescription = '[添加成员]'
+             | Focused = 'false'
+             | Role = 'Button'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             | Actions = [OnClick, RequestFocus]
+             | MergeDescendants = 'true'
+             |-Node #6630 at (l=88.0, t=532.0, r=672.0, b=687.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[情景设定, 线上模式]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6637 at (l=88.0, t=689.0, r=672.0, b=844.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[用户身份, 面具1：在漫长雨夜中旅行的记录者]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6644 at (l=88.0, t=846.0, r=672.0, b=1001.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[本会话预设, 跟随全局]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6651 at (l=88.0, t=1003.0, r=672.0, b=1158.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[背景与立绘, 默认视觉]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6663 at (l=88.0, t=1190.0, r=672.0, b=1345.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[主题, Narra · 边到边]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6670 at (l=88.0, t=1347.0, r=672.0, b=1534.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Text = '[快捷切换, fixture-model-长上下文与细腻情绪叙事完整模型名称]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+             | MergeDescendants = 'true'
+             |-Node #6678 at (l=88.0, t=1566.0, r=672.0, b=1662.0)px
+               Focused = 'false'
+               Role = 'Button'
+               StateDescription = '已折叠'
+               Text = '[高级选项, 展开]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+               MergeDescendants = 'true']]></semantics>

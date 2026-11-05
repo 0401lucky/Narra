@@ -196,8 +196,23 @@ object ScreenshotCases {
             NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
     }
 
+    private val e05Cases: List<ScreenshotCase> = buildList {
+        themeTokens.forEach { theme -> shadeTokens.forEach { shade ->
+            add(case("SessionSidebarScreenshotE05Test", "E05_main-$theme-$shade.png", "P05 会话设置 · $theme · $shade"))
+        } }
+        listOf("main-dynamic-light", "main-dynamic-dark").forEach {
+            add(case("SessionSidebarScreenshotE05Test", "E05_$it.png", "P05 固定动态色 · $it"))
+        }
+        listOf("main-narrow-light", "main-narrow-dark", "theme-narrow-light", "theme-narrow-dark",
+            "preset-sheet-light", "mask-sheet-dark", "help-dialog-dark", "model-sheet-light",
+            "reset-dialog-dark", "group-narrow-light").forEach {
+            add(case("SessionSidebarScreenshotE05Test", "E05_$it.png", "P05 真实面板 / 窗口 · $it",
+                NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+        }
+    }
+
     val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
-        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases
+        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases
 
     /** 冻结的分族数量：缺场景、零测试或静默删减都会让守卫失败。 */
     val expectedFamilyCounts: Map<String, Int> = mapOf(
@@ -211,6 +226,7 @@ object ScreenshotCases {
         "B04" to 4,
         "C01" to 2,
         "E04" to 14,
+        "E05" to 18,
     )
 
     private val byId: Map<String, ScreenshotCase> = all.associateBy { it.id }

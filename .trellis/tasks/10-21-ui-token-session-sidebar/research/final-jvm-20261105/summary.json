@@ -1,0 +1,12 @@
+{
+  "suites": 228,
+  "tests": 1719,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "pngs_verified_unchanged": 110,
+  "command_exit": 0,
+  "gradle_duration": "1m 46s",
+  "test_task_executed": true,
+  "screenshot_comparison_enabled": false
+}

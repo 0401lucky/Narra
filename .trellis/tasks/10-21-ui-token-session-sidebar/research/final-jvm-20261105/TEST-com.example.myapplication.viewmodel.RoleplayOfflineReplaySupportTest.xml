@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:02:26.303Z" hostname="LUCKY" time="0.045">
+  <properties/>
+  <testcase name="prepare_fixedFixture_installsNonBlankSeedAndReadyPhase" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.01"/>
+  <testcase name="start_calledRepeatedly_keepsSingleActiveReplayJob" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.007"/>
+  <testcase name="start_conversationSwitchWhileDelayed_oldJobDoesNotWriteNewConversation" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.004"/>
+  <testcase name="start_cancelledWhileDelayed_doesNotPublishFailure" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.005"/>
+  <testcase name="providerViolation_readyRunningOrCompleted_movesReplayToFailedImmediately" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.005"/>
+  <testcase name="prepare_nonFixedMessageCount_staysDisabled" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.003"/>
+  <testcase name="start_activeSendingJob_doesNotEnterReplay" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.002"/>
+  <testcase name="start_replaysDefaultChunksAndTracesOnlyAccumulationAndPublication" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.005"/>
+  <testcase name="start_delayFailure_movesToFailedWithoutProviderFallback" classname="com.example.myapplication.viewmodel.RoleplayOfflineReplaySupportTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

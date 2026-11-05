@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.context.TavernCharacterAdapterTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:08.104Z" hostname="LUCKY" time="0.053">
+  <properties/>
+  <testcase name="decodeAsBundle_mapsTavernCharacterToAssistant" classname="com.example.myapplication.data.repository.context.TavernCharacterAdapterTest" time="0.002"/>
+  <testcase name="decodeAsBundle_limitsCharacterFieldsListsAndEmbeddedWorldBook" classname="com.example.myapplication.data.repository.context.TavernCharacterAdapterTest" time="0.049"/>
+  <testcase name="decodeAsBundle_findsNestedCharacterBookNode" classname="com.example.myapplication.data.repository.context.TavernCharacterAdapterTest" time="0.001"/>
+  <testcase name="decodeAsBundle_importsCharacterBookEntries" classname="com.example.myapplication.data.repository.context.TavernCharacterAdapterTest" time="0.001"/>
+  <system-out><![CDATA[TavernCharacterAdapter: 解析到世界书条目数: 0
+TavernCharacterAdapter: 解析到世界书条目数: 500
+TavernCharacterAdapter: 解析到世界书条目数: 1
+TavernCharacterAdapter: 解析到世界书条目数: 2
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

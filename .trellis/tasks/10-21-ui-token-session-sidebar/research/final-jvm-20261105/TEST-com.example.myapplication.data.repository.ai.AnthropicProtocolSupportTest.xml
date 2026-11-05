@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.AnthropicProtocolSupportTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T02:01:07.270Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="parseStreamData_doesNotThrowWhenTextDeltaIsJsonNull" classname="com.example.myapplication.data.repository.ai.AnthropicProtocolSupportTest" time="0.0"/>
+  <testcase name="parseStreamData_doesNotThrowWhenTextDeltaIsJsonObject" classname="com.example.myapplication.data.repository.ai.AnthropicProtocolSupportTest" time="0.0"/>
+  <testcase name="parseStreamData_flagsMessageStop" classname="com.example.myapplication.data.repository.ai.AnthropicProtocolSupportTest" time="0.0"/>
+  <testcase name="parseStreamData_returnsContentForTextDelta" classname="com.example.myapplication.data.repository.ai.AnthropicProtocolSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
