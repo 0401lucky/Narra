@@ -2,11 +2,11 @@
 
 ## Goal
 
-让设置首页及三类外观 Sheet 显式采用 v2.3 统一令牌和无障碍契约，同时保留其他共享设置调用方的默认行为。2026-11-05按既有批准方案启动，归属 [扩面父任务](../10-21-ui-token-accessibility-expansion/prd.md)，排在 P05 后、P11 前。
+让设置首页及三类外观 Sheet 显式采用 v2.3 统一令牌和无障碍契约，同时保留其他共享设置调用方的默认行为。2026-11-05按既有批准方案启动，归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，排在 P05 后、P11 前。
 
 ## Background
 
-[设置与提供商研究](../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口为手机主壳 Profile“设置”→ SettingsNavGraph → SettingsScreen。共享设置符号命中约 45 个 UI 文件（含定义），不能全局改默认尺寸。现有测试主要为直接回调和 160% 局部 Sheet，尚无 P10 整页基准。
+[设置与提供商研究](../../../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md) 核实入口为手机主壳 Profile“设置”→ SettingsNavGraph → SettingsScreen。共享设置符号命中约 45 个 UI 文件（含定义），不能全局改默认尺寸。现有测试主要为直接回调和 160% 局部 Sheet，尚无 P10 整页基准。
 
 ## Requirements
 
@@ -33,6 +33,6 @@
 
 2026-10-21 四批最终摘要已由用户回复“可以”批准。本批保持 `planning`，等待 P05 验收后按序实施；本批为 P11 提供兼容的共享 opt-in 接口，不将它变成全设置默认。
 
-2026-11-05用户明确要求P05收尾后做设置首页；[P05已验收归档](../archive/2026-11/10-21-ui-token-session-sidebar/verification.md)，本批执行`task.py start`进入`in_progress`。保留上述需求、设计与16张候选矩阵，不重复创建任务或规划确认；本批新增视觉和具体提交清单仍分别审阅。
+2026-11-05用户明确要求P05收尾后做设置首页；[P05已验收归档](../10-21-ui-token-session-sidebar/verification.md)，本批执行`task.py start`进入`in_progress`。保留上述需求、设计与16张候选矩阵，不重复创建任务或规划确认；本批新增视觉和具体提交清单仍分别审阅。
 
-2026-11-05用户接纳16组效果；接纳后127/127真实截图与1755/1755完整JVM通过，126张PNG哈希不变。Lint、dev构建、AndroidTest实际编译通过，无新增警告；独立检查无代码遗留。HA1–HA4按宿主与人工视觉证据验收，设备/物理性能/远端新视觉CI继续单列未测；当前等待具体提交确认与归档。
+2026-11-05用户接纳16组效果；接纳后127/127真实截图与1755/1755完整JVM通过，126张PNG哈希不变。Lint、dev构建、AndroidTest实际编译通过，无新增警告；独立检查无代码遗留。HA1–HA4按宿主与人工视觉证据验收，设备/物理性能/远端新视觉CI继续单列未测；用户确认具体清单后已完成`b7aad3e6`、`76adadc9`并归档。

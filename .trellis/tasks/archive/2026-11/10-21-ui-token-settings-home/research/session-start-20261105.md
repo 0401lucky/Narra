@@ -1,7 +1,7 @@
 # P10 设置首页：执行起点（2026-11-05）
 
 - 用户在进度盘点后要求继续下一批，并明确回复“接纳侧栏，完成收尾后做设置首页”；随后确认P05的具体提交清单、归档及继续。
-- P05已完成：实现`4d32dabf`、基准`0c272255`、归档`78d2a230`、日志`18c1613f`。记录位于[已归档验证](../../archive/2026-11/10-21-ui-token-session-sidebar/verification.md)，不再等待P05视觉确认。
+- P05已完成：实现`4d32dabf`、基准`0c272255`、归档`78d2a230`、日志`18c1613f`。记录位于[已归档验证](../../10-21-ui-token-session-sidebar/verification.md)，不再等待P05视觉确认。
 - 本批基点为`main / 18c1613f`；启动前`app/src/main`和`app/src/test/java`无未提交改动。既有历史任务搬移、用户资料及manifest老CI段落保持，起点状态见[清单](workspace-start-status.txt)。
 - 已冻结全部110张已接纳PNG：[SHA-256清单](accepted-png-hashes-before-p10.txt)，与P05最终接纳清单一致。
 - 现有P10已执行`task.py start`，为当前`in_progress`任务；implement/check各12条上下文校验通过，不新建重复任务，也不重走已批准的方向确认。

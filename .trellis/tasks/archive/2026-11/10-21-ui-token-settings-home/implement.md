@@ -9,7 +9,7 @@
 5. 派 `trellis-check` 检查接口兼容、真实回调 / 保存边界与视觉。用户审阅 16 个 after / diff 后才接纳本批 PNG / manifest。
 6. 全包已接纳截图 verify、所需单测、Lint / dev 构建及 AndroidTest 编译；保留 CI / D01 / 性能未取得结果。更新版本记录 / 必要 spec，经具体提交审阅后独立归档 / journal。
 
-建议截图类 `SettingsHomeScreenshotE10Test`，每张独立 `@Test`。完整命令、失败与回退见 [父计划](../10-21-ui-token-accessibility-expansion/implement.md)。P11 在此 opt-in 与视觉验收稳定后开始，不能同时修改 SettingsComponents。
+建议截图类 `SettingsHomeScreenshotE10Test`，每张独立 `@Test`。完整命令、失败与回退见 [父计划](../../../10-21-ui-token-accessibility-expansion/implement.md)。P11 在此 opt-in 与视觉验收稳定后开始，不能同时修改 SettingsComponents。
 
 ## 当前执行记录（2026-11-05）
 

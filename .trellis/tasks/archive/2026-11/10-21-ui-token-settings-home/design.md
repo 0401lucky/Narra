@@ -1,6 +1,6 @@
 # P10 技术设计
 
-沿用 [父设计](../10-21-ui-token-accessibility-expansion/design.md)；实际入口、消费者与保存边界见 [设置研究](../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md)。
+沿用 [父设计](../../../10-21-ui-token-accessibility-expansion/design.md)；实际入口、消费者与保存边界见 [设置研究](../../../10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md)。
 
 ## 所有权与兼容接口
 

@@ -2,9 +2,9 @@
 
 > **当前状态：用户已接纳16张E10候选，共126张PNG；接纳后127/127真实截图、1755/1755完整JVM通过。**
 
-- 用户回复“接纳这16组效果（推荐）”，16张PNG均匹配已审阅after与接纳记录的精确SHA-256；原110张不变。见[接纳哈希](../../../../.trellis/tasks/10-21-ui-token-settings-home/research/accepted-png-hashes-20261105.txt)。
+- 用户回复“接纳这16组效果（推荐）”，16张PNG均匹配已审阅after与接纳记录的精确SHA-256；原110张不变。见[接纳哈希](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/accepted-png-hashes-20261105.txt)。
 - 最后参数规范修正没有改变16张图；接纳后真实截图127/127（48秒）及完整JVM1755/1755（91秒）全部通过，均0失败/错误/跳过，126张PNG哈希不变。Lint/dev/AndroidTest实际编译通过，无新增警告。
-- [16组前后对照](../../../../.trellis/tasks/10-21-ui-token-settings-home/review/index.html)已标为接纳；设备/物理性能/新视觉远端CI仍待补。
+- [16组前后对照](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/review/index.html)已标为接纳；设备/物理性能/新视觉远端CI仍待补。
 
 以下为候选阶段及更早批次的历史记录。
 
@@ -13,10 +13,10 @@
 > **当前状态：16组真实前后候选已齐全且捕获前置已校正；新增视觉尚未接纳，snapshots仍为110张已接纳PNG。**
 
 - 覆盖首页三主题浅深、固定动态浅深、200%窄屏首页，以及主题色调/颜色模式/显示三个真实Sheet的浅深窗口。
-- 产品修改前的17项检查严格仅为16个新图与计数守卫缺基准失败，输出16张actual、16份语义及6份独立窗口记录；参数见[before清单](../../../../.trellis/tasks/10-21-ui-token-settings-home/research/before/manifest.json)。
+- 产品修改前的17项检查严格仅为16个新图与计数守卫缺基准失败，输出16张actual、16份语义及6份独立窗口记录；参数见[before清单](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/before/manifest.json)。
 - 旧110张PNG已冻结且取得before时哈希不变。完整迁移后截图矩阵预期127项，最终运行与候选接纳结果另行记录；P05的111/1719结果不代替P10验收。
 - 本批先生成同参数after及前后对照，再独立检查与人工接纳；不record、删除用例或放宽缺图/计数守卫。
-- 显示Sheet首版仅滚入末项文字的问题已修正：before从18c1613f隔离副本重取，前后均滚至真实max并检查完整Switch。最终127项截图为110旧图通过、16新图与计数守卫缺图失败；相关JVM113项通过，见[16组前后对照](../../../../.trellis/tasks/10-21-ui-token-settings-home/review/index.html)与[验证记录](../../../../.trellis/tasks/10-21-ui-token-settings-home/verification.md)。
+- 显示Sheet首版仅滚入末项文字的问题已修正：before从18c1613f隔离副本重取，前后均滚至真实max并检查完整Switch。最终127项截图为110旧图通过、16新图与计数守卫缺图失败；相关JVM113项通过，见[16组前后对照](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/review/index.html)与[验证记录](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/verification.md)。
 
 以下P05及更早章节为已完成批次的历史记录。
 
