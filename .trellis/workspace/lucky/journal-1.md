@@ -348,3 +348,43 @@ P11令牌/无障碍、32组视觉及5张稳定帧修正完成；159截图和1826
 ### Status
 
 [OK] **Completed**
+
+
+## Session 12: v2.3四批扩面总验收与父任务归档
+
+**Date**: 2026-11-05
+**Task**: v2.3四批扩面总验收与父任务归档
+**Branch**: `main`
+
+### Summary
+
+P04/P05/P10/P11共4批全部交付，80新增与158总基准、159截图、1826 JVM通过，协调父任务归档，保留设备/性能/新视觉CI缺口。
+
+### Main Changes
+
+完成 v2.3 设计令牌与无障碍四批扩面的跨批总验收，P04 → P05 → P10 → P11全部独立提交、归档并记录journal。父任务始终只协调，未执行start，现已归档。
+
+- [父任务总验收](../../tasks/archive/2026-11/10-21-ui-token-accessibility-expansion/verification.md)及机器审计确认EA1–EA4、4/4完成；新增14+18+16+32=80张，加原78张，总158张PNG。
+- 最终159/159真实截图、1826/1826完整JVM通过，必要Lint无新增警告；旧批次数值仅引用其已完成证据，没有为恢复上下文重跑。
+- P11工作提交75b9a28d、ce7eb322，独立归档61f4628e；父任务归档1ce1c06c。父/四子任务JSONL验证通过，198个本地Markdown引用有效。
+- 13皮肤、用户几何/尾角/玻璃、Provider协议/ID/模型override和原保存/返回行为保持；构建与更新仍2.2.12-dev，v2.3未发布，未推送或发包。
+- 世界书、记忆、朋友圈、信箱等只保留后续队列，没有新建或启动任务。真机读屏/IME/系统栏/实际材质、物理性能和新视觉远端CI仍待补。
+- 保留111项既有工作区状态（含manifest旧CI段落差异），未把无关历史变动纳入本批或父任务提交。
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c93ae27` | (see git log) |
+| `2cf55f1f` | (see git log) |
+| `4d32dabf` | (see git log) |
+| `0c272255` | (see git log) |
+| `b7aad3e6` | (see git log) |
+| `76adadc9` | (see git log) |
+| `75b9a28d` | (see git log) |
+| `ce7eb322` | (see git log) |
+
+### Status
+
+[OK] **Completed**
