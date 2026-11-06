@@ -1,15 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.12-dev",
-  "latest_version_code": 20212,
+  "latest_version_name": "2.3.0-dev",
+  "latest_version_code": 20300,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.2.12-dev-20212-dev.apk?v=20212",
-  "apk_sha256": "3f6b31b3ad42d9e5a5574f8a6824c3d18d7dec639113b3bd3ab9d87c7a031a46",
-  "published_at": "2026-09-08T21:12:41+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.3.0-dev-20300-dev.apk?v=20300",
+  "apk_sha256": "cc6b3aa9946add66dccf58926d23fbceae4d894b15179d20dfb47b143e6b3eab",
+  "published_at": "2026-11-06T13:50:12.4747251+00:00",
   "release_notes": [
-    "线上聊天新增玻璃气泡开关，更换背景时可保留原主题气泡，线下保持原样",
-    "收紧朋友圈评论间距，保留查看详情、长按删除和大字体显示",
+    "统一消息、角色、扮演、阅读与设置页面的默认样式，保留现有皮肤、玻璃开关和自定义气泡",
+    "优化世界书编辑和资料库导入导出，改善窄屏、大字体与弹层操作体验",
+    "补齐控件名称和触控范围，改善禁用按钮文字的可读性",
+    "开发版改由 GitHub Actions 自动构建并经 Cloudflare R2 分发，保留原签名和应用内更新入口",
     "保留已有数据与设置，本版本仍为可选更新"
   ]
 }

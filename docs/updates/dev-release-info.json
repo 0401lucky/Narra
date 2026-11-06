@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "repository": "0401lucky/Narra",
+  "source_sha": "c34e8e12565487499799ad81fa07a313397de678",
+  "run_id": "42200205327",
+  "run_attempt": 1,
+  "run_url": "https://github.com/0401lucky/Narra/actions/runs/42200205327",
+  "version": "2.3.0",
+  "version_name": "2.3.0-dev",
+  "version_code": 20300,
+  "application_id": "com.narra.app.dev",
+  "channel": "dev",
+  "apk_name": "Narra-v2.3.0-dev-20300-dev.apk",
+  "apk_size": 80357328,
+  "apk_sha256": "cc6b3aa9946add66dccf58926d23fbceae4d894b15179d20dfb47b143e6b3eab",
+  "signing_certificate_sha256": "3a6c57eec0641bc00830252eb821d62c9e9b2f639c5989d0bc42b29b843546e8",
+  "built_at": "2026-11-06T10:23:30.2242173+00:00",
+  "apk_verification_build_tools": "36.1.0",
+  "apksigner_version": "0.9",
+  "java_version": "openjdk 17.0.21 2026-10-20",
+  "release_notes": [
+    "统一消息、角色、扮演、阅读与设置页面的默认样式，保留现有皮肤、玻璃开关和自定义气泡",
+    "优化世界书编辑和资料库导入导出，改善窄屏、大字体与弹层操作体验",
+    "补齐控件名称和触控范围，改善禁用按钮文字的可读性",
+    "开发版改由 GitHub Actions 自动构建并经 Cloudflare R2 分发，保留原签名和应用内更新入口",
+    "保留已有数据与设置，本版本仍为可选更新"
+  ],
+  "published_at": "2026-11-06T13:50:12.4747251+00:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.3.0-dev-20300-dev.apk?v=20300",
+  "r2_object": "narra-updates/dev/Narra-v2.3.0-dev-20300-dev.apk"
+}
