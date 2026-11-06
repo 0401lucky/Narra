@@ -1,6 +1,6 @@
 # v2.3 dev 自动发布设计
 
-状态：用户已审阅批准，实施中。需求及验收映射见 [prd.md](prd.md)，平台与源码依据见 [续接证据](research/resumption-and-release-contract.md)。
+状态：已实施并通过真实云端发布验收。需求及验收映射见 [prd.md](prd.md)，平台与源码依据见 [续接证据](research/resumption-and-release-contract.md)。
 
 ## 边界与取舍
 
