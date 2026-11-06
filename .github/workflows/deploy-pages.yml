@@ -5,6 +5,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_version:
+        type: string
+        default: ""
+      apk_sha256:
+        type: string
+        default: ""
+      publication_commit:
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -13,18 +24,32 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # 获得 pages 锁之后读取最新 main，旧事件不得重新部署旧更新清单。
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Guard current update metadata
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version || '' }}
+          RELEASE_SHA256: ${{ inputs.apk_sha256 || '' }}
+          PUBLICATION_COMMIT: ${{ inputs.publication_commit || '' }}
+        run: ./tools/dev-release.ps1 -Mode PreparePages -Version $env:RELEASE_VERSION -ExpectedSha256 $env:RELEASE_SHA256 -ExpectedCommit $env:PUBLICATION_COMMIT
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

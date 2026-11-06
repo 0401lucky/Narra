@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"审查真实云端构建、失败注入、截图 verify 与任务范围。"}
+{"file":".trellis/spec/backend/dev-release-guidelines.md","reason":"核对原签名、来源 artifact、对象不可覆盖、受限 S3 与显式 Pages 发布。"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"检查旧客户端清单/下载白名单、可选更新及完整性校验兼容。"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"独立检查 Secrets、签名文件、日志、缓存和公开 artifact 的泄漏边界。"}
+{"file":".trellis/tasks/11-06-github-actions-r2-dev-release/research/resumption-and-release-contract.md","reason":"核查原证书、S3 桶级权限、bot push 不触发 Pages 与新旧证据的区别。"}

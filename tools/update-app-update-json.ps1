@@ -19,17 +19,20 @@ param(
 
     [string]$PublishedAt = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK"),
 
-    [string[]]$ReleaseNotes = @("更新应用内测试包")
+    [string[]]$ReleaseNotes = @("更新应用内测试包"),
+
+    # CI 先生成到临时目录，完成发布门禁后再更新仓库。
+    [string]$OutputPath
 )
 
 $root = Split-Path -Parent $PSScriptRoot
-$jsonPath = Join-Path $root "docs\updates\$Channel.json"
+$jsonPath = if ($OutputPath) { $OutputPath } else { Join-Path $root "docs/updates/$Channel.json" }
 
-if (-not (Test-Path $jsonPath)) {
+if (-not $OutputPath -and -not (Test-Path -LiteralPath $jsonPath)) {
     throw "找不到更新元数据文件：$jsonPath"
 }
 
-if (-not (Test-Path $ApkPath)) {
+if (-not (Test-Path -LiteralPath $ApkPath -PathType Leaf)) {
     throw "找不到 APK 文件：$ApkPath"
 }
 
@@ -39,7 +42,7 @@ $appId = switch ($Channel) {
     "baseline" { "com.narra.app.baseline" }
 }
 
-$sha256 = (Get-FileHash -Path $ApkPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$sha256 = (Get-FileHash -LiteralPath $ApkPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
 $payload = [ordered]@{
     app_id = $appId
@@ -53,7 +56,7 @@ $payload = [ordered]@{
     release_notes = @($ReleaseNotes)
 }
 
-$payload | ConvertTo-Json -Depth 5 | Set-Content -Path $jsonPath -Encoding UTF8
+$payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $jsonPath -Encoding UTF8
 
 Write-Host "已更新 $jsonPath"
 Write-Host "SHA256: $sha256"

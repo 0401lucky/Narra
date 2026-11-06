@@ -1,0 +1,35 @@
+{
+  "scope": "local working tree, version 2.3.0",
+  "gradle_exit_code": 0,
+  "gradle_elapsed": "7m 13s",
+  "jvm": [
+    {
+      "class": "com.example.myapplication.data.repository.AppUpdateRepositoryTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.example.myapplication.system.update.AppUpdateUrlPolicyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.example.myapplication.viewmodel.AppUpdateViewModelTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "lint": {
+    "Warning": 55,
+    "Hint": 3
+  },
+  "offline_release_tests_at_handoff": 19,
+  "actionlint": "1.7.12 passed",
+  "new_apk_built_locally": false
+}

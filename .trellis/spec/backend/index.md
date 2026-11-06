@@ -32,6 +32,7 @@ Store / Room DAO / Retrofit / Android system adapter
 - [角色扮演主题与背景气泡](./roleplay-theme-settings.md)：全局线上材质开关、旧 JSON 兼容及消息视觉状态。
 - [系统悬浮翻译 UI](./floating-translation-ui-guidelines.md)：原生窗口、共享主题、授权编号与取消边界。
 - [网络与协议](./network-guidelines.md)：Provider、Retrofit、流式响应与 URL 安全。
+- [dev 云端发布与更新](./dev-release-guidelines.md)：Actions、原签名、桶级 S3、清单门禁与 Pages 发布重试。
 - [持久化规范](./database-guidelines.md)：Room、DataStore、Keystore 与迁移。
 - [错误处理](./error-handling.md)：异常传播、协程取消、UI 反馈与脱敏。
 - [合规门禁](./compliance-guidelines.md)：18+ 条款确认、DataStore 契约和后台 AI 守卫。
@@ -56,6 +57,8 @@ Store / Room DAO / Retrofit / Android system adapter
 - Room、DataStore、导入导出：`database-guidelines.md`、`error-handling.md`
 - Provider、AI、搜索、更新、TTS：`network-guidelines.md`、
   `logging-guidelines.md`、`error-handling.md`
+- dev 发版工作流、签名、R2、Pages 或发布工具：`dev-release-guidelines.md`、
+  `network-guidelines.md`、`logging-guidelines.md`
 - 首次启动、年龄门槛、条款确认或合规状态跨 UI/存储/后台任务传播：
   `compliance-guidelines.md`、`database-guidelines.md`、`error-handling.md`
 - Macrobenchmark、Baseline Profile、benchmark fixture / ready、Trace 或性能报告：

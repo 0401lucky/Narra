@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/directory-structure.md","reason":"遵循 Android 工程与发布工具的现有边界，避免扩展业务模块。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"沿用真实 Gradle、Lint、JVM 和截图 verify 门禁。"}
+{"file":".trellis/spec/backend/dev-release-guidelines.md","reason":"本任务形成的 Actions/R2/Pages、来源绑定与重试的可执行契约。"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"保留客户端更新地址白名单、渠道和 SHA 校验契约。"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"签名和 R2 凭据不得进入日志、文件或 artifact。"}
+{"file":".trellis/tasks/11-06-github-actions-r2-dev-release/research/resumption-and-release-contract.md","reason":"恢复既有授权及 main/CI 状态，落实桶级 S3 和显式 Pages 部署约束。"}

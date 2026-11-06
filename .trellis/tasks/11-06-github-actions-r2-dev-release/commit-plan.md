@@ -1,0 +1,41 @@
+# 本次工作提交
+
+用户已批准完整方案、首包发布和推送 `main`，沿用既有提交 / 推送授权。
+
+计划提交：`feat(ci): 支持 dev 云端构建与 R2 自动发版`
+
+## 实现与验证
+
+- `.github/workflows/dev-release.yml`
+- `.github/workflows/deploy-pages.yml`
+- `tools/dev-release.ps1`
+- `tools/dev-release.psm1`
+- `tools/update-app-update-json.ps1`
+- `tools/tests/dev-release.tests.ps1`
+- `tools/tests/dev-release-entry.tests.ps1`
+- `gradle.properties`
+
+## 发行说明、规范与记录
+
+- `CHANGELOG.md`
+- `docs/版本策略.md`
+- `docs/发布与更新约定.md`
+- `docs/updates/dev-release-notes.json`
+- `版本功能添加/优化.md`：仅本任务的 v2.3 段，已有 v2.4 未提交段不进入 index。
+- `.trellis/spec/backend/index.md`
+- `.trellis/spec/backend/dev-release-guidelines.md`
+- 本任务 PRD、design、implement、JSONL、task.json、commit-plan，以及 research 的 Markdown / JSON 和三份定向 JVM XML。
+
+本次源提交保持 `docs/updates/dev.json` 和当前候选记录为旧发布版本，新的 APK / 清单由真实工作流校验后自动提交。
+
+## 排除项
+
+- 初始工作区的历史任务归档移动 / 删除、截图 manifest、v2.4 规划及无关文档。
+- 所有签名文件、凭据值、APK、构建输出、工具二进制和忽略的日志。
+- 不使用全量 `git add`，不改写用户工作树；版本记录使用单独的 index 内容，保留工作区的原 v2.4 段。
+
+## 提交前结果
+
+- 独立检查通过：30 项离线发布测试、18 项更新协议 JVM 测试；PowerShell 语法及 actionlint 通过。
+- Android Lint 无错误，55 Warning / 3 Hint，与原基线计数一致。
+- 新 APK 将由 GitHub Actions 构建；R2 凭据当前仍待 Chrome 连接恢复后配置。构建 job 可独立生成有原签名的 artifact，发布失败可从原 artifact 重试。
