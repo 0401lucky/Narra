@@ -66,13 +66,19 @@ jobs:
         shell: pwsh
         run: ./tools/tests/dev-release-startup.tests.ps1
 
-      - name: Build and run JVM and lint checks
+      - name: Assemble signed debug APK
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain
+          ./gradlew :app:assembleDebug --console=plain --stacktrace
+
+      - name: Run JVM tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain --stacktrace
+
+      - name: Run Android Lint
+        run: ./gradlew :app:lintDebug --console=plain --stacktrace
 
       - name: Verify screenshot baselines
-        run: ./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true --console=plain
+        run: ./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true --console=plain --stacktrace
 
       - name: Verify and freeze APK artifact
         id: release

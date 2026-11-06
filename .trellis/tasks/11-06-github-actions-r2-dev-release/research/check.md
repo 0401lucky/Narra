@@ -5,6 +5,8 @@
 后续首个真实发版暴露了 `-File` 与 GitHub PowerShell wrapper 的作用域差异。
 下文保留初次审查记录；最新修复、60 次双启动复验和真实 CI 失败证据见
 [PowerShell 启动作用域修复](pwsh-startup-fix.md)。
+第二轮已通过 Linux 启动检查，随后出现打包失败；独立 Gradle 调用、当前 JDK 私钥
+签名预检及 66 次复验见 [packageDebug 后续调整](package-debug-followup.md)，打包根因仍待真实堆栈确认。
 
 ## 结论
 

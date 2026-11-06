@@ -22,3 +22,11 @@
 ## 外部条件
 
 原签名 Secret 与 Cloudflare Account ID Variable 已配置。R2 两项受限 S3 Secrets 仍未配置，Chrome 原生连接待用户通过插件页恢复；不能把尚未运行的上传及公网更新验证记为完成。
+
+## 启动方式修复后的重跑
+
+- 修复提交：`acb51b748dc481ba32b6f7daccfc10089347c305`，已推送 main。直连 GitHub 超时后，使用系统已有代理进行单次推送成功，没有改变全局 Git 配置。
+- [Dev Release 42181383716](https://github.com/0401lucky/Narra/actions/runs/42181383716)：新提交的真实发版运行，目标仍为 `2.3.0`。
+- 原签名恢复 / 校验及新的两种 PowerShell 启动门禁均已在 Linux 成功。组合 Gradle 调用随后在 `:app:packageDebug` 失败，日志只有 `PackageAndroidArtifact$IncrementalSplitterRunnable`，没有根因堆栈；未上传 APK 或清单。
+- 相同提交的普通 Android Quality `42181377835` 全部成功；因此发版流程改为已有成功路径的 assemble → JVM → Lint → 截图独立调用，全部启用 `--stacktrace`。并增加当前 JDK 的私钥签名预检；本机原私钥解锁及签名探针也已通过。
+- 本次根因尚未确认，不能把并发或内存冲突当作已证实结论。详见 [打包后续检查](package-debug-followup.md)。

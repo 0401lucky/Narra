@@ -95,6 +95,24 @@ function Invoke-FakeUpload {
     Publish-DevApk $Artifact $apk 'https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.r2.cloudflarestorage.com' $testRoot -S3 $Fake.S3 -VerifyPublic $Fake.Verify
 }
 
+function New-FakeKeytool {
+    $state = @{ Calls = [Collections.Generic.List[object]]::new(); Certificate = $info.signing_certificate_sha256; FailPrivateKey = $false }
+    $invoke = {
+        param([string[]]$arguments)
+        $state.Calls.Add($arguments)
+        if ($env:NARRA_DEV_STORE_PASSWORD -cne 'android') { throw '没有为 keytool 提供预期的密码环境变量。' }
+        if ($arguments -contains '-list') {
+            return [pscustomobject]@{ ExitCode = 0; Output = "SHA256: $($state.Certificate)"; Error = '' }
+        }
+        if ($arguments -notcontains '-certreq') { throw '未预期的 keytool 操作。' }
+        [pscustomobject]@{
+            ExitCode = $(if ($state.FailPrivateKey) { 1 } else { 0 })
+            Output = 'CSR_OUTPUT_MUST_NOT_LEAK'; Error = 'PRIVATE_KEY_ERROR_MUST_NOT_LEAK'
+        }
+    }.GetNewClosure()
+    [pscustomobject]@{ State = $state; Invoke = $invoke }
+}
+
 try {
     Test-Case 'canonical version and Gradle settings' {
         $propertiesPath = Join-Path $testRoot 'gradle.properties'
@@ -123,6 +141,42 @@ try {
         $changed = Copy-Value $candidate
         $changed.apk_sha256 = 'b' * 64
         Assert-Throws { Assert-DevMonotonic $candidate $changed } '相同版本'
+    }
+    Test-Case 'keystore verifies original certificate and private signing without exposing CSR' {
+        $fake = New-FakeKeytool
+        $savedPassword = $env:NARRA_DEV_STORE_PASSWORD
+        try {
+            $env:NARRA_DEV_STORE_PASSWORD = 'previous-test-value'
+            $output = @(Test-DevKeystore 'fixture-keystore-not-on-disk' -Keytool $fake.Invoke)
+            Assert-True ($output.Count -eq 0 -and $fake.State.Calls.Count -eq 2)
+            Assert-True ($fake.State.Calls[0] -contains '-list' -and $fake.State.Calls[1] -contains '-certreq')
+            foreach ($arguments in $fake.State.Calls) {
+                Assert-True ($arguments -notcontains '-storepass' -and $arguments -notcontains '-keypass' -and $arguments -notcontains '-file')
+                Assert-True ($arguments[[array]::IndexOf($arguments, '-storepass:env') + 1] -ceq 'NARRA_DEV_STORE_PASSWORD')
+            }
+            $probe = $fake.State.Calls[1]
+            Assert-True ($probe[[array]::IndexOf($probe, '-keypass:env') + 1] -ceq 'NARRA_DEV_STORE_PASSWORD')
+            Assert-True ($env:NARRA_DEV_STORE_PASSWORD -ceq 'previous-test-value')
+        } finally { $env:NARRA_DEV_STORE_PASSWORD = $savedPassword }
+    }
+    Test-Case 'keystore private unlock failure is safe and restores password environment' {
+        $fake = New-FakeKeytool
+        $fake.State.FailPrivateKey = $true
+        $savedPassword = $env:NARRA_DEV_STORE_PASSWORD
+        try {
+            $env:NARRA_DEV_STORE_PASSWORD = 'previous-test-value'
+            $failure = $null
+            try { Test-DevKeystore 'fixture-keystore-not-on-disk' -Keytool $fake.Invoke } catch { $failure = $_.Exception.Message }
+            Assert-True ($null -ne $failure -and $failure -match '验证 dev 私钥签名.*退出码 1')
+            Assert-True (-not $failure.Contains('CSR_OUTPUT_MUST_NOT_LEAK') -and -not $failure.Contains('PRIVATE_KEY_ERROR_MUST_NOT_LEAK'))
+            Assert-True ($fake.State.Calls.Count -eq 2 -and $env:NARRA_DEV_STORE_PASSWORD -ceq 'previous-test-value')
+        } finally { $env:NARRA_DEV_STORE_PASSWORD = $savedPassword }
+    }
+    Test-Case 'keystore certificate mismatch stops before private signing probe' {
+        $fake = New-FakeKeytool
+        $fake.State.Certificate = 'b' * 64
+        Assert-Throws { Test-DevKeystore 'fixture-keystore-not-on-disk' -Keytool $fake.Invoke } '既有 dev 证书'
+        Assert-True ($fake.State.Calls.Count -eq 1)
     }
     Test-Case 'APK identity requires dev app, exact version and one original signer' {
         $badging = "package: name='com.narra.app.dev' versionCode='20300' versionName='2.3.0-dev'"

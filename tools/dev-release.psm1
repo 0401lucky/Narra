@@ -146,15 +146,17 @@ function Assert-DevArtifact {
 }
 
 function Test-DevKeystore {
-    param([string]$Path)
+    param([string]$Path, [scriptblock]$Keytool = { param($arguments) Invoke-DevCommand keytool $arguments })
     $oldPassword = $env:NARRA_DEV_STORE_PASSWORD
     try {
         $env:NARRA_DEV_STORE_PASSWORD = 'android'
-        $result = Invoke-DevCommand keytool @('-J-Duser.language=en', '-J-Duser.country=US', '-list', '-v', '-keystore', $Path, '-alias', 'androiddebugkey', '-storepass:env', 'NARRA_DEV_STORE_PASSWORD')
+        $result = & $Keytool @('-J-Duser.language=en', '-J-Duser.country=US', '-list', '-v', '-keystore', $Path, '-alias', 'androiddebugkey', '-storepass:env', 'NARRA_DEV_STORE_PASSWORD')
         $details = Assert-DevCommand $result '读取 dev 签名'
         if ($details -notmatch 'SHA256:\s*([0-9A-Fa-f:]+)' -or $Matches[1].Replace(':', '').ToLowerInvariant() -cne $script:DevCertificate) {
             throw '还原的 keystore 不是既有 dev 证书。'
         }
+        # 证书可读不代表私钥可解锁；用当前 JDK 签署临时 CSR，捕获后丢弃，不写文件或发送请求。
+        $null = Assert-DevCommand (& $Keytool @('-J-Duser.language=en', '-J-Duser.country=US', '-certreq', '-keystore', $Path, '-alias', 'androiddebugkey', '-storepass:env', 'NARRA_DEV_STORE_PASSWORD', '-keypass:env', 'NARRA_DEV_STORE_PASSWORD')) '验证 dev 私钥签名'
     } finally { $env:NARRA_DEV_STORE_PASSWORD = $oldPassword }
 }
 

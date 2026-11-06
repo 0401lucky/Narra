@@ -28,7 +28,7 @@ switch ($Mode) {
     'VerifyKeystore' {
         Assert-DevContext
         Test-DevKeystore $KeystorePath
-        Write-Host '已确认原 dev 签名证书。'
+        Write-Host '已确认原 dev 签名证书及私钥签名可用。'
     }
     'FreezeArtifact' {
         Assert-DevContext

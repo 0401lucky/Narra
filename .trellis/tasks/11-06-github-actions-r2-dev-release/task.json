@@ -35,6 +35,8 @@
     "signing_secret_configured": true,
     "r2_secrets_configured": false,
     "first_release_run_id": 42178061696,
-    "cloud_release_state": "ready_to_rebuild_after_scope_fix"
+    "cloud_release_state": "ready_after_gradle_step_split",
+    "current_release_run_id": 42181383716,
+    "current_release_source_sha": "acb51b748dc481ba32b6f7daccfc10089347c305"
   }
 }
