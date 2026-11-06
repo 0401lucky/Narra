@@ -37,3 +37,9 @@
 - 最终冻结阶段的证书检查失败；该次未保存 artifact，也未进入 R2 发布。实际 packageDebug 执行过，不能归因于缓存；未保留失败 APK，证书差异根因仍未确定。
 - 已增加 CI-only `narraDevCi` 明确绑定临时目录中的原 key，并在构建前校验 Gradle signingReport；最终诊断输出公有指纹与记录数、工具版本。继续保留单一原证书要求。见 [签名绑定后续检查](signing-binding-followup.md)。
 - 两种 PowerShell 启动方式各 37 项通过；后续必须继续取得真实云端 APK 验证结果。
+
+## 证书输出协议漂移
+
+- `59905a88` 的 [Dev Release 42192056230](https://github.com/0401lucky/Narra/actions/runs/42192056230) 已通过 Gradle 原签名绑定和全部 Android 门禁；冻结阶段使用镜像最高的 build-tools 37.0.0，未能解析证书记录。
+- 真实旧公开 APK 在官方 37 工具中验证成功，但证书行改为 `V2 Signer: ...`，而版本命令仍报 0.9；这已解释零记录错误，不能视为实际错误证书。
+- 已固定验证工具为 36.1.0 并显式安装，真实旧 APK 的完整调用链通过，官方 Linux / 本机验证 jar 哈希一致。下一轮仍须核验新产物；详见 [验证器固定版本](verifier-pin-followup.md)。

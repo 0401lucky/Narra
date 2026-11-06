@@ -53,6 +53,11 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
 - APK 身份校验必须保留唯一原证书限制。失败区分无法解析、多个证书记录和不同指纹，
   诊断只输出预期 / 实际 SHA-256、记录数、不同指纹数以及所选 build-tools / apksigner
   版本；不得把重复记录直接去重后放行，也不输出原始证书主题、完整工具输出或 CSR。
+- APK 验证工具固定为 build-tools `36.1.0`：setup-android 显式安装
+  `platform-tools build-tools;36.1.0`，`Get-DevVerificationTools` 只选择此目录的 aapt2
+  和 apksigner；缺失或不完整时失败，不能选择镜像中最高版本作为替代。37.0.0 已将
+  证书行改为 `V2 Signer: ...`，但自身版本仍报 `0.9`，不能只凭该版本号推断输出协议
+  相同。升级固定版本时需用真实公开 APK 验证完整原生命令 / 输出解析链。
 - `Assert-DevArtifact -CheckRun` 绑定当前 run / source，允许使用较早 attempt 已完成
   构建的 artifact。重试发布不能要求原产物的 attempt 等于最新 attempt，也不能
   默默重编译后覆盖同版本对象。
@@ -106,6 +111,8 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
   证书不匹配时不得签名；断言密码环境恢复、CSR 与失败诊断不泄漏。签名报告解析还需
   覆盖 baseline 块不干扰 debug、配置 / 路径 / alias / 指纹错误、缺失 / 重复 debug，
   以及 APK 未解析 / 重复记录的安全诊断。
+- 验证工具选择需覆盖“更高版本并存仍选固定版本”及“固定版本缺失 / 不完整不得回退”，
+  同时核对 workflow 的显式 SDK 安装版本。工具升级不能仅用手写证书字符串测试。
 - `tools/tests/dev-release-entry.tests.ps1`：直接运行真实 Publish / PreparePages /
   VerifyPublished，只替换最底层 Git / S3 / HTTP / 等待；覆盖跨模块 closure、
   七文件暂存范围、main 竞争后的原 artifact 重试，以及失败时清单写入为零。

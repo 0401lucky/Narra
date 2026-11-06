@@ -9,6 +9,8 @@
 签名预检及 66 次复验见 [packageDebug 后续调整](package-debug-followup.md)，打包根因仍待真实堆栈确认。
 第三轮 Android 门禁已通过，冻结时的证书失败及其显式签名绑定 / 安全诊断调整见
 [Gradle 签名绑定后续记录](signing-binding-followup.md)；本轮离线复验为两种启动方式各 37 项。
+第四轮签名绑定通过后已定位为 SDK 37 证书行格式漂移；固定 36.1.0、真实 APK 调用链
+和各 39 项双启动复验见 [验证器版本固定](verifier-pin-followup.md)。
 
 ## 结论
 

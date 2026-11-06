@@ -133,6 +133,19 @@ BUILD SUCCESSFUL
 "@
 }
 
+function New-FakeVerificationSdk {
+    param([string[]]$Versions)
+    $sdk = Join-Path $testRoot ('sdk-' + [guid]::NewGuid().ToString('N'))
+    foreach ($version in $Versions) {
+        $directory = Join-Path $sdk "build-tools/$version"
+        New-Item -ItemType Directory -Path (Join-Path $directory 'lib') -Force | Out-Null
+        $aapt = Join-Path $directory $(if ($IsWindows) { 'aapt2.exe' } else { 'aapt2' })
+        [IO.File]::WriteAllText($aapt, 'offline fixture, never executed')
+        [IO.File]::WriteAllText((Join-Path $directory 'lib/apksigner.jar'), 'offline fixture, never executed')
+    }
+    $sdk
+}
+
 try {
     Test-Case 'canonical version and Gradle settings' {
         $propertiesPath = Join-Path $testRoot 'gradle.properties'
@@ -225,6 +238,24 @@ try {
         Assert-Throws { Assert-DevGradleSigningReport ($report.Replace('Variant: debug', 'Variant: release')) $store } '唯一 debug'
         Assert-Throws { Assert-DevGradleSigningReport ($report + "`n" + $report) $store } '唯一 debug'
         Assert-Throws { Assert-DevGradleSigningReport ([regex]::Replace($report, '(?m)^SHA-256:.*$', '')) $store } 'SHA-256'
+    }
+    Test-Case 'APK verification pins 36.1.0 even when newer build-tools exist' {
+        $sdk = New-FakeVerificationSdk @('36.0.0', '36.1.0', '37.0.0')
+        $selected = Get-DevVerificationTools $sdk
+        Assert-True ($selected.Version -ceq '36.1.0')
+        Assert-True ($selected.Aapt -ceq (Join-Path $sdk $(if ($IsWindows) { 'build-tools/36.1.0/aapt2.exe' } else { 'build-tools/36.1.0/aapt2' })))
+        Assert-True ($selected.Apksigner -ceq (Join-Path $sdk 'build-tools/36.1.0/lib/apksigner.jar'))
+        $workflow = Get-Content -LiteralPath (Join-Path $repository '.github/workflows/dev-release.yml') -Raw
+        $packages = ([regex]::Match($workflow, '(?m)^\s+packages:\s*([^\r\n]+)').Groups[1].Value.Trim().Trim([char]34, [char]39)) -split '\s+'
+        Assert-True ($packages -contains 'platform-tools' -and $packages -contains "build-tools;$($selected.Version)") '工作流没有明确安装固定验证器。'
+    }
+    Test-Case 'APK verification fails for missing or incomplete pin instead of falling back' {
+        $sdk = New-FakeVerificationSdk @('37.0.0')
+        Assert-Throws { Get-DevVerificationTools $sdk } '36\.1\.0.*禁止回退'
+        $sdk = New-FakeVerificationSdk @('36.1.0', '37.0.0')
+        Remove-Item -LiteralPath (Join-Path $sdk 'build-tools/36.1.0/lib/apksigner.jar')
+        Assert-Throws { Get-DevVerificationTools $sdk } '36\.1\.0.*禁止回退'
+        Assert-Throws { Get-DevVerificationTools '' } '缺少 Android SDK'
     }
     Test-Case 'APK identity requires dev app, exact version and one original signer' {
         $badging = "package: name='com.narra.app.dev' versionCode='20300' versionName='2.3.0-dev'"

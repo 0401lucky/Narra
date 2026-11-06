@@ -16,7 +16,7 @@
 
 1. **预检**：锁定触发时 `main` 的完整 SHA，核对目标版本、渠道、必需配置、现有清单及发布对象；非本仓库 / 非 main 直接失败，不接触签名或 R2 写入。
 2. **构建与验证**：在 `ubuntu-24.04 / JDK 17` 还原原 dev keystore，核验证书和私钥签名，并用 Gradle signingReport 确认 debug 实际绑定该文件及原证书；从锁定提交分别执行 `assembleDebug`、JVM、Lint、截图 verify，禁止 record 基准。
-3. **产物冻结**：使用 Android SDK 的 APK / 签名工具检查实际包名、版本及签名；计算 SHA-256，产生 `release-info.json`，上传明确文件列表的 Actions artifact。
+3. **产物冻结**：使用 workflow 明确安装的 build-tools `36.1.0` APK / 签名工具检查实际包名、版本及签名；不按镜像中的最高版本漂移。计算 SHA-256，产生 `release-info.json`，上传明确文件列表的 Actions artifact。
 4. **R2 发布**：单独 job 下载上一步 artifact，再次核对哈希和来源。检查远端同名对象；首次上传后回拉并验 SHA，再检查公开 URL 的 HTTP 状态、大小、类型和完整内容哈希。
 5. **清单提交**：只有步骤 4 成功后才生成新 `dev.json`、候选记录和已发布文档。以新鲜的 `main` 为基线重查版本、只提交允许的发布文件，以普通快进 push 更新 main。
 6. **Pages 部署**：显式调用可复用的 Pages workflow，把含新清单的 docs 部署到现有站点。该步骤不依赖 bot push 再触发其他工作流。

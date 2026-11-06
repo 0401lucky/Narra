@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:DevCertificate = '3a6c57eec0641bc00830252eb821d62c9e9b2f639c5989d0bc42b29b843546e8'
+$script:DevVerificationBuildTools = '36.1.0'
 $script:MetadataUrl = 'https://0401lucky.github.io/Narra/updates/dev.json'
 $script:DownloadBase = 'https://download.lsa1230.dpdns.org/dev/'
 $script:ApkContentType = 'application/vnd.android.package-archive'
@@ -201,6 +202,18 @@ function Assert-DevGradleSigningReport {
     }
 }
 
+function Get-DevVerificationTools {
+    param([string]$SdkRoot)
+    if ([string]::IsNullOrWhiteSpace($SdkRoot)) { throw '缺少 Android SDK 目录。' }
+    $directory = Join-Path $SdkRoot "build-tools/$script:DevVerificationBuildTools"
+    $aapt = Join-Path $directory $(if ($IsWindows) { 'aapt2.exe' } else { 'aapt2' })
+    $apksigner = Join-Path $directory 'lib/apksigner.jar'
+    if (-not (Test-Path -LiteralPath $aapt -PathType Leaf) -or -not (Test-Path -LiteralPath $apksigner -PathType Leaf)) {
+        throw "缺少固定的 Android build-tools $script:DevVerificationBuildTools（aapt2 / apksigner）；请安装该版本，禁止回退到其他版本。"
+    }
+    [pscustomobject]@{ Version = $script:DevVerificationBuildTools; Aapt = $aapt; Apksigner = $apksigner }
+}
+
 function New-DevArtifact {
     param([string]$RepoRoot, [string]$Version, [string]$ArtifactDirectory)
     $source = Assert-DevCommand (Invoke-DevCommand git @('-C', $RepoRoot, 'rev-parse', 'HEAD')) '检查实际构建提交'
@@ -211,14 +224,12 @@ function New-DevArtifact {
     if ($notes.version -cne $Version) { throw '发行说明版本与构建版本不一致。' }
     $apk = Join-Path $RepoRoot "app/build/outputs/apk/debug/$($target.ApkName)"
     $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { $env:ANDROID_SDK_ROOT }
-    $buildTools = Get-ChildItem -LiteralPath (Join-Path $sdk 'build-tools') -Directory |
-        Where-Object Name -Match '^\d+\.\d+\.\d+$' | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
-    if (-not $buildTools) { throw '缺少 Android build-tools。' }
-    $aapt = Join-Path $buildTools.FullName $(if ($IsWindows) { 'aapt2.exe' } else { 'aapt2' })
-    $apksigner = Join-Path $buildTools.FullName 'lib/apksigner.jar'
+    $verificationTools = Get-DevVerificationTools $sdk
+    $aapt = $verificationTools.Aapt
+    $apksigner = $verificationTools.Apksigner
     $apksignerVersion = Assert-DevCommand (Invoke-DevCommand java @('-jar', $apksigner, 'version')) '读取 apksigner 版本'
     if ($apksignerVersion -cnotmatch '^[A-Za-z0-9.+-]{1,40}$') { throw '无法识别 apksigner 版本。' }
-    Write-Host "APK 校验工具：build-tools=$($buildTools.Name); apksigner=$apksignerVersion"
+    Write-Host "APK 校验工具：build-tools=$($verificationTools.Version); apksigner=$apksignerVersion"
     $badging = Assert-DevCommand (Invoke-DevCommand $aapt @('dump', 'badging', $apk)) '检查 APK 包信息'
     $signature = Assert-DevCommand (Invoke-DevCommand java @('-jar', $apksigner, 'verify', '--verbose', '--print-certs', $apk)) '校验 APK 签名'
     Assert-DevApkIdentity $badging $signature $Version
@@ -231,7 +242,7 @@ function New-DevArtifact {
         application_id = 'com.narra.app.dev'; channel = 'dev'; apk_name = $target.ApkName
         apk_size = (Get-Item -LiteralPath $apk).Length; apk_sha256 = Get-DevSha256 $apk
         signing_certificate_sha256 = $script:DevCertificate; built_at = [DateTimeOffset]::UtcNow.ToString('o')
-        apk_verification_build_tools = $buildTools.Name; apksigner_version = $apksignerVersion; java_version = ($javaVersion -split "`n")[0].Trim()
+        apk_verification_build_tools = $verificationTools.Version; apksigner_version = $apksignerVersion; java_version = ($javaVersion -split "`n")[0].Trim()
         release_notes = @($notes.release_notes)
     }
     Assert-DevArtifact ([pscustomobject]$info) $apk $Version -CheckRun
