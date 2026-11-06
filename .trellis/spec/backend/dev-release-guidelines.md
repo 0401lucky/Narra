@@ -13,8 +13,8 @@
 # 人工指定已提交到 main 的版本，触发后自动完成。
 gh workflow run dev-release.yml --repo 0401lucky/Narra --ref main -f version=2.3.0
 
-# 离线检查；内部包含真实入口测试，使用隔离目录和假外部调用。
-pwsh -NoProfile -File tools/tests/dev-release.tests.ps1
+# 离线检查；模块和真实入口均覆盖 -File 与 GitHub pwsh wrapper 启动。
+pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
 ```
 
 `dev-release.ps1` 要求 PowerShell 7.2+，接受 `-Mode`：`Preflight`、
@@ -52,6 +52,10 @@ pwsh -NoProfile -File tools/tests/dev-release.tests.ps1
   `VerifyPublished` 成功。
 - 自动发布只暂存 `Write-DevReleaseDocuments` 返回的七个文档路径；主会话提交仍需
   排除用户原有修改。不能把 runner 的干净工作树假设套用到本机工作区。
+- `GetNewClosure()` 创建独立动态模块，不继承调用脚本的私有函数，也不会自动捕获
+  所有上层变量。闭包所需 helper scriptblock、数据和前态先绑定到当前局部变量；
+  生产入口显式 `Import-Module ... -Scope Global`，让发布函数可被这些闭包解析。
+  不能用全局测试桩或跳过模块导入来补齐生产入口原本缺少的依赖。
 
 ## 4. Validation & Error Matrix
 
@@ -79,12 +83,18 @@ pwsh -NoProfile -File tools/tests/dev-release.tests.ps1
 
 ## 6. Tests Required
 
+- `tools/tests/dev-release-startup.tests.ps1`：统一门禁，同一套模块与真实入口测试分别
+  用 `pwsh -File` 和 GitHub 的 `pwsh -Command ". '<step.ps1>'"` 启动，wrapper 再调用
+  测试脚本。后者多一层脚本作用域，单独 `-File` 通过不能作为其通过证据。
 - `tools/tests/dev-release.tests.ps1`：版本 / 上下文、APK 身份、来源 / attempt、
   元数据单调性、403 / 404、原子上传和 GitHub 输出名称；输出字段如 `apk_sha256`
-  必须允许合法数字。
+  必须允许合法数字。失败注入同时断言指定阶段 / 原因，不能把 helper 缺失等任意
+  异常算作预期网络失败。
 - `tools/tests/dev-release-entry.tests.ps1`：直接运行真实 Publish / PreparePages /
   VerifyPublished，只替换最底层 Git / S3 / HTTP / 等待；覆盖跨模块 closure、
   七文件暂存范围、main 竞争后的原 artifact 重试，以及失败时清单写入为零。
+  测试移除宿主预载的模块导出后，执行入口真实 `Import-Module` 和其作用域选项，
+  随后才装配 I/O 桩，避免宿主导出掩盖生产闭包作用域错误。
 - workflow 变更执行 actionlint 与 PowerShell 语法检查；云端保留 JVM、Lint、
   debug 构建和截图 verify。不得用截图 record 接纳差异。
 - 真实发版必须另外记录 Actions run、APK 签名 / SHA、R2 回拉、公开下载和旧

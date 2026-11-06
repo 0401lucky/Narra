@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $entryPath = Join-Path $repository 'tools/dev-release.ps1'
 $modulePath = Join-Path $repository 'tools/dev-release.psm1'
-$releaseModule = Import-Module $modulePath -Force -DisableNameChecking -PassThru
+$releaseModule = Import-Module $modulePath -Force -DisableNameChecking -Scope Global -PassThru
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('narra-dev-entry-tests-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 $passed = 0
@@ -122,9 +122,28 @@ Set-Item -Path function:global:Invoke-DevCommand -Value $nativeStub
 Set-Item -Path function:global:Invoke-WebRequest -Value $httpStub
 Set-Item -Path function:global:Start-Sleep -Value $sleepStub
 $global:NarraDevEntryModulePath = $modulePath
+$global:NarraDevEntryExports = @($releaseModule.ExportedFunctions.Keys)
+$global:NarraDevEntryAdapters = @{ Native = $nativeStub; Http = $httpStub; Sleep = $sleepStub }
 function global:Import-Module {
-    param([string]$Name, [switch]$Force, [switch]$DisableNameChecking)
+    param([string]$Name, [switch]$Force, [switch]$DisableNameChecking, [string]$Scope)
     if ($Name -cne $global:NarraDevEntryModulePath) { throw '入口试图载入其他模块。' }
+    # 移除测试宿主预载的导出，避免宿主替生产入口补齐本应由其导入的函数。
+    foreach ($command in $global:NarraDevEntryExports) {
+        Remove-Item -LiteralPath ('function:global:' + $command) -ErrorAction SilentlyContinue
+    }
+    # 执行真实导入及其作用域选项，再仅替换 I/O；不能跳过导入而掩盖生产闭包的可见性问题。
+    $loaded = Microsoft.PowerShell.Core\Import-Module @PSBoundParameters -PassThru
+    $adapters = $global:NarraDevEntryAdapters
+    & $loaded {
+        param($Native, $Http, $Sleep)
+        Set-Item -Path function:script:Invoke-DevCommand -Value $Native
+        Set-Item -Path function:script:Invoke-WebRequest -Value $Http
+        Set-Item -Path function:script:Start-Sleep -Value $Sleep
+    } $adapters.Native $adapters.Http $adapters.Sleep
+    Set-Item -Path function:global:Invoke-DevCommand -Value $adapters.Native
+    Set-Item -Path function:global:Invoke-WebRequest -Value $adapters.Http
+    Set-Item -Path function:global:Start-Sleep -Value $adapters.Sleep
+    $global:NarraDevEntryState.Imports++
 }
 
 function New-EntryFixture {
@@ -161,7 +180,7 @@ function New-EntryFixture {
         RepoRoot = $repoRoot; ArtifactDirectory = $artifactDirectory; Info = $info; ApkBytes = $bytes; Old = $old; Candidate = $candidate
         Calls = [Collections.Generic.List[string]]::new(); AllowedPaths = $allowedPaths; Staged = @(); Dirty = ''; Head = ('b' * 40)
         Ancestor = $true; Fetches = 0; AdvanceAfterFetch = 0; Commits = 0; Pushes = 0; FailPush = $false; PushedMetadata = $old
-        HeadError = ''; ObjectExists = $false; Puts = 0; CorruptPublic = $false; PublicMetadata = @($old); MetadataReads = 0; Sleeps = 0
+        HeadError = ''; ObjectExists = $false; Puts = 0; CorruptPublic = $false; PublicMetadata = @($old); MetadataReads = 0; Sleeps = 0; Imports = 0
     }
     $env:GITHUB_ACTIONS = 'true'; $env:GITHUB_EVENT_NAME = 'workflow_dispatch'; $env:GITHUB_REPOSITORY = '0401lucky/Narra'
     $env:GITHUB_REF = 'refs/heads/main'; $env:GITHUB_SHA = $info.source_sha; $env:GITHUB_RUN_ID = '123'; $env:GITHUB_RUN_ATTEMPT = '1'
@@ -186,6 +205,7 @@ try {
         Invoke-EntryPublish
         Assert-EntryTrue ($state.Puts -eq 1 -and $state.Commits -eq 1 -and $state.Pushes -eq 1)
         Assert-EntryTrue ($state.Fetches -eq 3 -and $state.MetadataReads -eq 2)
+        Assert-EntryTrue ($state.Imports -eq 1) '没有执行生产入口的真实模块导入。'
         $calls = $state.Calls -join "`n"
         Assert-EntryTrue ($calls -match '(?s)s3:put-object.*s3:get-object.*http:apk-head.*http:apk-get.*http:metadata.*git:add.*git:.*commit.*git:push') '副作用顺序不正确。'
         Assert-EntryTrue ($state.PushedMetadata.apk_sha256 -ceq $state.Info.apk_sha256)

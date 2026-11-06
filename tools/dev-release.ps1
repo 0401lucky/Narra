@@ -11,7 +11,8 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'dev-release.psm1') -Force -DisableNameChecking
+# GetNewClosure 使用独立动态模块；显式导出到全局，保证 Actions wrapper 下也能解析发布函数。
+Import-Module (Join-Path $PSScriptRoot 'dev-release.psm1') -Force -DisableNameChecking -Scope Global
 
 switch ($Mode) {
     'Preflight' {

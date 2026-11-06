@@ -33,6 +33,8 @@
     "implementation_complete": true,
     "local_check_passed": true,
     "signing_secret_configured": true,
-    "r2_secrets_configured": false
+    "r2_secrets_configured": false,
+    "first_release_run_id": 42178061696,
+    "cloud_release_state": "ready_to_rebuild_after_scope_fix"
   }
 }

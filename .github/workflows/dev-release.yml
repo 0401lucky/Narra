@@ -64,7 +64,7 @@ jobs:
 
       - name: Test release guards
         shell: pwsh
-        run: ./tools/tests/dev-release.tests.ps1
+        run: ./tools/tests/dev-release-startup.tests.ps1
 
       - name: Build and run JVM and lint checks
         run: |

@@ -1,8 +1,11 @@
 #requires -Version 7.2
+[CmdletBinding()]
+param([switch]$SkipEntryTests)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-Import-Module (Join-Path $repository 'tools/dev-release.psm1') -Force -DisableNameChecking
+Import-Module (Join-Path $repository 'tools/dev-release.psm1') -Force -DisableNameChecking -Scope Global
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('narra-dev-tests-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 $passed = 0
@@ -45,6 +48,10 @@ $old.latest_version_code = 20212
 $old.apk_url = Get-DevApkUrl '2.2.12'
 
 function New-FakeR2 {
+    # 动态模块不继承调用脚本的私有函数或上层变量，先把依赖绑定到当前局部作用域。
+    $assertTrue = ${function:Assert-True}
+    $fixtureBytes = [IO.File]::ReadAllBytes($apk)
+    $expectedUrl = Get-DevApkUrl $info.version
     $state = @{
         Calls = [Collections.Generic.List[string]]::new(); Exists = $false; HeadError = ''; PutRace = $false
         WrongBytes = $false; FailGet = $false; FailPublic = $false; Puts = 0
@@ -53,22 +60,22 @@ function New-FakeR2 {
         param([string[]]$arguments)
         $operation = $arguments[[array]::IndexOf($arguments, 's3api') + 1]
         $state.Calls.Add($operation)
-        Assert-True ($arguments[[array]::IndexOf($arguments, '--bucket') + 1] -ceq 'narra-updates')
-        Assert-True ($arguments[[array]::IndexOf($arguments, '--key') + 1] -ceq 'dev/Narra-v2.3.0-dev-20300-dev.apk')
+        & $assertTrue ($arguments[[array]::IndexOf($arguments, '--bucket') + 1] -ceq 'narra-updates')
+        & $assertTrue ($arguments[[array]::IndexOf($arguments, '--key') + 1] -ceq 'dev/Narra-v2.3.0-dev-20300-dev.apk')
         switch ($operation) {
             'head-object' {
                 if ($state.HeadError) { return [pscustomobject]@{ ExitCode = 255; Output = ''; Error = "An error occurred ($($state.HeadError)) when calling the HeadObject operation" } }
                 if (-not $state.Exists) { return [pscustomobject]@{ ExitCode = 255; Output = ''; Error = 'An error occurred (404) when calling the HeadObject operation' } }
             }
             'put-object' {
-                Assert-True ($arguments[[array]::IndexOf($arguments, '--if-none-match') + 1] -ceq '*') '缺少服务端原子防覆盖条件'
+                & $assertTrue ($arguments[[array]::IndexOf($arguments, '--if-none-match') + 1] -ceq '*') '缺少服务端原子防覆盖条件'
                 $state.Puts++
                 $state.Exists = $true
                 if ($state.PutRace) { return [pscustomobject]@{ ExitCode = 255; Output = ''; Error = 'An error occurred (PreconditionFailed) when calling the PutObject operation' } }
             }
             'get-object' {
                 if ($state.FailGet) { return [pscustomobject]@{ ExitCode = 255; Output = ''; Error = 'An error occurred (AccessDenied) when calling the GetObject operation' } }
-                $bytes = if ($state.WrongBytes) { [Text.Encoding]::UTF8.GetBytes('不同的 APK') } else { [IO.File]::ReadAllBytes($apk) }
+                $bytes = if ($state.WrongBytes) { [Text.Encoding]::UTF8.GetBytes('不同的 APK') } else { $fixtureBytes }
                 [IO.File]::WriteAllBytes($arguments[-1], $bytes)
             }
             default { throw "不应执行：$operation" }
@@ -78,7 +85,7 @@ function New-FakeR2 {
     $public = {
         param($url, $artifact, $path)
         $state.Calls.Add('public-verify')
-        Assert-True ($url -ceq (Get-DevApkUrl $artifact.version))
+        & $assertTrue ($url -ceq $expectedUrl)
         if ($state.FailPublic) { throw '公开 APK 验证失败' }
     }.GetNewClosure()
     [pscustomobject]@{ State = $state; S3 = $s3; Verify = $public }
@@ -173,15 +180,18 @@ try {
             $fake = New-FakeR2
             $fake.State[$failure] = $true
             $written = [Collections.Generic.List[string]]::new()
-            Assert-Throws { Invoke-DevPublication $candidate { $old } { Invoke-FakeUpload $fake } { $written.Add('commit') } }
+            $failurePattern = if ($failure -eq 'FailGet') { '远端回拉' } else { '公开 APK' }
+            Assert-Throws { Invoke-DevPublication $candidate { $old } { Invoke-FakeUpload $fake } { $written.Add('commit') } } $failurePattern
             Assert-True ($written.Count -eq 0)
+            Assert-True ($fake.State.Calls.Contains($(if ($failure -eq 'FailGet') { 'get-object' } else { 'public-verify' })))
         }
     }
     Test-Case 'publication rechecks version after upload' {
         $state = @{ Reads = 0; Commits = 0; Uploads = 0 }
+        $previous = $old
         $newer = Copy-Value $candidate
         $newer.latest_version_name = '2.3.1-dev'; $newer.latest_version_code = 20301; $newer.apk_url = Get-DevApkUrl '2.3.1'
-        $read = { $state.Reads++; if ($state.Reads -eq 1) { $old } else { $newer } }.GetNewClosure()
+        $read = { $state.Reads++; if ($state.Reads -eq 1) { $previous } else { $newer } }.GetNewClosure()
         Assert-Throws { Invoke-DevPublication $candidate $read { $state.Uploads++ } { $state.Commits++ } } '降级'
         Assert-True ($state.Reads -eq 2 -and $state.Uploads -eq 1 -and $state.Commits -eq 0)
     }
@@ -262,6 +272,8 @@ try {
 }
 Write-Host "Dev release tests: $passed passed, $failed failed."
 if ($failed) { exit 1 }
-$entryTestRunner = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
-& $entryTestRunner -NoProfile -NonInteractive -File (Join-Path $PSScriptRoot 'dev-release-entry.tests.ps1')
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (-not $SkipEntryTests) {
+    $entryTestRunner = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+    & $entryTestRunner -NoProfile -NonInteractive -File (Join-Path $PSScriptRoot 'dev-release-entry.tests.ps1')
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}

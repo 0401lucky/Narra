@@ -39,3 +39,11 @@
 - 独立检查通过：30 项离线发布测试、18 项更新协议 JVM 测试；PowerShell 语法及 actionlint 通过。
 - Android Lint 无错误，55 Warning / 3 Hint，与原基线计数一致。
 - 新 APK 将由 GitHub Actions 构建；R2 凭据当前仍待 Chrome 连接恢复后配置。构建 job 可独立生成有原签名的 artifact，发布失败可从原 artifact 重试。
+
+## 首次 CI 后的修复提交
+
+提交：`fix(ci): 修复 PowerShell 发布入口的启动作用域`
+
+- 本次仅包含发布入口、两份已有测试、新启动测试门禁、对应 workflow、发布规范及本任务的 CI / 复现记录。
+- 收录三份简短 wrapper 作为可执行复现入口；忽略的本机日志不提交。
+- 同一组 30 个发布用例在两种启动方式下各通过一次；普通 Android Quality 已对 `95460b58` 完整通过，App / Gradle / 版本配置未因本次修复改变。
