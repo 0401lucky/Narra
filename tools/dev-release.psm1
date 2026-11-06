@@ -165,8 +165,40 @@ function Assert-DevApkIdentity {
     $target = Get-DevVersion $Version
     if ($Badging -notmatch "(?m)^package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'" -or
         $Matches[1] -cne 'com.narra.app.dev' -or $Matches[2] -ne [string]$target.Code -or $Matches[3] -cne $target.Name) { throw '实际 APK 包名或版本不正确。' }
-    $certificates = [regex]::Matches($Signature, 'Signer #[0-9]+ certificate SHA-256 digest:\s*([a-fA-F0-9]+)')
-    if ($certificates.Count -ne 1 -or $certificates[0].Groups[1].Value.ToLowerInvariant() -cne $script:DevCertificate) { throw 'APK 签名证书与既有 dev 证书不一致。' }
+    $certificates = [regex]::Matches($Signature, '(?m)^Signer #[0-9]+ certificate SHA-256 digest:[ \t]*([a-fA-F0-9]+)[ \t]*\r?$')
+    $fingerprints = @($certificates | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Where-Object { $_ -cmatch '^[a-f0-9]{64}$' })
+    $distinct = @($fingerprints | Select-Object -Unique)
+    $actual = if ($distinct.Count) { $distinct -join ',' } else { 'unparsed' }
+    $diagnostic = "expected_sha256=$script:DevCertificate; certificate_records=$($certificates.Count); distinct_certificates=$($distinct.Count); actual_sha256=$actual"
+    Write-Host "APK 签名诊断：$diagnostic"
+    if ($certificates.Count -eq 0 -or $fingerprints.Count -ne $certificates.Count) { throw "无法解析 APK 签名证书输出。$diagnostic" }
+    if ($certificates.Count -ne 1 -or $fingerprints[0] -cne $script:DevCertificate) { throw "APK 签名证书与既有 dev 证书不一致。$diagnostic" }
+}
+
+function Assert-DevGradleSigningReport {
+    param([string]$Report, [string]$ExpectedKeystorePath)
+    $blocks = [regex]::Matches($Report, '(?ms)^Variant:[ \t]*debug[ \t]*\r?\n(?<details>.*?)(?=^-{5,}[ \t]*\r?$|^Variant:|\z)')
+    if ($blocks.Count -ne 1) { throw 'Gradle 签名报告必须包含唯一 debug 变体。' }
+    $details = $blocks[0].Groups['details'].Value
+    $fields = @{}
+    foreach ($name in @('Config', 'Store', 'Alias', 'SHA-256')) {
+        $fieldMatches = [regex]::Matches($details, '(?m)^' + [regex]::Escape($name) + ':[ \t]*([^\r\n]+)\r?$')
+        if ($fieldMatches.Count -ne 1) { throw "Gradle debug 签名报告缺少唯一 $name 字段。" }
+        $fields[$name] = $fieldMatches[0].Groups[1].Value.Trim()
+    }
+    $fingerprint = $fields['SHA-256'].Replace(':', '').ToLowerInvariant()
+    if ($fingerprint -cnotmatch '^[a-f0-9]{64}$') { throw '无法解析 Gradle debug 签名证书指纹。' }
+    try {
+        if (-not [IO.Path]::IsPathFullyQualified($ExpectedKeystorePath) -or -not [IO.Path]::IsPathFullyQualified($fields.Store)) { throw '非绝对路径' }
+        $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+        $pathMatches = [string]::Equals([IO.Path]::GetFullPath($ExpectedKeystorePath), [IO.Path]::GetFullPath($fields.Store), $comparison)
+    } catch { throw 'Gradle debug 签名路径无效。' }
+    $configMatches = $fields.Config -ceq 'narraDevCi' -and $fields.Alias -ceq 'androiddebugkey'
+    $diagnostic = "config_matches=$configMatches; store_path_matches=$pathMatches; expected_sha256=$script:DevCertificate; actual_sha256=$fingerprint"
+    Write-Host "Gradle debug 签名诊断：$diagnostic"
+    if (-not $configMatches -or -not $pathMatches -or $fingerprint -cne $script:DevCertificate) {
+        throw "Gradle debug 签名未绑定原 CI dev keystore。$diagnostic"
+    }
 }
 
 function New-DevArtifact {
@@ -183,8 +215,12 @@ function New-DevArtifact {
         Where-Object Name -Match '^\d+\.\d+\.\d+$' | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
     if (-not $buildTools) { throw '缺少 Android build-tools。' }
     $aapt = Join-Path $buildTools.FullName $(if ($IsWindows) { 'aapt2.exe' } else { 'aapt2' })
+    $apksigner = Join-Path $buildTools.FullName 'lib/apksigner.jar'
+    $apksignerVersion = Assert-DevCommand (Invoke-DevCommand java @('-jar', $apksigner, 'version')) '读取 apksigner 版本'
+    if ($apksignerVersion -cnotmatch '^[A-Za-z0-9.+-]{1,40}$') { throw '无法识别 apksigner 版本。' }
+    Write-Host "APK 校验工具：build-tools=$($buildTools.Name); apksigner=$apksignerVersion"
     $badging = Assert-DevCommand (Invoke-DevCommand $aapt @('dump', 'badging', $apk)) '检查 APK 包信息'
-    $signature = Assert-DevCommand (Invoke-DevCommand java @('-jar', (Join-Path $buildTools.FullName 'lib/apksigner.jar'), 'verify', '--verbose', '--print-certs', $apk)) '校验 APK 签名'
+    $signature = Assert-DevCommand (Invoke-DevCommand java @('-jar', $apksigner, 'verify', '--verbose', '--print-certs', $apk)) '校验 APK 签名'
     Assert-DevApkIdentity $badging $signature $Version
     $javaVersion = Assert-DevCommand (Invoke-DevCommand java @('--version')) '读取 JDK 版本'
     $info = [ordered]@{
@@ -195,7 +231,7 @@ function New-DevArtifact {
         application_id = 'com.narra.app.dev'; channel = 'dev'; apk_name = $target.ApkName
         apk_size = (Get-Item -LiteralPath $apk).Length; apk_sha256 = Get-DevSha256 $apk
         signing_certificate_sha256 = $script:DevCertificate; built_at = [DateTimeOffset]::UtcNow.ToString('o')
-        apk_verification_build_tools = $buildTools.Name; java_version = ($javaVersion -split "`n")[0].Trim()
+        apk_verification_build_tools = $buildTools.Name; apksigner_version = $apksignerVersion; java_version = ($javaVersion -split "`n")[0].Trim()
         release_notes = @($notes.release_notes)
     }
     Assert-DevArtifact ([pscustomobject]$info) $apk $Version -CheckRun

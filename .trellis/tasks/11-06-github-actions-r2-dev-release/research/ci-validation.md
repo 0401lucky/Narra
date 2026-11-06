@@ -30,3 +30,10 @@
 - 原签名恢复 / 校验及新的两种 PowerShell 启动门禁均已在 Linux 成功。组合 Gradle 调用随后在 `:app:packageDebug` 失败，日志只有 `PackageAndroidArtifact$IncrementalSplitterRunnable`，没有根因堆栈；未上传 APK 或清单。
 - 相同提交的普通 Android Quality `42181377835` 全部成功；因此发版流程改为已有成功路径的 assemble → JVM → Lint → 截图独立调用，全部启用 `--stacktrace`。并增加当前 JDK 的私钥签名预检；本机原私钥解锁及签名探针也已通过。
 - 本次根因尚未确认，不能把并发或内存冲突当作已证实结论。详见 [打包后续检查](package-debug-followup.md)。
+
+## 分步调用后的重跑
+
+- `afde0f10` 的 [Dev Release 42185037764](https://github.com/0401lucky/Narra/actions/runs/42185037764) 已通过 JDK 17 私钥签名预检、两种启动方式、APK 构建、完整 JVM、Lint 和截图 verify。
+- 最终冻结阶段的证书检查失败；该次未保存 artifact，也未进入 R2 发布。实际 packageDebug 执行过，不能归因于缓存；未保留失败 APK，证书差异根因仍未确定。
+- 已增加 CI-only `narraDevCi` 明确绑定临时目录中的原 key，并在构建前校验 Gradle signingReport；最终诊断输出公有指纹与记录数、工具版本。继续保留单一原证书要求。见 [签名绑定后续检查](signing-binding-followup.md)。
+- 两种 PowerShell 启动方式各 37 项通过；后续必须继续取得真实云端 APK 验证结果。

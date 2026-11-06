@@ -15,7 +15,7 @@
 ## 数据流与 job 顺序
 
 1. **预检**：锁定触发时 `main` 的完整 SHA，核对目标版本、渠道、必需配置、现有清单及发布对象；非本仓库 / 非 main 直接失败，不接触签名或 R2 写入。
-2. **构建与验证**：在 `ubuntu-24.04 / JDK 17` 还原原 dev keystore，先核验证书；从锁定提交执行 JVM、Lint、截图 verify 和 `assembleDebug`，禁止 record 基准。
+2. **构建与验证**：在 `ubuntu-24.04 / JDK 17` 还原原 dev keystore，核验证书和私钥签名，并用 Gradle signingReport 确认 debug 实际绑定该文件及原证书；从锁定提交分别执行 `assembleDebug`、JVM、Lint、截图 verify，禁止 record 基准。
 3. **产物冻结**：使用 Android SDK 的 APK / 签名工具检查实际包名、版本及签名；计算 SHA-256，产生 `release-info.json`，上传明确文件列表的 Actions artifact。
 4. **R2 发布**：单独 job 下载上一步 artifact，再次核对哈希和来源。检查远端同名对象；首次上传后回拉并验 SHA，再检查公开 URL 的 HTTP 状态、大小、类型和完整内容哈希。
 5. **清单提交**：只有步骤 4 成功后才生成新 `dev.json`、候选记录和已发布文档。以新鲜的 `main` 为基线重查版本、只提交允许的发布文件，以普通快进 push 更新 main。
@@ -29,6 +29,7 @@
 | 配置 | 存放位置 | 使用范围 |
 | --- | --- | --- |
 | `NARRA_DEV_KEYSTORE_BASE64` | 本仓库 Actions Secret | 构建 job 还原旧 dev keystore |
+| `NARRA_DEV_STORE_FILE` | 每次 run 的 `GITHUB_ENV` | 指向 `RUNNER_TEMP` 内已还原的原 key，不新增仓库配置 |
 | `R2_ACCESS_KEY_ID` | 本仓库 Actions Secret | 仅 R2 发布 job |
 | `R2_SECRET_ACCESS_KEY` | 本仓库 Actions Secret | 仅 R2 发布 job |
 | `CLOUDFLARE_ACCOUNT_ID` | 本仓库 Variable | 构造核实过的 R2 endpoint |
@@ -37,7 +38,9 @@
 
 固定证书指纹：`3a6c57eec0641bc00830252eb821d62c9e9b2f639c5989d0bc42b29b843546e8`。
 
-- 实施前验证本机 keystore 可读且证书吻合；若它使用标准 Android debug alias / password，可直接还原到 runner 的默认位置，避免修改 app Gradle 签名逻辑。如果实际不同，按已授权的 dev 签名范围增加专用 Secrets，任何值都不进入输出。
+- 原 dev 的标准 Android debug alias / password 已确认。CI 将 key 放在 `RUNNER_TEMP/narra-original-dev.keystore`，通过 `NARRA_DEV_STORE_FILE` 明确传入 Gradle；仅 CI debug 使用独立 `narraDevCi` 配置，本地默认、baseline 和 release 的签名配置保持原样。
+- 构建前捕获 `:app:signingReport`，验证唯一 debug 块的配置名、alias、路径和原证书；不输出整份报告。签名 assemble 禁用任务输出缓存，仍复用依赖下载缓存。第三次运行的 package task 实际执行，没有缓存复用证据，此开关只作为确定性边界。
+- 最终 APK 校验保留唯一原证书限制，同时输出安全的预期 / 实际 SHA-256、不同指纹 / 记录数量及 build-tools / apksigner 版本，区分解析问题与真实证书不同；不输出证书主题、密钥或 CSR。
 - Secret 使用标准输入或受控客户端配置，不把内容拼进命令行或日志；不上传 `.android/`、keystore、临时凭据文件或包含它们的缓存。
 - 临时签名文件在 `always()` 清理。构建、R2 和 GitHub 写权限只对需要它们的 job 提供，不对 PR 流程共享。
 - 凭据只允许既有桶对象操作。发布脚本固定桶及 `dev/` key 前缀；不创建桶、改 DNS、开放新公网域名或更改仓库全局 workflow 默认权限。

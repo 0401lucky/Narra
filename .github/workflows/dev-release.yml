@@ -56,9 +56,8 @@ jobs:
           NARRA_DEV_KEYSTORE_BASE64: ${{ secrets.NARRA_DEV_KEYSTORE_BASE64 }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:NARRA_DEV_KEYSTORE_BASE64)) { throw '缺少原 dev 签名 Secret。' }
-          $signingDirectory = Join-Path $env:HOME '.android'
-          New-Item -ItemType Directory -Path $signingDirectory -Force | Out-Null
-          $signingFile = Join-Path $signingDirectory 'debug.keystore'
+          $signingFile = Join-Path $env:RUNNER_TEMP 'narra-original-dev.keystore'
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "NARRA_DEV_STORE_FILE=$signingFile`n", [Text.UTF8Encoding]::new($false))
           [IO.File]::WriteAllBytes($signingFile, [Convert]::FromBase64String($env:NARRA_DEV_KEYSTORE_BASE64))
           ./tools/dev-release.ps1 -Mode VerifyKeystore -KeystorePath $signingFile
 
@@ -66,10 +65,19 @@ jobs:
         shell: pwsh
         run: ./tools/tests/dev-release-startup.tests.ps1
 
-      - name: Assemble signed debug APK
+      - name: Grant Gradle execute permission
+        run: chmod +x gradlew
+
+      - name: Verify Gradle dev signing configuration
+        shell: pwsh
         run: |
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug --console=plain --stacktrace
+          Import-Module ./tools/dev-release.psm1 -Force -DisableNameChecking -Scope Global
+          $report = Invoke-DevCommand (Join-Path $env:GITHUB_WORKSPACE 'gradlew') @(':app:signingReport', '--console=plain', '--no-configuration-cache', '--no-build-cache')
+          $details = Assert-DevCommand $report '读取 Gradle dev 签名配置'
+          Assert-DevGradleSigningReport $details $env:NARRA_DEV_STORE_FILE
+
+      - name: Assemble signed debug APK
+        run: ./gradlew :app:assembleDebug --console=plain --stacktrace --no-build-cache
 
       - name: Run JVM tests
         run: ./gradlew :app:testDebugUnitTest --console=plain --stacktrace
@@ -102,7 +110,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $signingFile = Join-Path $env:HOME '.android/debug.keystore'
+          $signingFile = Join-Path $env:RUNNER_TEMP 'narra-original-dev.keystore'
           if (Test-Path -LiteralPath $signingFile) { Remove-Item -LiteralPath $signingFile -Force }
 
   publish:

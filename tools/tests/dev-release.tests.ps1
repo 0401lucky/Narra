@@ -113,6 +113,26 @@ function New-FakeKeytool {
     [pscustomobject]@{ State = $state; Invoke = $invoke }
 }
 
+function New-FakeSigningReport {
+    param([string]$StorePath)
+    $fingerprint = (@([regex]::Matches($info.signing_certificate_sha256, '..') | ForEach-Object { $_.Value }) -join ':').ToUpperInvariant()
+    @"
+> Task :app:signingReport
+Variant: debug
+Config: narraDevCi
+Store: $StorePath
+Alias: androiddebugkey
+SHA-256: $fingerprint
+----------
+Variant: baseline
+Config: debug
+Store: unused-default.keystore
+Error: No keystore found
+----------
+BUILD SUCCESSFUL
+"@
+}
+
 try {
     Test-Case 'canonical version and Gradle settings' {
         $propertiesPath = Join-Path $testRoot 'gradle.properties'
@@ -178,6 +198,34 @@ try {
         Assert-Throws { Test-DevKeystore 'fixture-keystore-not-on-disk' -Keytool $fake.Invoke } '既有 dev 证书'
         Assert-True ($fake.State.Calls.Count -eq 1)
     }
+    Test-Case 'Gradle signing report binds debug path and certificate while ignoring baseline' {
+        $store = Join-Path $testRoot 'restored-original.keystore'
+        Assert-DevGradleSigningReport (New-FakeSigningReport $store) $store 6>$null
+    }
+    Test-Case 'Gradle signing report rejects fallback config, other path, alias and certificate safely' {
+        $store = Join-Path $testRoot 'restored-original.keystore'
+        $report = New-FakeSigningReport $store
+        foreach ($field in @('Config', 'Store', 'Alias', 'SHA-256')) {
+            $replacement = switch ($field) {
+                'Store' { Join-Path $testRoot 'wrong.keystore' }
+                'SHA-256' { 'b' * 64 }
+                default { 'SENSITIVE_REPORT_FIELD_MUST_NOT_LEAK' }
+            }
+            $bad = [regex]::Replace($report, '(?m)^' + [regex]::Escape($field) + ':.*$', ($field + ': ' + $replacement))
+            $failure = $null
+            try { Assert-DevGradleSigningReport $bad $store 6>$null } catch { $failure = $_.Exception.Message }
+            Assert-True ($null -ne $failure -and $failure.Contains('未绑定原 CI dev keystore'))
+            Assert-True (-not $failure.Contains('SENSITIVE_REPORT_FIELD_MUST_NOT_LEAK'))
+            Assert-True ($failure.Contains($info.signing_certificate_sha256))
+        }
+    }
+    Test-Case 'Gradle signing report refuses missing or duplicate debug and missing certificate' {
+        $store = Join-Path $testRoot 'restored-original.keystore'
+        $report = New-FakeSigningReport $store
+        Assert-Throws { Assert-DevGradleSigningReport ($report.Replace('Variant: debug', 'Variant: release')) $store } '唯一 debug'
+        Assert-Throws { Assert-DevGradleSigningReport ($report + "`n" + $report) $store } '唯一 debug'
+        Assert-Throws { Assert-DevGradleSigningReport ([regex]::Replace($report, '(?m)^SHA-256:.*$', '')) $store } 'SHA-256'
+    }
     Test-Case 'APK identity requires dev app, exact version and one original signer' {
         $badging = "package: name='com.narra.app.dev' versionCode='20300' versionName='2.3.0-dev'"
         $signature = "Signer #1 certificate SHA-256 digest: $($info.signing_certificate_sha256)"
@@ -185,6 +233,16 @@ try {
         Assert-Throws { Assert-DevApkIdentity ($badging.Replace('.app.dev', '.app')) $signature '2.3.0' } '包名'
         Assert-Throws { Assert-DevApkIdentity $badging ($signature + "`n" + $signature.Replace('#1', '#2')) '2.3.0' } '签名'
         Assert-Throws { Assert-DevApkIdentity $badging ($signature.Replace($info.signing_certificate_sha256, ('b' * 64))) '2.3.0' } '签名'
+    }
+    Test-Case 'APK signature diagnostics distinguish unparsed output and duplicate signer records safely' {
+        $badging = "package: name='com.narra.app.dev' versionCode='20300' versionName='2.3.0-dev'"
+        $signature = "Signer #1 certificate SHA-256 digest: $('b' * 64)`nSigner #2 certificate SHA-256 digest: $('b' * 64)`nSubject: SENSITIVE_SUBJECT_MUST_NOT_LEAK"
+        $failure = $null
+        try { Assert-DevApkIdentity $badging $signature '2.3.0' 6>$null } catch { $failure = $_.Exception.Message }
+        Assert-True ($failure.Contains('certificate_records=2') -and $failure.Contains('distinct_certificates=1'))
+        Assert-True ($failure.Contains('actual_sha256=' + ('b' * 64)) -and $failure.Contains($info.signing_certificate_sha256))
+        Assert-True (-not $failure.Contains('SENSITIVE_SUBJECT_MUST_NOT_LEAK'))
+        Assert-Throws { Assert-DevApkIdentity $badging 'unsupported output SENSITIVE_SUBJECT_MUST_NOT_LEAK' '2.3.0' 6>$null } '无法解析 APK 签名证书输出.*certificate_records=0.*actual_sha256=unparsed'
     }
     Test-Case 'artifact corruption is rejected before any S3 call' {
         $fake = New-FakeR2

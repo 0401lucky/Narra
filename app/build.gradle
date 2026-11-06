@@ -61,6 +61,12 @@ def hasReleaseSigningConfig = [
         releaseKeyPassword,
 ].every { value -> value?.trim() }
 
+def ciDevStoreFilePath = providers.environmentVariable("NARRA_DEV_STORE_FILE").orNull?.trim() ?: ""
+def useCiDevSigning = providers.environmentVariable("GITHUB_ACTIONS").orElse("false").get() == "true" && ciDevStoreFilePath
+if (useCiDevSigning && (!new File(ciDevStoreFilePath).isAbsolute() || !file(ciDevStoreFilePath).isFile())) {
+    throw new GradleException("CI dev 签名文件必须是已还原的绝对文件路径。")
+}
+
 if (!hasReleaseSigningConfig) {
     logger.lifecycle("Narra release signing 未配置，assembleRelease 仍会生成未签名包。请在 local.properties、环境变量或 -P 参数中配置 NARRA_RELEASE_*。")
 }
@@ -91,6 +97,14 @@ android {
     }
 
     signingConfigs {
+        if (useCiDevSigning) {
+            narraDevCi {
+                storeFile file(ciDevStoreFilePath)
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
         if (hasReleaseSigningConfig) {
             release {
                 storeFile file(releaseStoreFilePath)
@@ -111,6 +125,9 @@ android {
             }
         }
         debug {
+            if (useCiDevSigning) {
+                signingConfig signingConfigs.narraDevCi
+            }
             applicationIdSuffix ".dev"
             versionNameSuffix "-dev"
             resValue "string", "app_name", "${appDisplayName} Dev"

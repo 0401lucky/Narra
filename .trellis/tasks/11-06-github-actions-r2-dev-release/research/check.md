@@ -7,6 +7,8 @@
 [PowerShell 启动作用域修复](pwsh-startup-fix.md)。
 第二轮已通过 Linux 启动检查，随后出现打包失败；独立 Gradle 调用、当前 JDK 私钥
 签名预检及 66 次复验见 [packageDebug 后续调整](package-debug-followup.md)，打包根因仍待真实堆栈确认。
+第三轮 Android 门禁已通过，冻结时的证书失败及其显式签名绑定 / 安全诊断调整见
+[Gradle 签名绑定后续记录](signing-binding-followup.md)；本轮离线复验为两种启动方式各 37 项。
 
 ## 结论
 

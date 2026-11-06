@@ -33,7 +33,13 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
   匹配现有证书 `3a6c57eec0641bc00830252eb821d62c9e9b2f639c5989d0bc42b29b843546e8`。
   构建前用 runner 当前 JDK 执行 `keytool -list` 核验证书，再用 `-certreq` 验证私钥
   可以解锁并签名；密码走已有环境变量，CSR 仅捕获后丢弃，不写文件或发送请求。
-  私钥不进入缓存或 artifact，临时 keystore 在 `always()` 步骤清理。
+  私钥还原到 `RUNNER_TEMP/narra-original-dev.keystore`，路径经 `GITHUB_ENV` 导出为
+  `NARRA_DEV_STORE_FILE`；这不是新的仓库 Secret / Variable。私钥不进入缓存或
+  artifact，临时 keystore 在 `always()` 步骤按同一路径清理。
+- `app/build.gradle` 仅在 `GITHUB_ACTIONS=true` 且存在显式路径时创建 `narraDevCi`
+  signing config，并只绑定 debug；本地默认、release、baseline 使用原配置。
+  构建前无配置缓存地运行 `:app:signingReport`，捕获正文后只检查唯一 debug 块的
+  config、alias、绝对路径和证书 SHA-256；只输出匹配标记及公开指纹，不打印整份报告。
 - R2 仓库 Secrets `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` 只在发布 job 映射为
   `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`。Object Read & Write 凭据只支持
   S3 API，不能为复用 Wrangler REST 上传而扩大到管理权限。
@@ -43,7 +49,10 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
 - 构建 artifact 只含 APK 与 `release-info.json`。来源报告使用 schema 1，记录
   repository、source_sha、run_id / run_attempt / run_url、version / version_name /
   version_code、application_id、channel、apk_name / apk_size / apk_sha256、
-  signing_certificate_sha256、built_at、工具版本和 release_notes。
+  signing_certificate_sha256、built_at、工具版本（包括 `apksigner_version`）和 release_notes。
+- APK 身份校验必须保留唯一原证书限制。失败区分无法解析、多个证书记录和不同指纹，
+  诊断只输出预期 / 实际 SHA-256、记录数、不同指纹数以及所选 build-tools / apksigner
+  版本；不得把重复记录直接去重后放行，也不输出原始证书主题、完整工具输出或 CSR。
 - `Assert-DevArtifact -CheckRun` 绑定当前 run / source，允许使用较早 attempt 已完成
   构建的 artifact。重试发布不能要求原产物的 attempt 等于最新 attempt，也不能
   默默重编译后覆盖同版本对象。
@@ -66,6 +75,7 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
 | 非目标仓库 / 分支 / 事件 | build job 在接触签名前跳过，入口也拒绝上下文 |
 | 版本、包名、证书或 artifact SHA 不匹配 | 失败，无 R2 写入和新清单提交 |
 | 证书可读但私钥无法解锁 / 签名 | 构建前失败，只报告阶段与退出码，不输出 CSR 或 keytool 诊断正文 |
+| Gradle debug 配置 / 路径 / alias / 指纹未绑定原 key | 构建前失败；私钥预检通过不能代替实际 Gradle 配置校验 |
 | R2 凭据缺失 | 发布 job 失败，成功构建的 artifact 仍可留用于后续重试 |
 | S3 404 / NoSuchKey | 可以首次上传，必须带 `If-None-Match: *` |
 | S3 403、认证或网络异常 | 失败，不能当作对象不存在 |
@@ -93,7 +103,9 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
   元数据单调性、403 / 404、原子上传和 GitHub 输出名称；输出字段如 `apk_sha256`
   必须允许合法数字。失败注入同时断言指定阶段 / 原因，不能把 helper 缺失等任意
   异常算作预期网络失败。签名预检用假 keytool 覆盖证书和私钥成功、解锁失败及
-  证书不匹配时不得签名；断言密码环境恢复、CSR 与失败诊断不泄漏。
+  证书不匹配时不得签名；断言密码环境恢复、CSR 与失败诊断不泄漏。签名报告解析还需
+  覆盖 baseline 块不干扰 debug、配置 / 路径 / alias / 指纹错误、缺失 / 重复 debug，
+  以及 APK 未解析 / 重复记录的安全诊断。
 - `tools/tests/dev-release-entry.tests.ps1`：直接运行真实 Publish / PreparePages /
   VerifyPublished，只替换最底层 Git / S3 / HTTP / 等待；覆盖跨模块 closure、
   七文件暂存范围、main 竞争后的原 artifact 重试，以及失败时清单写入为零。
@@ -105,6 +117,9 @@ pwsh -NoProfile -File tools/tests/dev-release-startup.tests.ps1
   `lintDebug`，随后单独执行截图 verify，全部通过后才冻结 artifact。每次调用保留
   `--stacktrace` 供失败诊断，不用 `--debug` 输出详细构建设置。仅有任务重叠或
   包装层异常时，不能将并行 / 内存竞争写成已证实的根因。
+- 签名 assemble 使用 `--no-build-cache`，避免从任务输出缓存取回不同签名的 APK；
+  依赖下载缓存仍可复用。缓存命中本身不是 APK 被复用的证据，应先核对 package task
+  是否实际执行 / `FROM-CACHE`，不能把防御性开关写成已确认的根因修复。
 - 真实发版必须另外记录 Actions run、APK 签名 / SHA、R2 回拉、公开下载和旧
   清单结果。离线假适配器测试不能替代这些结果，也不能替代设备覆盖安装实测。
 
