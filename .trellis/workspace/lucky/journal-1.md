@@ -426,3 +426,41 @@ P04/P05/P10/P11共4批全部交付，80新增与158总基准、159截图、1826 
 
 - github-actions-r2-dev-release处于规划；用户已选全自动发布并配置仓库Secrets，首包按2.3.0-dev准备。
 - 2.3主要实施批次已收口；后续仍需发版验证，未宣称全App扩面、真机或远端视觉CI完成。
+
+
+## Session 14: v2.3 dev 云端自动发版完成
+
+**Date**: 2026-11-06
+**Task**: v2.3 dev 云端自动发版完成
+**Branch**: `main`
+
+### Summary
+
+续接历史任务，完成受限R2凭据配置、原产物发布重试与旧更新入口验收，已独立复核并归档。
+
+### Main Changes
+
+- 通过Cloudflare和GitHub页面配置仅限narra-updates对象读写的R2 Secrets；未输出凭据。
+- Actions 42200205327 attempt 2复用attempt 1原APK，七文件发布提交30746e33；版本2.3.0-dev/20300。
+- 定向提交d77a2956并归档11-06-github-actions-r2-dev-release，原有2.4规划段与无关变动保留。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `30746e33` | (see git log) |
+| `d77a2956` | (see git log) |
+
+### Testing
+
+- [OK] 同源码build/JVM/Lint/截图和78次发布回归通过；APK原签名、大小及SHA独立核验通过。
+- [OK] R2回拉与公开下载校验、Pages和最终旧清单检查全部成功，minimum_supported_version_code保持0。
+- [OK] adb无设备，覆盖安装及数据保留未实测；临时加密交接文件清理被自动审批拒绝，残留见任务续接记录。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 本次2.3发布工作已完成；2.4记忆改造等待用户明确恢复，不自动启动实施。
