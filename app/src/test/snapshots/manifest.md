@@ -2,11 +2,11 @@
 
 > **当前状态：用户已接纳63张E06，共221张PNG；接纳后222/222真实截图、1973/1973完整JVM通过。**
 
-- 用户在[63组修正前后对照](../../../../.trellis/tasks/11-05-ui-token-worldbook/review-corrected/index.html)及接纳问题后回复“可以”。仅从已审阅after按精确SHA新增63张E06，原158张不变，没有record或降低阈值。
+- 用户在[63组修正前后对照](../../../../.trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/review-corrected/index.html)及接纳问题后回复“可以”。仅从已审阅after按精确SHA新增63张E06，原158张不变，没有record或降低阈值。
 - 世界书列表/详情/编辑、关键词/正文与共享资料库五组导入导出共63场景，含18个独立窗口（4个Popup），覆盖固定动态色和320×640dp/200%字体。
-- 三张预览取景已按实际正文/计数/首条冲突边界修正，从原始提交隔离补before，其余60张保持；after/repeat及第三次全量捕获逐图同SHA。[来源链](../../../../.trellis/tasks/11-05-ui-token-worldbook/research/capture-recovery.json)、[接纳记录](../../../../.trellis/tasks/11-05-ui-token-worldbook/research/visual-acceptance.json)与[221张哈希](../../../../.trellis/tasks/11-05-ui-token-worldbook/research/accepted-png-hashes-20261106.txt)均保留。
+- 三张预览取景已按实际正文/计数/首条冲突边界修正，从原始提交隔离补before，其余60张保持；after/repeat及第三次全量捕获逐图同SHA。[来源链](../../../../.trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/research/capture-recovery.json)、[接纳记录](../../../../.trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/research/visual-acceptance.json)与[221张哈希](../../../../.trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/research/accepted-png-hashes-20261106.txt)均保留。
 - 接纳后完整截图222/222（17 suites、104.4秒）与无selector完整JVM1973/1973（261 suites、216.2秒）均实际执行、退出0，无失败/错误/跳过。221 PNG与14+9来源前后SHA不变；Lint仍为55条既有Warning、3条Hint，无新增问题。
-- 本批宿主结果不代表真实设备选择器、IME、TalkBack、系统栏、物理性能或新视觉远端CI已验证；完整运行结果见[验证记录](../../../../.trellis/tasks/11-05-ui-token-worldbook/verification.md)。
+- 本批宿主结果不代表真实设备选择器、IME、TalkBack、系统栏、物理性能或新视觉远端CI已验证；完整运行结果见[验证记录](../../../../.trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/verification.md)。
 
 以下P11及更早章节保留历史状态，当前接纳情况以上节为准。
 

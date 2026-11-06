@@ -3,7 +3,7 @@
   "name": "ui-token-worldbook",
   "title": "v2.3 扩面五：世界书与数据导入导出",
   "description": "v2.3 P06世界书列表、书目详情、编辑与共享数据导入/导出页的令牌和无障碍扩面，保留既有领域与读写契约。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "frontend",
   "scope": "ui",
   "package": null,
@@ -11,21 +11,21 @@
   "creator": "lucky",
   "assignee": "lucky",
   "createdAt": "2026-11-05",
-  "completedAt": null,
+  "completedAt": "2026-11-06",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "b7af5429cd215a65598a34bffb714a53651b5a8a",
   "pr_url": null,
   "subtasks": [],
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "用户已于2026-11-06回复ok批准实施，并在63组review-corrected接纳问题后回复“可以”。63张已审SHA入库，原158张不变，共221 PNG。接纳后222/222真实截图、1973/1973无selector完整JVM均退出0，无失败/错误/跳过，221 PNG及14+9来源不变；Lint/dev/AndroidTest编译与独立检查通过。当前等待本批两笔工作提交及后续精确归档/journal的一次性确认。其他历史状态、manifest旧CI差异和v2.4记忆规划保留；构建/更新仍2.2.12-dev，不推送。",
+  "notes": "P06已完成两笔工作提交、63张视觉接纳与222/1973完整回归并归档。用户随后明确授权推送main，Actions/R2 dev发版由11-06-github-actions-r2-dev-release另行规划。v2.4和历史工作区状态保留。",
   "meta": {
     "version": "2.3",
     "batch": "P06",
-    "review_status": "commit_approved",
+    "review_status": "completed",
     "source_task": ".trellis/tasks/archive/2026-11/10-21-ui-token-accessibility-expansion",
     "base_commit": "43ebda6dc40a5d21812cd594d10777ce3f2b166a",
     "implementation_authorized": true,
@@ -48,6 +48,12 @@
     "post_acceptance_audit": "research/post-acceptance/audit.json",
     "screenshot_checks_passed": 222,
     "full_jvm_tests_passed": 1973,
-    "commit_plan": "commit-plan.md"
+    "commit_plan": "commit-plan.md",
+    "work_commits": [
+      "c925da5e961261ec69400ad2d987cecfb2653359",
+      "b7af5429cd215a65598a34bffb714a53651b5a8a"
+    ],
+    "archive_directory": ".trellis/tasks/archive/2026-11/11-05-ui-token-worldbook",
+    "push_authorized_to": "main"
   }
 }

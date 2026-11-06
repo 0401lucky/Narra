@@ -1,6 +1,6 @@
 # P06 验证记录
 
-用户于2026-11-06回复“可以”，已接纳[63组前后对照](review-corrected/index.html)。仅按已审阅SHA新增63张基准，原158张不变，共221张PNG；[接纳记录](research/visual-acceptance.json)保留用户原话与原审阅文件哈希。接纳后222/222真实截图和1973/1973完整JVM均通过，当前待提交审阅，未提交、推送或发布。
+用户于2026-11-06接纳[63组前后对照](review-corrected/index.html)并批准提交归档，已完成`c925da5e`和`b7af5429`两笔工作提交。原158张基准保持，共221张PNG；[接纳记录](research/visual-acceptance.json)保留用户原话与审阅哈希。222/222真实截图和1973/1973完整JVM均通过，本任务已归档；后续main推送及Actions/R2发版按用户新指令处理。
 
 ## 修改前来源
 
@@ -34,12 +34,12 @@
 | 接纳后完整JVM | 无selector，1973/1973，261 suites，216.2秒；实际执行且退出0，0失败/错误/跳过 | [完整JVM结果](research/post-acceptance/jvm-01/summary.json) |
 | 接纳后独立质量门禁 | 原始报告、全部221 PNG和14+9来源前后哈希一致，无修复或新阻断 | [最终核对](research/post-acceptance/audit.json) |
 
-视觉接纳、按SHA入库和接纳后完整门禁已完成。剩余步骤为具体提交的一次性审阅、工作提交及本任务归档/journal。221张当前基准清单见[接纳哈希](research/accepted-png-hashes-20261106.txt)；接纳前预期缺图报告仅保留历史。
+视觉接纳、完整门禁、具体提交和归档已完成。221张基准清单见[接纳哈希](research/accepted-png-hashes-20261106.txt)；接纳前预期缺图报告仅保留历史。journal以两笔工作提交记录，不混入v2.4规划或其他工作区改动。
 
 重新生成最终审阅页使用：
 
 ```powershell
-python -X utf8 .trellis/tasks/11-05-ui-token-worldbook/research/build_review.py --before research/before-corrected --after research/after-corrected --repeat research/after-repeat-corrected --output review-corrected
+python -X utf8 .trellis/tasks/archive/2026-11/11-05-ui-token-worldbook/research/build_review.py --before research/before-corrected --after research/after-corrected --repeat research/after-repeat-corrected --output review-corrected
 ```
 
 ## 验证边界
