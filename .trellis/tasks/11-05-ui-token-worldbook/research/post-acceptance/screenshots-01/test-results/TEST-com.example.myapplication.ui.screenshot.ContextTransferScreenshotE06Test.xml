@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:18:33.923Z" hostname="LUCKY" time="20.596">
+  <properties/>
+  <testcase name="e06_transfer_matcha_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="13.164"/>
+  <testcase name="e06_transfer_ocean_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.391"/>
+  <testcase name="e06_transfer_preview_notice_narrow_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.68"/>
+  <testcase name="e06_transfer_ocean_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.324"/>
+  <testcase name="e06_transfer_source_dialog_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.547"/>
+  <testcase name="e06_transfer_help_dialog_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.363"/>
+  <testcase name="e06_transfer_matcha_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.326"/>
+  <testcase name="e06_transfer_first_narrow_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.372"/>
+  <testcase name="e06_transfer_preview_dynamic_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.538"/>
+  <testcase name="e06_transfer_last_narrow_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.492"/>
+  <testcase name="e06_transfer_source_dialog_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.421"/>
+  <testcase name="e06_transfer_preview_dynamic_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.491"/>
+  <testcase name="e06_transfer_preview_actions_narrow_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.438"/>
+  <testcase name="e06_transfer_vanilla_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.303"/>
+  <testcase name="e06_transfer_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.369"/>
+  <testcase name="e06_transfer_vanilla_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.311"/>
+  <system-out><![CDATA[Roborazzi: E06_transfer-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_transfer-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_transfer-preview-notice-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_transfer-source-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_transfer-help-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_transfer-first-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-preview-dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_transfer-last-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_transfer-source-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-preview-dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_transfer-preview-actions-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_transfer-help-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_transfer-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

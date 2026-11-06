@@ -19,7 +19,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import com.composables.icons.lucide.ChevronDown
@@ -27,6 +30,9 @@ import com.composables.icons.lucide.ChevronUp
 import com.composables.icons.lucide.Lucide
 import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 /** 编辑页四段折叠态 + 可选的"试命中"预览段，默认展开前两段。 */
 internal data class WorldBookEditExpandedState(
@@ -87,21 +93,23 @@ internal fun WorldBookCollapsibleSection(
     body: @Composable () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp),
+                .heightIn(min = NarraMinimumTouchTarget),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
-                modifier = Modifier.weight(1f).clickable(onClick = onToggle)
-                    .heightIn(min = 56.dp).padding(horizontal = 4.dp),
+                modifier = Modifier.weight(1f)
+                    .clickable(role = Role.Button, onClick = onToggle)
+                    .semantics { stateDescription = if (expanded) "已展开" else "已收起" }
+                    .heightIn(min = NarraMinimumTouchTarget).padding(horizontal = NarraUi.space4),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = title,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics { heading() },
                     style = MaterialTheme.typography.titleMedium,
                     color = palette.title,
                 )
@@ -111,7 +119,12 @@ internal fun WorldBookCollapsibleSection(
                     tint = palette.body,
                 )
             }
-            SettingsHelpButton(title, description)
+            SettingsHelpButton(
+                title, description,
+                dialogShape = NarraShapes.large,
+                actionContentColor = palette.title,
+                actionMinSize = NarraMinimumTouchTarget,
+            )
         }
         AnimatedVisibility(visible = expanded) {
             body()

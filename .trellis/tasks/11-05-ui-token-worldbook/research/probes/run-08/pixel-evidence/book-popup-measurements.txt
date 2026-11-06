@@ -1,0 +1,13 @@
+image=560x1004
+colors=166
+clockStartMillis=1791950400000
+popupScroll=188.0/188.0
+popupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 988.0)
+lastChoice=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)
+lastChoiceUnclipped=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)
+lastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)
+lastChoiceFullyVisible=true
+lastChoiceTouch48dp=true
+lastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途
+popupViewOwner=androidx.compose.ui.window.PopupLayout
+popupRenderer=native Canvas drawing the independent Popup AndroidComposeView

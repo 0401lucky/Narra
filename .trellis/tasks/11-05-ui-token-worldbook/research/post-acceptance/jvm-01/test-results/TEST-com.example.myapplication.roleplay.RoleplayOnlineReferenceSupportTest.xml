@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.660Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="sanitizeRequestMessages_dropsAssistantSystemEventsFromModelHistory" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.0"/>
+  <testcase name="sanitizeRequestMessages_removesThoughtPartsWhenGlobalSwitchIsOff" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.0"/>
+  <testcase name="buildSystemEventPromptContext_rewritesVideoEndAndScreenshotAsPlainContext" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.002"/>
+  <testcase name="resolveReplyTargets_rewritesShortIdToRealMessageId" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.001"/>
+  <testcase name="sanitizeRequestMessages_longformModeStripsDanglingLongformTagsFromHistory" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.0"/>
+  <testcase name="sanitizeRequestMessages_switchingOnlineAssistantToLongformDropsSpecialPlayResidualLines" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.003"/>
+  <testcase name="formatCandidatesForPrompt_usesChatLikeIdShape" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.0"/>
+  <testcase name="buildCandidates_usesFlattenedDialogueItemsFromWindow" classname="com.example.myapplication.roleplay.RoleplayOnlineReferenceSupportTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

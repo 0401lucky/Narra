@@ -1,0 +1,80 @@
+<semantics id="E06_detail-dark" fontScale="1.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #9581 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #9582 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #9604 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'worldbook_detail'
+    | CollectionInfo = 'CollectionInfo(rowCount=8, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@7a7bf7d2'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #9607 at (l=40.0, t=144.0, r=680.0, b=209.0)px
+    |  | Text = '[海风档案：群岛旅人与旧日传说]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #9610 at (l=32.0, t=285.0, r=500.0, b=326.0)px
+    |  | Text = '[6 条条目]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #9611 at (l=500.0, t=257.0, r=688.0, b=353.0)px
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | StateDescription = '已收起'
+    |  | Text = '[管理世界书]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9615 at (l=32.0, t=385.0, r=688.0, b=705.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[群岛记事 1：海风与旧日约定, 群岛由古老灯塔连接，潮汐带来旅人的消息。, 可挂载, 关键词：白塔城 · /islands?,harbor/i, 含正则]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9627 at (l=32.0, t=737.0, r=688.0, b=1057.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[群岛记事 2：海风与旧日约定, 群岛由古老灯塔连接，潮汐带来旅人的消息。, 可挂载, 关键词：白塔城 · /islands?,harbor/i, 已停用]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9639 at (l=32.0, t=1089.0, r=688.0, b=1409.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[群岛记事 3：海风与旧日约定, 群岛由古老灯塔连接，潮汐带来旅人的消息。, 可挂载, 关键词：白塔城 · /islands?,harbor/i, 常驻注入]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9651 at (l=32.0, t=1441.0, r=688.0, b=1761.0)px
+    |    Focused = 'false'
+    |    IsContainer = 'true'
+    |    Role = 'Button'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |    Text = '[群岛记事 4：海风与旧日约定, 群岛由古老灯塔连接，潮汐带来旅人的消息。, 可挂载, 关键词：白塔城 · /islands?,harbor/i, 含正则]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |    MergeDescendants = 'true'
+    |-Node #9586 at (l=0.0, t=0.0, r=720.0, b=120.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #9588 at (l=16.0, t=16.0, r=112.0, b=112.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #9591 at (l=120.0, t=32.0, r=340.0, b=97.0)px
+       | Text = '[世界书详情]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #9592 at (l=536.0, t=16.0, r=688.0, b=112.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[新增]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

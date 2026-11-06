@@ -1,0 +1,27 @@
+<semantics id="E06_list-help-dialog-dark" fontScale="2.0" target="independent-dialog-root"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #8466 at (l=0.0, t=0.0, r=640.0, b=690.0)px
+ |-Node #8467 at (l=0.0, t=0.0, r=640.0, b=690.0)px
+   [IsDialog]
+    |-Node #8468 at (l=0.0, t=0.0, r=640.0, b=690.0)px
+      PaneTitle = '对话框'
+       |-Node #8469 at (l=0.0, t=0.0, r=640.0, b=690.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          |-Node #8472 at (l=48.0, t=48.0, r=258.0, b=151.0)px
+          | Text = '[世界书]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #8474 at (l=48.0, t=183.0, r=592.0, b=485.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1cbb8cc8'
+          | Text = '[搜索包含书名、条目标题、正文与关键词。作用域、状态和所属世界书筛选同时生效。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #8477 at (l=388.0, t=533.0, r=592.0, b=642.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #8479 at (l=412.0, t=549.0, r=568.0, b=626.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

@@ -1,0 +1,119 @@
+<semantics id="E06_transfer-vanilla-light" fontScale="1.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #1939 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #1940 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #1959 at (l=0.0, t=120.0, r=720.0, b=1600.0)px
+    | CollectionInfo = 'CollectionInfo(rowCount=9, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1cbb8cc8'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #1963 at (l=48.0, t=160.0, r=576.0, b=225.0)px
+    |  | Text = '[管理 Narra 本地资源包]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #1964 at (l=576.0, t=144.0, r=672.0, b=240.0)px
+    |  | ContentDescription = '[管理 Narra 本地资源包：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #1968 at (l=48.0, t=292.0, r=672.0, b=339.0)px
+    |  | Text = '[资料库概览]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #1970 at (l=40.0, t=375.0, r=680.0, b=1145.0)px
+    |  | IsContainer = 'true'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  |-Node #1972 at (l=40.0, t=391.0, r=680.0, b=537.0)px
+    |  |  | IsContainer = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  |  |-Node #1975 at (l=72.0, t=415.0, r=168.0, b=462.0)px
+    |  |  |  | Text = '[角色包]'
+    |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |  |-Node #1976 at (l=72.0, t=472.0, r=242.0, b=513.0)px
+    |  |  |    Text = '[当前共有 3 条]'
+    |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #1978 at (l=40.0, t=539.0, r=680.0, b=685.0)px
+    |  |  | IsContainer = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  |  |-Node #1981 at (l=72.0, t=563.0, r=232.0, b=610.0)px
+    |  |  |  | Text = '[世界书条目]'
+    |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |  |-Node #1982 at (l=72.0, t=620.0, r=258.0, b=661.0)px
+    |  |  |    Text = '[当前共有 18 条]'
+    |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #1984 at (l=40.0, t=687.0, r=680.0, b=833.0)px
+    |  |  | IsContainer = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  |  |-Node #1987 at (l=72.0, t=711.0, r=200.0, b=758.0)px
+    |  |  |  | Text = '[记忆档案]'
+    |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |  |-Node #1988 at (l=72.0, t=768.0, r=258.0, b=809.0)px
+    |  |  |    Text = '[当前共有 12 条]'
+    |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #1990 at (l=40.0, t=835.0, r=680.0, b=981.0)px
+    |  |  | IsContainer = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  |  |-Node #1993 at (l=72.0, t=859.0, r=200.0, b=906.0)px
+    |  |  |  | Text = '[对话摘要]'
+    |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |  |-Node #1994 at (l=72.0, t=916.0, r=242.0, b=957.0)px
+    |  |  |    Text = '[当前共有 7 条]'
+    |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #1996 at (l=40.0, t=983.0, r=680.0, b=1129.0)px
+    |  |    IsContainer = 'true'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |     |-Node #1999 at (l=72.0, t=1007.0, r=232.0, b=1054.0)px
+    |  |     | Text = '[自定义预设]'
+    |  |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #2000 at (l=72.0, t=1064.0, r=242.0, b=1105.0)px
+    |  |       Text = '[当前共有 4 条]'
+    |  |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #2003 at (l=48.0, t=1181.0, r=672.0, b=1228.0)px
+    |  | Text = '[资源包]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #2005 at (l=40.0, t=1264.0, r=680.0, b=1580.0)px
+    |    IsContainer = 'true'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |-Node #2010 at (l=76.0, t=1315.0, r=236.0, b=1362.0)px
+    |     | Text = '[资料库备份]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #2011 at (l=76.0, t=1370.0, r=292.0, b=1406.0)px
+    |     | Text = '[导出或导入本地文件]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #2012 at (l=548.0, t=1312.0, r=644.0, b=1408.0)px
+    |     | ContentDescription = '[资料库备份：查看说明]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | Actions = [OnClick, RequestFocus]
+    |     | MergeDescendants = 'true'
+    |     |-Node #2016 at (l=76.0, t=1428.0, r=350.0, b=1532.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[导出]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #2022 at (l=370.0, t=1428.0, r=644.0, b=1532.0)px
+    |       Focused = 'false'
+    |       Role = 'Button'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |       Text = '[导入]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |       MergeDescendants = 'true'
+    |-Node #1944 at (l=0.0, t=0.0, r=720.0, b=120.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #1946 at (l=16.0, t=16.0, r=112.0, b=112.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #1949 at (l=120.0, t=32.0, r=252.0, b=97.0)px
+         Text = '[资料库]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

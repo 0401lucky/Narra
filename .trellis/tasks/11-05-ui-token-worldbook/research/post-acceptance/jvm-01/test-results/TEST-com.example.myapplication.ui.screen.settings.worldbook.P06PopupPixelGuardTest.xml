@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.P06PopupPixelGuardTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:25:06.300Z" hostname="LUCKY" time="0.589">
+  <properties/>
+  <testcase name="pixelGuard_rejectsActivityPixelsAndCapturesIndependentPopupOwner" classname="com.example.myapplication.ui.screen.settings.worldbook.P06PopupPixelGuardTest" time="0.582"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

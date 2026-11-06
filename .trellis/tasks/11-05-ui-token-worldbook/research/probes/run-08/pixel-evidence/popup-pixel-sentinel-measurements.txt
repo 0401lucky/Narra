@@ -1,0 +1,5 @@
+image=240x240
+colors=36
+clockStartMillis=1791950400000
+popupViewOwner=androidx.compose.ui.window.PopupLayout
+popupRenderer=native Canvas drawing the independent Popup AndroidComposeView

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.local.AppSettingsStoreTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:17.950Z" hostname="LUCKY" time="0.108">
+  <properties/>
+  <testcase name="settingsFlow_multipleCollectorsParseEachEmissionOnceAndReplayLatest" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.055"/>
+  <testcase name="settingsFlow_backgroundGlassFlag_preservesThemeForLegacyAndInvalidFields" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.021"/>
+  <testcase name="settingsFlow_ioFailureEmitsDefaultThenRecoversFromLaterValue" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.009"/>
+  <testcase name="settingsFlow_parsesOnInjectedBackgroundDispatcher" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.008"/>
+  <testcase name="settingsFlow_nonIoFailureReportsUnavailableWithoutDefaultSnapshot" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.006"/>
+  <testcase name="saveDisplaySettings_disabledBackgroundGlass_roundTripsWithOtherBubbleValues" classname="com.example.myapplication.data.local.AppSettingsStoreTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,23 @@
+{
+  "phase": "before",
+  "complete_cases": 63,
+  "independent_windows": 18,
+  "popups": 4,
+  "expected_missing_baselines": {
+    "WorldBookScreenshotE06Test": 47,
+    "ContextTransferScreenshotE06Test": 16
+  },
+  "baseline_guard_failures": 1,
+  "product_source_hashes_unchanged": 13,
+  "old_baselines_unchanged": 158,
+  "manifest_sha256": "215ae4f85d88cafe3e47c09e1a24f4883e006a0a05d342cb5fbc83e087877bae",
+  "checkedAtUtc": "2026-11-06T00:41:34.852866+00:00",
+  "negativeGuardsRejected": [
+    "missing_dialog_root",
+    "activity_stage_in_window",
+    "window_header_mismatch",
+    "measurement_mismatch"
+  ],
+  "reviewScriptSha256": "395fc312f0d52042562e65c1e6b38cb5209289f4b2873a4cdf9ecb23682e8c1b",
+  "originalEvidenceModified": false
+}

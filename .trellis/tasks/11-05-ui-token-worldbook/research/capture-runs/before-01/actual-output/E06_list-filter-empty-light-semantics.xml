@@ -1,0 +1,216 @@
+<semantics id="E06_list-filter-empty-light" fontScale="1.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #2913 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #2914 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #2936 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'worldbook_list'
+    | CollectionInfo = 'CollectionInfo(rowCount=4, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1cbb8cc8'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #2938 at (l=40.0, t=128.0, r=680.0, b=232.0)px
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  | Text = '[导入世界书]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #2944 at (l=40.0, t=268.0, r=680.0, b=504.0)px
+    |  | Shape = 'RectangleShape'
+    |  |  |-Node #2945 at (l=40.0, t=268.0, r=680.0, b=396.0)px
+    |  |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |  |  | EditableText = ''
+    |  |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@3c9c5814'
+    |  |  | Focused = 'false'
+    |  |  | ImeAction = 'Default'
+    |  |  | InputText = ''
+    |  |  | IsEditable = 'true'
+    |  |  | Text = '[搜索世界书]'
+    |  |  | TextSelectionRange = 'TextRange(0, 0)'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #2959 at (l=40.0, t=436.0, r=381.0, b=477.0)px
+    |  |  | Text = '[0 条条目]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #2960 at (l=381.0, t=408.0, r=584.0, b=504.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Button'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |  | Text = '[筛选 (1)]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #2964 at (l=584.0, t=408.0, r=680.0, b=504.0)px
+    |  |    ContentDescription = '[世界书：查看说明]'
+    |  |    Focused = 'false'
+    |  |    Role = 'Button'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |    Actions = [OnClick, RequestFocus]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #3016 at (l=40.0, t=540.0, r=112.0, b=576.0)px
+    |  | Text = '[作用域]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3017 at (l=40.0, t=584.0, r=680.0, b=680.0)px
+    |  | CollectionInfo = 'CollectionInfo(rowCount=1, columnCount=5)'
+    |  | HorizontalScrollAxisRange = 'ScrollAxisRange(value=52.0, maxValue=52.0, reverseScrolling=false)'
+    |  | IsTraversalGroup = 'true'
+    |  | Shape = 'androidx.compose.foundation.HorizontalScrollableClipShape@28ed821b'
+    |  | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |  |-Node #3025 at (l=-12.0, t=584.0, r=108.0, b=680.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[全部]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3030 at (l=124.0, t=584.0, r=244.0, b=680.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[全局]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3035 at (l=260.0, t=584.0, r=408.0, b=680.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[可挂载]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3040 at (l=424.0, t=584.0, r=544.0, b=680.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[角色]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3045 at (l=560.0, t=584.0, r=680.0, b=680.0)px
+    |  |    Focused = 'false'
+    |  |    Role = 'Checkbox'
+    |  |    Selected = 'true'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |    Text = '[会话]'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #3019 at (l=40.0, t=696.0, r=88.0, b=732.0)px
+    |  | Text = '[状态]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3020 at (l=40.0, t=740.0, r=680.0, b=836.0)px
+    |  | CollectionInfo = 'CollectionInfo(rowCount=1, columnCount=5)'
+    |  | HorizontalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    |  | IsTraversalGroup = 'true'
+    |  | Shape = 'androidx.compose.foundation.HorizontalScrollableClipShape@28ed821b'
+    |  | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |  |-Node #3050 at (l=40.0, t=740.0, r=160.0, b=836.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[全部]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3055 at (l=176.0, t=740.0, r=296.0, b=836.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[启用]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3060 at (l=312.0, t=740.0, r=432.0, b=836.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[停用]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3065 at (l=448.0, t=740.0, r=624.0, b=836.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[常驻注入]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3070 at (l=640.0, t=740.0, r=788.0, b=836.0)px
+    |  |    Focused = 'false'
+    |  |    Role = 'Checkbox'
+    |  |    Selected = 'false'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |    Text = '[含正则]'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #3022 at (l=40.0, t=852.0, r=64.0, b=888.0)px
+    |  | Text = '[书]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3023 at (l=40.0, t=896.0, r=632.0, b=992.0)px
+    |  | CollectionInfo = 'CollectionInfo(rowCount=1, columnCount=2)'
+    |  | HorizontalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+    |  | IsTraversalGroup = 'true'
+    |  | Shape = 'androidx.compose.foundation.HorizontalScrollableClipShape@28ed821b'
+    |  | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |  |-Node #3075 at (l=40.0, t=896.0, r=160.0, b=992.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[全部]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3080 at (l=176.0, t=896.0, r=632.0, b=992.0)px
+    |  |    Focused = 'false'
+    |  |    Role = 'Checkbox'
+    |  |    Selected = 'false'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |    Text = '[海风档案：群岛旅人与旧日传说]'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #3084 at (l=40.0, t=1008.0, r=200.0, b=1104.0)px
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Text = '[清除筛选]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3088 at (l=312.0, t=1228.0, r=408.0, b=1324.0)px
+    |  | ContentDescription = '[当前筛选下没有条目]'
+    |  | Role = 'Image'
+    |  |-Node #3089 at (l=234.0, t=1344.0, r=486.0, b=1385.0)px
+    |  | Text = '[当前筛选下没有条目]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3090 at (l=360.0, t=1405.0, r=360.0, b=1433.0)px
+    |  | Text = '[]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3091 at (l=294.0, t=1461.0, r=426.0, b=1541.0)px
+    |    Focused = 'false'
+    |    Role = 'Button'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |    Text = '[清筛选]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |    MergeDescendants = 'true'
+    |-Node #2918 at (l=0.0, t=0.0, r=720.0, b=120.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #2920 at (l=16.0, t=16.0, r=112.0, b=112.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #2923 at (l=120.0, t=32.0, r=252.0, b=97.0)px
+       | Text = '[世界书]'
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #2924 at (l=528.0, t=16.0, r=680.0, b=112.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[新增]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

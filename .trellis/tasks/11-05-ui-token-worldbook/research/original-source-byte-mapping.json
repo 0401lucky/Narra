@@ -1,0 +1,78 @@
+{
+  "sourceCommit": "43ebda6dc40a5d21812cd594d10777ce3f2b166a",
+  "allOriginalHashesRecoverableFromGit": false,
+  "sources": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookBookDetailScreen.kt": {
+      "expectedSha256": "c5992b35548234618a71398e4d8ae634c0647a7bd3cd6b381ac6b6f004db44ea",
+      "matchingEncodings": []
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookContentFullscreenSheet.kt": {
+      "expectedSha256": "f85fdbbee3e8ccbc8e12d1361b3bc3914c19beedf9dfa278c5ed2a126de73915",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditScreen.kt": {
+      "expectedSha256": "3786cfe92fc026a597914d66bdff2944545ebf35fde45f2083eb1347973b2223",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditSections.kt": {
+      "expectedSha256": "b42cf17b457304629cab3a02dd653881baa9342c34d0e34e7413ebe22ca7ea41",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListScreen.kt": {
+      "expectedSha256": "6e79b3d976d77352aa95d6b12f4572f0ce55a7ad1e1417744813c7bf88ee79d3",
+      "matchingEncodings": []
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListStyle.kt": {
+      "expectedSha256": "f758ca0f9b146adb95401a79dd40a3b04552f61d0e9ae6ae21a7596d7f30c22c",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ContextTransferScreen.kt": {
+      "expectedSha256": "033fd37d456fb149a4576d972290b64e4ab6477084fc9183702dfd16de8d5a23",
+      "matchingEncodings": []
+    },
+    "app/src/main/java/com/example/myapplication/ui/component/worldbook/KeywordChipInput.kt": {
+      "expectedSha256": "d8b123eb366e0edce84b00310bcc9affa60db5491082ec2b99eff905ce34ba81",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": {
+      "expectedSha256": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+      "matchingEncodings": []
+    },
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": {
+      "expectedSha256": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592",
+      "matchingEncodings": [
+        "git-bytes",
+        "LF"
+      ]
+    },
+    "gradle.properties": {
+      "expectedSha256": "eb455746f9a9e4c5882c0aab957715c3321e6580d8ca18a765ede07a51b45667",
+      "matchingEncodings": []
+    },
+    "app/build.gradle": {
+      "expectedSha256": "cd272a6c8769bfafa391c328ab9e7183c1c4e0631ffa6dfdf89d4ba05bc6d16f",
+      "matchingEncodings": []
+    },
+    "docs/updates/dev.json": {
+      "expectedSha256": "bfbb8d97279e6eda1a4b1e5a7005d27f0345e464cfca68d6d29494ee72541963",
+      "matchingEncodings": [
+        "CRLF"
+      ]
+    }
+  }
+}

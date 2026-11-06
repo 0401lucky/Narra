@@ -1,0 +1,30 @@
+{
+  "run": "run-08",
+  "commandExitCode": 0,
+  "tests": 11,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suiteCounts": {
+    "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest": 5,
+    "com.example.myapplication.ui.screen.settings.worldbook.P06PopupPixelGuardTest": 1,
+    "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest": 5
+  },
+  "pixelEvidenceSha256": {
+    "body-sheet-tail.png": "b492eb8b988931734da4f8badb5a2558c047531c60ac7319e9c20fc52a0ec679",
+    "book-popup.png": "451a20d845a5c6c94caa62e74e33ad1f6106d16b37763e6eb0b70016b3bab60a",
+    "conversation-popup.png": "db05536a43da47d915eae5b2ac02e18d9dc7310777baf45b678e240a1c3d1cc3",
+    "list-dialog.png": "a32766c23742d8f9f3ec3782a1b08e565ce6aad4266c7f44c0d7964c4455c8c4",
+    "ordinary-page.png": "f7105f129f4c5d7eb8d42a24c75962c7e8b7adb69df7272b63f6fd47773f2286",
+    "popup-pixel-sentinel.png": "b12f8e8789f5cd22d445e1d84417fb5785f8550d25b6562a46665a7c61eb47d6",
+    "transfer-source-dialog.png": "488246319137be3f6c91222e6898b098d8b687b3ecade0db5a89f70afa6af031"
+  },
+  "postProbeChanges": [
+    "Screenshot-only Stage focus clearing and long-keyword reveal; exercised by full before-02 verify",
+    "Native IDE formatting of 9 new test files"
+  ],
+  "limits": [
+    "Real OS chooser/IME/TalkBack/device behavior is not executed",
+    "Source/VM business behavior implementation remains outside checkpoint one"
+  ]
+}

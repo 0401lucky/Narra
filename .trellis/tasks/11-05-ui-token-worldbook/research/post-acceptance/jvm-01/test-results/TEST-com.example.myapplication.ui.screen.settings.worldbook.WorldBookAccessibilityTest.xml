@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:25:07.118Z" hostname="LUCKY" time="7.978">
+  <properties/>
+  <testcase name="editor_switchNamesAndHelpHaveIndependent48dpTouchTargets" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="1.75"/>
+  <testcase name="detail_longTitleAndBothManagementActionsCanBeReadAndReached" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.985"/>
+  <testcase name="editor_allElevenHelpEntrypointsOpenCorrectWindowsWithoutEditingState" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="1.204"/>
+  <testcase name="editor_bothPopupLastChoicesHaveNativePixelsAndCompleteTouchBounds" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="1.924"/>
+  <testcase name="list_helpIsIndependentAndCloseIsReachableAt200Percent" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.528"/>
+  <testcase name="editor_longKeywordHasFullTextAndRemovesExactlyOneToken" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.375"/>
+  <testcase name="list_narrowHeaderFiltersAndLastEntryRemainReachable" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.533"/>
+  <testcase name="editor_longBodyInternalTailAndFixedActionsFitAt200Percent" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.657"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -4,16 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,16 +27,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.TopAppSnackbarHost
+import com.example.myapplication.ui.component.narraOutlinedButtonColors
+import com.example.myapplication.ui.component.narraButtonColors
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
@@ -58,7 +64,7 @@ fun WorldBookBookDetailScreen(
     onConsumeMessage: () -> Unit = {},
 ) {
     val palette = rememberSettingsPalette()
-    val outlineColors = rememberSettingsOutlineColors()
+    val outlineColors = rememberSettingsOutlineColors().copy(focusedLabelColor = palette.title)
     var renameText by rememberSaveable(bookName) { mutableStateOf(bookName) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showManagement by rememberSaveable { mutableStateOf(false) }
@@ -92,6 +98,9 @@ fun WorldBookBookDetailScreen(
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = onAddEntry,
+                horizontalPadding = NarraUi.space16,
+                titleMaxLines = Int.MAX_VALUE,
+                titleIsHeading = true,
             )
         },
         snackbarHost = { TopAppSnackbarHost(hostState = snackbarHostState) },
@@ -103,33 +112,57 @@ fun WorldBookBookDetailScreen(
                 .testTag("worldbook_detail")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 36.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space4,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 SettingsPageIntro(
                     title = bookName.ifBlank { "未命名世界书" },
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space4,
+                        vertical = NarraUi.space8
+                    ),
+                    titleMaxLines = Int.MAX_VALUE,
+                    titleIsHeading = true,
                 )
             }
 
             item {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${entries.size} 条条目", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = palette.body)
-                    TextButton(onClick = { showManagement = !showManagement }, modifier = Modifier.heightIn(min = 48.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "${entries.size} 条条目",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.body
+                    )
+                    TextButton(
+                        onClick = { showManagement = !showManagement },
+                        modifier = Modifier.sizeIn(
+                            minWidth = NarraMinimumTouchTarget,
+                            minHeight = NarraMinimumTouchTarget
+                        )
+                            .semantics {
+                                stateDescription = if (showManagement) "已展开" else "已收起"
+                            },
+                        colors = ButtonDefaults.textButtonColors(contentColor = palette.title),
+                    ) {
                         Text(if (showManagement) "收起管理" else "管理世界书")
                     }
                 }
             }
 
             if (showManagement) {
-            item {
+                item {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
                     ) {
                         OutlinedTextField(
                             value = renameText,
@@ -144,22 +177,48 @@ fun WorldBookBookDetailScreen(
                                 },
                             ),
                             colors = outlineColors,
+                            shape = NarraShapes.medium,
                         )
                         AnimatedSettingButton(
                             text = if (isSaving) "处理中…" else "保存书名",
                             onClick = { onRenameBook(bookId, trimmedRename) },
                             enabled = canRename,
                             isPrimary = true,
+                            shape = NarraShapes.medium,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space16,
+                                vertical = NarraUi.space12
+                            ),
+                            colors = narraButtonColors().copy(
+                                disabledContainerColor = palette.surfaceTint,
+                                disabledContentColor = palette.body,
+                            ),
+                            disabledAlpha = 1f,
                         )
                         AnimatedSettingButton(
                             text = "删除整本世界书",
                             onClick = { showDeleteDialog = true },
                             enabled = !isSaving && entries.isNotEmpty(),
                             isPrimary = false,
+                            shape = NarraShapes.medium,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space16,
+                                vertical = NarraUi.space12
+                            ),
+                            colors = narraOutlinedButtonColors().copy(
+                                contentColor = palette.title,
+                                disabledContainerColor = palette.surfaceTint,
+                                disabledContentColor = palette.body,
+                            ),
+                            disabledAlpha = 1f,
                         )
-                        Text("删除整本会同时移除所有条目，无法恢复。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            "删除整本会同时移除所有条目，无法恢复。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
-            }
+                }
             }
 
             if (entries.isEmpty()) {
@@ -169,6 +228,8 @@ fun WorldBookBookDetailScreen(
                         body = "暂无内容",
                         containerColor = palette.accentSoft,
                         contentColor = palette.accent,
+                        shape = NarraShapes.medium,
+                        contentPadding = PaddingValues(NarraUi.space16),
                     )
                 }
             } else {
@@ -189,6 +250,8 @@ fun WorldBookBookDetailScreen(
             confirmLabel = "确认删除",
             dismissLabel = "取消",
             isDestructive = true,
+            shape = NarraShapes.large,
+            actionContentColor = palette.title,
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false

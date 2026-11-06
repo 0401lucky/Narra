@@ -1,0 +1,3 @@
+image=640x690
+colors=125
+clockStartMillis=1791950400000

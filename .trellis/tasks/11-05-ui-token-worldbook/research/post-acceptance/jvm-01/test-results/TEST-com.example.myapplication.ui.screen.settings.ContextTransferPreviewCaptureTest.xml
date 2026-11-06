@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferPreviewCaptureTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:35.536Z" hostname="LUCKY" time="0.568">
+  <properties/>
+  <testcase name="narrowNotice_requiresCompleteRealBodyInsteadOfOnlyHeader" classname="com.example.myapplication.ui.screen.settings.ContextTransferPreviewCaptureTest" time="0.34"/>
+  <testcase name="dynamicPreview_requiresVisibleBodyCountsAndFirstConflict" classname="com.example.myapplication.ui.screen.settings.ContextTransferPreviewCaptureTest" time="0.224"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

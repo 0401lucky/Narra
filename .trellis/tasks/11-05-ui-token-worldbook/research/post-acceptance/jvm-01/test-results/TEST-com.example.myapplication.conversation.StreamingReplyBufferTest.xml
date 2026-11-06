@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.StreamingReplyBufferTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:17.438Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="advanceFrame_revealsMultipleReasoningStepsAndCompletion" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.004"/>
+  <testcase name="advanceFrame_usesLargerBatchWhenStreamCompleted" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.002"/>
+  <testcase name="advanceFrame_revealsContentReasoningAndImages" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.0"/>
+  <testcase name="safeSurrogateBoundary_backsOffWhenSplittingSurrogatePair" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.0"/>
+  <testcase name="advanceFrame_neverRevealsLoneHighSurrogateInContent" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.001"/>
+  <testcase name="advanceFrame_neverRevealsLoneHighSurrogateInReasoning" classname="com.example.myapplication.conversation.StreamingReplyBufferTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

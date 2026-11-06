@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.717Z" hostname="LUCKY" time="0.003">
+  <properties/>
+  <testcase name="visibleInputForScript_exposesVariablesWithReadPermission" classname="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" time="0.002"/>
+  <testcase name="filterOutput_keepsOnlyGrantedEffects" classname="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" time="0.0"/>
+  <testcase name="filterOutput_limitsGrantedEffectsByQuota" classname="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" time="0.0"/>
+  <testcase name="filterOutput_removesEffectsWithoutMatchingPermissions" classname="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" time="0.0"/>
+  <testcase name="visibleInputForScript_hidesVariablesWithoutReadPermission" classname="com.example.myapplication.roleplay.script.RoleplayScriptPermissionGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

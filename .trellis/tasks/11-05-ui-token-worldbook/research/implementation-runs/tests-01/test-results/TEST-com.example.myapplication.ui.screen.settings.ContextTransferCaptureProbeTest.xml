@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:07:49.275Z" hostname="LUCKY" time="1.32">
+  <properties/>
+  <testcase name="documentResult_readsOnlyMemoryUri_stripsBom_andKeepsSection" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="0.187"/>
+  <testcase name="sourceDialog_isRealAndCancelDoesNotLaunchChooser" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="0.47"/>
+  <testcase name="nullResults_fromThreeRealLaunchers_haveNoIoOrCallbacks" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="0.257"/>
+  <testcase name="photoResult_readsConstructedPngFromMemory_onlyAfterResult" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="0.211"/>
+  <testcase name="exportResult_writesOnlyRegisteredMemoryStream_andClosesIt" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="0.19"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

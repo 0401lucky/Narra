@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -40,6 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.context.WorldBookHitPreview
@@ -51,11 +58,15 @@ import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.component.narraOutlinedButtonColors
+import com.example.myapplication.ui.component.narraFilledTonalButtonColors
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.example.myapplication.ui.component.worldbook.KeywordChipInput
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.SettingsHelpButton
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
@@ -91,7 +102,7 @@ fun WorldBookEditScreen(
     onOpenAssistantMount: () -> Unit = {},
 ) {
     val palette = rememberSettingsPalette()
-    val outlineColors = rememberSettingsOutlineColors()
+    val outlineColors = rememberSettingsOutlineColors().copy(focusedLabelColor = palette.title)
 
     var title by rememberSaveable { mutableStateOf(entry?.title ?: "") }
     var content by rememberSaveable { mutableStateOf(entry?.content ?: "") }
@@ -122,7 +133,11 @@ fun WorldBookEditScreen(
         mutableStateOf(entry?.matchMode ?: WorldBookMatchMode.WORD_CJK)
     }
     var advancedExpanded by rememberSaveable { mutableStateOf(false) }
-    var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
+    var scopeType by rememberSaveable {
+        mutableStateOf(
+            entry?.scopeType ?: WorldBookScopeType.GLOBAL
+        )
+    }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showContentSheet by rememberSaveable { mutableStateOf(false) }
@@ -133,12 +148,13 @@ fun WorldBookEditScreen(
     val expandedState by expandedStateHolder
 
     val canSave = title.isNotBlank() &&
-        content.isNotBlank() &&
-        when (scopeType) {
-            WorldBookScopeType.GLOBAL,
-            WorldBookScopeType.ATTACHABLE -> true
-            else -> scopeId.isNotBlank()
-        }
+            content.isNotBlank() &&
+            when (scopeType) {
+                WorldBookScopeType.GLOBAL,
+                WorldBookScopeType.ATTACHABLE -> true
+
+                else -> scopeId.isNotBlank()
+            }
 
     val onSaveClick: () -> Unit = {
         if (canSave) {
@@ -162,6 +178,7 @@ fun WorldBookEditScreen(
                 scopeId = when (scopeType) {
                     WorldBookScopeType.GLOBAL,
                     WorldBookScopeType.ATTACHABLE -> ""
+
                     else -> scopeId.trim()
                 },
                 updatedAt = now,
@@ -179,6 +196,14 @@ fun WorldBookEditScreen(
                 actionLabel = "保存",
                 onAction = onSaveClick,
                 actionEnabled = canSave,
+                horizontalPadding = NarraUi.space16,
+                titleMaxLines = Int.MAX_VALUE,
+                titleIsHeading = true,
+                actionColors = narraFilledTonalButtonColors().copy(
+                    disabledContainerColor = palette.surfaceTint,
+                    disabledContentColor = palette.body,
+                ),
+                actionDisabledAlpha = 1f,
             )
         },
         containerColor = palette.background,
@@ -189,12 +214,12 @@ fun WorldBookEditScreen(
                 .testTag("worldbook_editor")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 32.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space4,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 Text(
@@ -213,7 +238,8 @@ fun WorldBookEditScreen(
                             scopeType == WorldBookScopeType.ASSISTANT -> "请选择所属角色"
                             else -> "请选择所属会话"
                         },
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = NarraUi.space8)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -227,8 +253,8 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleBasicInfo() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
                     ) {
                         OutlinedTextField(
                             value = title,
@@ -236,7 +262,7 @@ fun WorldBookEditScreen(
                             label = { Text("标题") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = NarraShapes.medium,
                             colors = outlineColors,
                         )
                         OutlinedTextField(
@@ -247,10 +273,13 @@ fun WorldBookEditScreen(
                                 .fillMaxWidth()
                                 .heightIn(min = 160.dp),
                             maxLines = 12,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = NarraShapes.medium,
                             colors = outlineColors,
                             trailingIcon = {
-                                IconButton(onClick = { showContentSheet = true }) {
+                                IconButton(
+                                    onClick = { showContentSheet = true },
+                                    modifier = Modifier.size(NarraMinimumTouchTarget)
+                                ) {
                                     Icon(Lucide.Expand, contentDescription = "全屏编辑正文")
                                 }
                             },
@@ -273,27 +302,42 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleHitRule() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                             SettingsSectionHeader(
                                 "匹配模式",
                                 "子串匹配：任意位置出现关键词即命中。整词匹配：中文按子串匹配，英文要求词边界。正则匹配：将整条关键词作为正则表达式。",
+                                contentPadding = PaddingValues(
+                                    horizontal = NarraUi.space4,
+                                    vertical = NarraUi.space4
+                                ),
+                                horizontalSpacing = NarraUi.space8,
+                                titleMaxLines = Int.MAX_VALUE,
+                                titleIsHeading = true,
+                                titleColor = palette.title,
+                                helpDialogShape = NarraShapes.large,
+                                helpActionContentColor = palette.title,
+                                helpActionMinSize = NarraMinimumTouchTarget,
                             )
                             FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                             ) {
                                 WorldBookMatchMode.entries.forEach { mode ->
                                     FilterChip(
-                                        modifier = Modifier.heightIn(min = 48.dp),
+                                        modifier = Modifier.sizeIn(
+                                            minWidth = NarraMinimumTouchTarget,
+                                            minHeight = NarraMinimumTouchTarget
+                                        ),
+                                        shape = NarraShapes.small,
                                         selected = matchMode == mode,
                                         onClick = { matchMode = mode },
                                         label = { Text(mode.label) },
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = palette.accentSoft,
-                                            selectedLabelColor = palette.accent,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                         ),
                                     )
                                 }
@@ -317,7 +361,7 @@ fun WorldBookEditScreen(
                             label = { Text("优先级") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = NarraShapes.medium,
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         )
@@ -352,16 +396,20 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleScope() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
                     ) {
                         FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                         ) {
                             WorldBookScopeType.entries.forEach { candidate ->
                                 FilterChip(
-                                    modifier = Modifier.heightIn(min = 48.dp),
+                                    modifier = Modifier.sizeIn(
+                                        minWidth = NarraMinimumTouchTarget,
+                                        minHeight = NarraMinimumTouchTarget
+                                    ),
+                                    shape = NarraShapes.small,
                                     selected = scopeType == candidate,
                                     onClick = {
                                         scopeType = candidate
@@ -374,7 +422,7 @@ fun WorldBookEditScreen(
                                     label = { Text(candidate.label) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = palette.accentSoft,
-                                        selectedLabelColor = palette.accent,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                     ),
                                 )
                             }
@@ -394,22 +442,37 @@ fun WorldBookEditScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )
-                                androidx.compose.material3.TextButton(onClick = onOpenAssistantMount) {
+                                TextButton(
+                                    onClick = onOpenAssistantMount,
+                                    modifier = Modifier.sizeIn(
+                                        minWidth = NarraMinimumTouchTarget,
+                                        minHeight = NarraMinimumTouchTarget
+                                    ),
+                                    colors = ButtonDefaults.textButtonColors(contentColor = palette.title),
+                                ) {
                                     Text("去角色页挂载")
                                 }
                             }
 
                             WorldBookScopeType.ASSISTANT -> {
                                 if (assistants.isEmpty()) {
-                                    Text("暂无角色", color = palette.body, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "暂无角色",
+                                        color = palette.body,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
                                 FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                                 ) {
                                     assistants.forEach { assistant ->
                                         FilterChip(
-                                            modifier = Modifier.heightIn(min = 48.dp),
+                                            modifier = Modifier.sizeIn(
+                                                minWidth = NarraMinimumTouchTarget,
+                                                minHeight = NarraMinimumTouchTarget
+                                            ),
+                                            shape = NarraShapes.small,
                                             selected = scopeId == assistant.id,
                                             onClick = { scopeId = assistant.id },
                                             label = {
@@ -417,7 +480,7 @@ fun WorldBookEditScreen(
                                             },
                                             colors = FilterChipDefaults.filterChipColors(
                                                 selectedContainerColor = palette.accentSoft,
-                                                selectedLabelColor = palette.accent,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                             ),
                                         )
                                     }
@@ -445,8 +508,8 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleStatus() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
                     ) {
                         ToggleField(
                             title = "启用条目",
@@ -462,20 +525,44 @@ fun WorldBookEditScreen(
                         )
                         TextButton(
                             onClick = { advancedExpanded = !advancedExpanded },
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.sizeIn(
+                                minWidth = NarraMinimumTouchTarget,
+                                minHeight = NarraMinimumTouchTarget
+                            )
+                                .semantics {
+                                    stateDescription = if (advancedExpanded) "已展开" else "已收起"
+                                },
+                            colors = ButtonDefaults.textButtonColors(contentColor = palette.title),
                         ) {
                             Text("高级参数", modifier = Modifier.weight(1f))
-                            Icon(if (advancedExpanded) Lucide.ChevronUp else Lucide.ChevronDown, contentDescription = null)
+                            Icon(
+                                if (advancedExpanded) Lucide.ChevronUp else Lucide.ChevronDown,
+                                contentDescription = null
+                            )
                         }
                         if (advancedExpanded) {
-                            SettingsSectionHeader("注入控制", "插入顺序（insertionOrder）默认为 0，数值越小越靠前。触发概率（probability）为 0–100，默认为 100，表示每次命中都注入。")
+                            SettingsSectionHeader(
+                                "注入控制",
+                                "插入顺序（insertionOrder）默认为 0，数值越小越靠前。触发概率（probability）为 0–100，默认为 100，表示每次命中都注入。",
+                                contentPadding = PaddingValues(
+                                    horizontal = NarraUi.space4,
+                                    vertical = NarraUi.space4
+                                ),
+                                horizontalSpacing = NarraUi.space8,
+                                titleMaxLines = Int.MAX_VALUE,
+                                titleIsHeading = true,
+                                titleColor = palette.title,
+                                helpDialogShape = NarraShapes.large,
+                                helpActionContentColor = palette.title,
+                                helpActionMinSize = NarraMinimumTouchTarget,
+                            )
                             OutlinedTextField(
                                 value = insertionOrderText,
                                 onValueChange = { insertionOrderText = filterIntegerInput(it) },
                                 label = { Text("插入顺序") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(8.dp),
+                                shape = NarraShapes.medium,
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             )
@@ -485,7 +572,7 @@ fun WorldBookEditScreen(
                                 label = { Text("触发概率 (%)") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(8.dp),
+                                shape = NarraShapes.medium,
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 supportingText = { Text("0–100") },
@@ -503,8 +590,8 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleHitPreview() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
                     ) {
                         OutlinedTextField(
                             value = previewSource,
@@ -517,7 +604,7 @@ fun WorldBookEditScreen(
                                 .heightIn(min = 96.dp),
                             label = { Text("待测文本") },
                             placeholder = { Text("例如：我准备去白塔城做生意") },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = NarraShapes.medium,
                             colors = outlineColors,
                         )
                         AnimatedSettingButton(
@@ -539,6 +626,17 @@ fun WorldBookEditScreen(
                             },
                             enabled = previewSource.isNotBlank(),
                             isPrimary = false,
+                            shape = NarraShapes.medium,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space16,
+                                vertical = NarraUi.space12
+                            ),
+                            colors = narraOutlinedButtonColors().copy(
+                                contentColor = palette.title,
+                                disabledContainerColor = palette.surfaceTint,
+                                disabledContentColor = palette.body,
+                            ),
+                            disabledAlpha = 1f,
                         )
                         hitPreview?.let { preview ->
                             HitPreviewResultCard(preview = preview)
@@ -549,18 +647,31 @@ fun WorldBookEditScreen(
 
             if (!isNew && entry != null) {
                 item {
-                        Column(
-                            modifier = Modifier.padding(vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            AnimatedSettingButton(
-                                text = "删除条目",
-                                onClick = { showDeleteDialog = true },
-                                enabled = true,
-                                isPrimary = false,
-                            )
-                            Text("删除后无法恢复", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        }
+                    Column(
+                        modifier = Modifier.padding(vertical = NarraUi.space16),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
+                    ) {
+                        AnimatedSettingButton(
+                            text = "删除条目",
+                            onClick = { showDeleteDialog = true },
+                            enabled = true,
+                            isPrimary = false,
+                            shape = NarraShapes.medium,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space16,
+                                vertical = NarraUi.space12
+                            ),
+                            colors = narraOutlinedButtonColors().copy(
+                                contentColor = palette.title,
+                                disabledContentColor = palette.title
+                            ),
+                        )
+                        Text(
+                            "删除后无法恢复",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }
@@ -573,6 +684,8 @@ fun WorldBookEditScreen(
             confirmLabel = "确认删除",
             dismissLabel = "取消",
             isDestructive = true,
+            shape = NarraShapes.large,
+            actionContentColor = palette.title,
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false
@@ -601,18 +714,31 @@ private fun ToggleField(
     val palette = rememberSettingsPalette()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = title,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleSmall,
                 color = palette.title,
             )
-            SettingsHelpButton(title, subtitle)
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
+            SettingsHelpButton(
+                title, subtitle,
+                dialogShape = NarraShapes.large,
+                actionContentColor = palette.title,
+                actionMinSize = NarraMinimumTouchTarget,
+            )
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.sizeIn(
+                    minWidth = NarraMinimumTouchTarget,
+                    minHeight = NarraMinimumTouchTarget
+                )
+                    .semantics { contentDescription = title },
+            )
         }
     }
 }
@@ -650,7 +776,7 @@ private fun SourceBookNameDropdown(
                 .fillMaxWidth()
                 .menuAnchor(),
             singleLine = true,
-            shape = RoundedCornerShape(8.dp),
+            shape = NarraShapes.medium,
             colors = outlineColors,
             placeholder = { Text("留空则作为独立条目显示") },
             trailingIcon = {
@@ -663,10 +789,18 @@ private fun SourceBookNameDropdown(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                shape = NarraShapes.medium,
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp,
             ) {
                 existingBookNames.forEach { name ->
                     DropdownMenuItem(
                         text = { Text(name) },
+                        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                        contentPadding = PaddingValues(
+                            horizontal = NarraUi.space12,
+                            vertical = NarraUi.space8
+                        ),
                         onClick = {
                             onValueChange(name)
                             expanded = false
@@ -702,7 +836,7 @@ private fun ConversationScopePicker(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             readOnly = true,
-            shape = RoundedCornerShape(8.dp),
+            shape = NarraShapes.medium,
             colors = outlineColors,
             placeholder = { Text("暂无会话，先到会话管理中新建") },
         )
@@ -725,7 +859,7 @@ private fun ConversationScopePicker(
                 .menuAnchor(),
             singleLine = true,
             readOnly = true,
-            shape = RoundedCornerShape(8.dp),
+            shape = NarraShapes.medium,
             colors = outlineColors,
             placeholder = { Text("请选择会话") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -733,6 +867,9 @@ private fun ConversationScopePicker(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            shape = NarraShapes.medium,
+            containerColor = palette.surface,
+            tonalElevation = 0.dp,
         ) {
             sortedConversations.forEach { conversation ->
                 val title = conversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE }
@@ -743,7 +880,7 @@ private fun ConversationScopePicker(
                 ).toString()
                 DropdownMenuItem(
                     text = {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
                             Text(
                                 text = title,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -756,6 +893,11 @@ private fun ConversationScopePicker(
                             )
                         }
                     },
+                    modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space12,
+                        vertical = NarraUi.space8
+                    ),
                     onClick = {
                         onSelected(conversation.id)
                         expanded = false
@@ -775,8 +917,9 @@ private fun HitPreviewResultCard(preview: WorldBookHitPreview) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 2.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = NarraUi.space4)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
     ) {
         Text(
             text = statusLabel,

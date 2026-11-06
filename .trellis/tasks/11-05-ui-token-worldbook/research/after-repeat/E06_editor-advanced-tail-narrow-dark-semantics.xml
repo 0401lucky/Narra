@@ -1,0 +1,90 @@
+<semantics id="E06_editor-advanced-tail-narrow-dark" fontScale="2.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #4591 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #4592 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #4613 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'worldbook_editor'
+    | CollectionInfo = 'CollectionInfo(rowCount=7, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1f8e9865'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=2655.0, maxValue=2655.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #4899 at (l=32.0, t=-14.0, r=512.0, b=82.0)px
+    |  | ContentDescription = '[折叠试命中（预览）]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已展开'
+    |  | Text = '[试命中（预览）]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #4902 at (l=512.0, t=-14.0, r=608.0, b=82.0)px
+    |  | ContentDescription = '[试命中（预览）：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #4910 at (l=32.0, t=98.0, r=608.0, b=882.0)px
+    |  |  |-Node #4912 at (l=32.0, t=114.0, r=608.0, b=378.0)px
+    |  |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |  |  | EditableText = '旅人在白塔城寻找灯塔'
+    |  |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@21d89fab'
+    |  |  | Focused = 'false'
+    |  |  | ImeAction = 'Default'
+    |  |  | InputText = '旅人在白塔城寻找灯塔'
+    |  |  | IsEditable = 'true'
+    |  |  | Text = '[待测文本]'
+    |  |  | TextSelectionRange = 'TextRange(10, 10)'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #4922 at (l=32.0, t=402.0, r=608.0, b=527.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Button'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  |  | Text = '[试命中]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #4927 at (l=40.0, t=551.0, r=600.0, b=866.0)px
+    |  |    LiveRegion = 'Polite'
+    |  |     |-Node #4928 at (l=40.0, t=551.0, r=508.0, b=628.0)px
+    |  |     | Text = '[命中：会被自动注入]'
+    |  |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #4929 at (l=40.0, t=644.0, r=600.0, b=779.0)px
+    |  |     | Text = '[主关键词命中：白塔城、灯塔]'
+    |  |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #4930 at (l=40.0, t=795.0, r=520.0, b=866.0)px
+    |  |       Text = '[次级关键词命中：旅人]'
+    |  |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #4932 at (l=32.0, t=964.0, r=608.0, b=1089.0)px
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[删除条目]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #4935 at (l=32.0, t=1113.0, r=368.0, b=1184.0)px
+    |    Text = '[删除后无法恢复]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #4596 at (l=0.0, t=0.0, r=640.0, b=133.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #4598 at (l=16.0, t=23.0, r=112.0, b=119.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #4601 at (l=120.0, t=19.0, r=400.0, b=122.0)px
+       | Text = '[编辑条目]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #4602 at (l=408.0, t=16.0, r=608.0, b=125.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[保存]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

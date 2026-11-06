@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayConversationSupportTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.584Z" hostname="LUCKY" time="0.006">
+  <properties/>
+  <testcase name="resolveUserPersona_usesScenarioMaskWhenNoManualOverride" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="buildTranscriptInput_keepsLatestLinesWithinLimit" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.003"/>
+  <testcase name="resolveRecentWindow_appliesRoleplayMinimumWindow" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="decorate_offlineDialogueWithTimeAwareness_includesTimeSection" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="resolveUserPersona_usesDefaultMaskWhenScenarioDoesNotBindMask" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="resolvePromptSettings_injectsMaskPersonaWhenSceneHasNoPersonaOverride" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="resolvePromptSettings_scenePersonaOverrideDoesNotDuplicateMaskPersona" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="buildDynamicDirectorNote_timeAwarenessDisabled_skipsTimeGapNarration" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.002"/>
+  <testcase name="buildDynamicDirectorNote_includesTensionGoalObstacleAndAnchor" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.001"/>
+  <testcase name="buildTranscriptInput_keepsSpeakerPrefixForMultilineUserMessage" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="buildTranscriptInput_keepsLatestTailWhenSingleLineTooLong" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <testcase name="resolveUserPersona_manualScenarioNameOverridesMaskName" classname="com.example.myapplication.roleplay.RoleplayConversationSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

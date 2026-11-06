@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.RoleplayInteractionSpecTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.556Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="withInteractionMode_offlineLongformForcesLongformOnAndProtocolOff" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withLongform_falseFromOnlinePhoneKeepsOnlinePhoneMode" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="scenarioToInteractionSpec_extractsOnlyThreeFields" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="scenarioWithRoleplayProtocol_delegatesToSpec" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.001"/>
+  <testcase name="normalized_promotesLongformOfflineDialogueToOfflineLongform" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withInteractionMode_onlinePhoneForcesLongformOffAndProtocolOn" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="scenarioWithInteractionMode_delegatesToSpec" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="normalized_isIdempotentWhenAlreadyConsistent" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withRoleplayProtocol_underLongformKeepsMode" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="scenarioWithLongform_delegatesToSpec" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withLongform_trueForcesOfflineLongformAndProtocolOff" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withInteractionMode_returnsSameInstanceShapeForNoOp" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="normalized_doesNotTouchOnlinePhoneEvenIfLongformFlagOn" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withRoleplayProtocol_underOnlinePhoneKeepsMode" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withLongform_falseDemotesLongformToOfflineDialogue" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withRoleplayProtocol_offlineBranchNormalizesModeToOfflineDialogue" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="scenarioWithInteractionSpec_keepsUnrelatedFieldsUntouched" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <testcase name="withInteractionMode_offlineDialogueClearsLongformButKeepsProtocol" classname="com.example.myapplication.model.RoleplayInteractionSpecTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

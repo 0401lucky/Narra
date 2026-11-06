@@ -1,0 +1,9 @@
+{
+  "checkedAtUtc": "2026-11-06T00:57:48.756326+00:00",
+  "syntaxValid": true,
+  "realBeforeEvidenceCases": 63,
+  "currentCaptureSourceDriftRejected": "after与当前捕获测试源码不同：app/src/test/java/com/example/myapplication/ui/screenshot/P06RenderTest.kt",
+  "inMemorySimulationOnly": true,
+  "afterArtifactsWritten": false,
+  "scriptSha256": "a0804fa89e593f90dbb06a20cc15e1c9100ba20b8d11f379a887b42bf525e6f0"
+}

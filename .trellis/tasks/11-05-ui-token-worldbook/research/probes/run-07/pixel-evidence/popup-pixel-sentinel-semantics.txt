@@ -1,0 +1,9 @@
+Printing with useUnmergedTree = 'true'
+Node #901 at (l=0.0, t=0.0, r=240.0, b=240.0)px
+ |-Node #902 at (l=0.0, t=0.0, r=240.0, b=240.0)px
+   [IsPopup]
+    |-Node #903 at (l=0.0, t=0.0, r=240.0, b=240.0)px
+      Shape = 'RectangleShape'
+       |-Node #904 at (l=0.0, t=0.0, r=240.0, b=168.0)px
+         Text = '[Popup 像素哨兵]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

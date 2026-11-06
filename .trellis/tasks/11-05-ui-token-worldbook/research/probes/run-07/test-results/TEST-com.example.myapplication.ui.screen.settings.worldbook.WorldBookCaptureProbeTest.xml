@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-05T23:17:06.270Z" hostname="LUCKY" time="3.546">
+  <properties/>
+  <testcase name="bookPopup_isIndependentAndLastChoiceUsesRealScroll" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" time="1.122"/>
+  <testcase name="bodySheet_lastLineIsInsideRealTextViewport" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" time="0.597"/>
+  <testcase name="ordinaryPage_usesFixtureAndShadowClock" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" time="0.436"/>
+  <testcase name="conversationPopup_usesFixedRelativeTimeAndRealLastId" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" time="1.035"/>
+  <testcase name="realDialog_isIndependentAndMissingWindowFails" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest" time="0.347"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

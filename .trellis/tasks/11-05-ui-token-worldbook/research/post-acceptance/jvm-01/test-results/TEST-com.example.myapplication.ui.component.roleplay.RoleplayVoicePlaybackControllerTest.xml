@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:03.840Z" hostname="LUCKY" time="0.013">
+  <properties/>
+  <testcase name="keyChange_disposedControllerCannotOverwriteReplacementState" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.005"/>
+  <testcase name="playerError_releasesOnceAndIgnoresLaterCallbacks" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.002"/>
+  <testcase name="dispose_isIdempotentAndReleasedCallbacksCannotWriteState" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.002"/>
+  <testcase name="toggle_preparingAgain_cancelsWithoutCreatingSecondPlayer" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.001"/>
+  <testcase name="startFailure_releasesOnceAndExposesCause" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.0"/>
+  <testcase name="completion_releasesOnceAndReturnsToIdle" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.001"/>
+  <testcase name="prepareFailure_releasesOnceAndExposesCause" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.0"/>
+  <testcase name="toggle_idle_registersListenersBeforeAsyncPrepareAndStartsOnlyAfterPrepared" classname="com.example.myapplication.ui.component.roleplay.RoleplayVoicePlaybackControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

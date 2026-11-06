@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:26:39.404Z" hostname="LUCKY" time="0.253">
+  <properties/>
+  <testcase name="mergeFailure_retainsPreviewAndPending_forRetryAndGatedSuccess" classname="com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest" time="0.224"/>
+  <testcase name="avatarFailure_isCaughtBeforeMerge_andRetryPreservesOriginalImagePayload" classname="com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest" time="0.015"/>
+  <testcase name="previewAndCancel_neverWrite_andCancelledPendingImportCannotBeConfirmed" classname="com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest" time="0.005"/>
+  <testcase name="invalidNextPreview_clearsPreviousPendingWithoutWriting" classname="com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest" time="0.009"/>
+  <system-out><![CDATA[TavernCharacterAdapter: 解析到世界书条目数: 1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

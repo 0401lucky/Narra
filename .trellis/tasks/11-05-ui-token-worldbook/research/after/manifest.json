@@ -1,0 +1,1373 @@
+{
+  "phase": "after",
+  "capturedAtUtc": "2026-11-06T01:54:00.877459+00:00",
+  "command": ".\\gradlew.bat :app:verifyRoborazziDebug --tests com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test --tests com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test --tests com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest --console=plain",
+  "commandExitCode": 1,
+  "sourceCommit": "43ebda6dc40a5d21812cd594d10777ce3f2b166a",
+  "expectedMissingBaselines": 63,
+  "acceptedPngHashesUnchanged": 158,
+  "independentWindows": 18,
+  "popupCases": 4,
+  "captureEnvironment": {
+    "fixedEpochMillis": 1791950400000,
+    "clock": "Robolectric ShadowPausedSystemClock; virtual time advances with deterministic UI actions; restored after each test",
+    "locale": "zh-CN",
+    "timeZone": "Asia/Shanghai",
+    "density": 2.0,
+    "sdk": 35,
+    "graphicsMode": "NATIVE",
+    "application": "android.app.Application"
+  },
+  "sourceSha256": {
+    "app/build.gradle": "cd272a6c8769bfafa391c328ab9e7183c1c4e0631ffa6dfdf89d4ba05bc6d16f",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraButton.kt": "364611ed5ad86911db513e33aff749fc1eb8ccb47f9fa096deddac8f88ad56bf",
+    "app/src/main/java/com/example/myapplication/ui/component/worldbook/KeywordChipInput.kt": "7c1d58645e608d4e40e95e771d43c7c98d2fc0d892948da1e91b72eb22069cf0",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ContextTransferScreen.kt": "e94893743b0e27852011d9589da38a1b2292ffe5bedc57ff24ab09376e05739d",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "f3bba87287acdf79d554e4095767c797be2226108c0aa763cb743a37c5548190",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookBookDetailScreen.kt": "9e7080c47f4e4441c486ba177de73f86d33c46e4d6a0018b1360b7a5d3d0540b",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookContentFullscreenSheet.kt": "a49f1c5b780167a5af0fd9d86e50f41f7c476a534de78f05d878daf4687e3d85",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditScreen.kt": "2e7759b27c16463ce0be04e6943b06cd72f058932fc210c7fd897e66eb236c7c",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditSections.kt": "04532f3c52e6ad7d803782a64599d5d7b774d1683976cdc1d9b69a94fc669b36",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListScreen.kt": "fc2883bccea7f7fc05d278d300ac14edc4a7613f770d60dfd6e95cfb6a8ea702",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListStyle.kt": "f758ca0f9b146adb95401a79dd40a3b04552f61d0e9ae6ae21a7596d7f30c22c",
+    "docs/updates/dev.json": "bfbb8d97279e6eda1a4b1e5a7005d27f0345e464cfca68d6d29494ee72541963",
+    "gradle.properties": "eb455746f9a9e4c5882c0aab957715c3321e6580d8ca18a765ede07a51b45667"
+  },
+  "testSourceSha256": {
+    "app/src/test/java/com/example/myapplication/ui/screenshot/P06RenderTest.kt": "2aed6a44a0656d584bf57d60f75cd15ea79888d4a5223bfe39a7bf51b33d5439",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/WorldBookRenderTest.kt": "2ed41af3cadab9a6e2736f2a0960d13b4b2c8e0551a31ce11a0017357a421fbf",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ContextTransferRenderTest.kt": "84f3a83285e840c8957015e6e9a09065457187c9f3a1991b824647016351423d",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/LegacyTextFieldScrollProbe.kt": "db663677067061a18d7445b60cfe7fd114ef49c02a9701584d7c650c8541bb70",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/WorldBookScreenshotE06Test.kt": "a0c8aa758b1e76b67c3f34ea42b00184897e87fe90f6c192edce1390b62f3157",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ContextTransferScreenshotE06Test.kt": "72cfa252fdf8117a4e7c702e014d49f464ce0bc41499da9c82ca6829d4c651f9",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotCases.kt": "505e1e9aca2c26e16789946766d75f74f7448135b98933d708dd4cf7c7269a69",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotStageTest.kt": "9a84332709230a7b6df81b7d62cecc71ba5405999b047ef35dbae23b54237604",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotFixture.kt": "794c58d005148b304098dc3df703c8e410b131426b5c83e7581e61d8e166974f"
+  },
+  "cases": [
+    {
+      "id": "E06_list-matcha-light",
+      "file": "E06_list-matcha-light_actual.png",
+      "sha256": "d941a0b30bb954bb6e890a6b39070913171a90c13fd358869691a78b68dd96a4",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-matcha-dark",
+      "file": "E06_list-matcha-dark_actual.png",
+      "sha256": "2cc21c0bf6047500b9877c8b3fe0a3a5cce094d3a30e7edcdd4405fd663b2ff5",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-vanilla-light",
+      "file": "E06_list-vanilla-light_actual.png",
+      "sha256": "25c839f8b7bd494ea1b3141c61a1fc46a077fd6556c527afd07a127e0cd56a15",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "vanilla",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-vanilla-dark",
+      "file": "E06_list-vanilla-dark_actual.png",
+      "sha256": "e01637c6ff2284035bb688074ec6ff3eb7d62f0149671ccbd55bd5497a547adc",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "vanilla",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-ocean-light",
+      "file": "E06_list-ocean-light_actual.png",
+      "sha256": "d3375325427ece8ff097d52c70eec650c79067e296b8413588a1a76ac0ca1f2c",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "ocean",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-ocean-dark",
+      "file": "E06_list-ocean-dark_actual.png",
+      "sha256": "4e2d07b194ac0ce9027036b2547128c11caf529fe5057df36e68f1921b500f4a",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "books-and-standalone",
+      "theme": "ocean",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-light",
+      "file": "E06_detail-light_actual.png",
+      "sha256": "ba5cb980abf3c9e77a7814228dcaee00926b14e200aa386535f9577f3ff74c79",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "existing-book",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-dynamic-light",
+      "file": "E06_list-dynamic-light_actual.png",
+      "sha256": "a1016a9fead715c52192d035c0eeca2dfe4c028cdef1e5af84e081dd2a4d22eb",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "filter-selected",
+      "theme": "fixed-dynamic",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-dynamic-light",
+      "file": "E06_detail-dynamic-light_actual.png",
+      "sha256": "3ead41ec43f2a9bff3aafa24d1321aa7fd81d25983cc01d0ef96281f0c21e62e",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "management-expanded",
+      "theme": "fixed-dynamic",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-filters-narrow-light",
+      "file": "E06_list-filters-narrow-light_actual.png",
+      "sha256": "7e79e5459eb636dc3f9a2027679cd1e2640aaf223c5d26ec1667c134b45f5427",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "filters-expanded-first",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-tail-narrow-light",
+      "file": "E06_list-tail-narrow-light_actual.png",
+      "sha256": "abbc273fcf8b9258bd48798162e7c3d88270a71e2cfa90b3d3fa91d128ca2757",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "list-at-maximum",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3005.0/3005.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-management-narrow-light",
+      "file": "E06_detail-management-narrow-light_actual.png",
+      "sha256": "17c767e94f160f1bb301e2b8c6d8c93264dfec76aa361fcbc5357bda222c6d06",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "management-expanded",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-tail-narrow-light",
+      "file": "E06_detail-tail-narrow-light_actual.png",
+      "sha256": "699757c56d790f46e1b89c36c06408650102fcfa56f08a28bbb3a8a1c3acb515",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "detail-at-maximum",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3240.0/3240.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-help-dialog-light",
+      "file": "E06_list-help-dialog-light_actual.png",
+      "sha256": "9f58d6ccba05dd6f08efa1bbe3dd4ddfdd09af68943acb6adb69032bdbd193f7",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "real-list-help",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_book-delete-dialog-light",
+      "file": "E06_book-delete-dialog-light_actual.png",
+      "sha256": "f834da40989ed13223320dc1b6450049046668a48f7133305c68cc8014c842ce",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "delete-book-long-name",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_detail-dark",
+      "file": "E06_detail-dark_actual.png",
+      "sha256": "e4ba2aa4f9eb46aa1e3155372eb8ce6e327083c7bd2764fbacc5e788154055be",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "existing-book",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-dynamic-dark",
+      "file": "E06_list-dynamic-dark_actual.png",
+      "sha256": "74a8722544413f7eb9c1e64b003b894a0e2deab33222a0dd5dcc4e989c041cd2",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "filter-selected",
+      "theme": "fixed-dynamic",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-dynamic-dark",
+      "file": "E06_detail-dynamic-dark_actual.png",
+      "sha256": "7751b3b02e4e1a87f50842597e6964952646c3374d2744466b32dd9a9f90f562",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "management-expanded",
+      "theme": "fixed-dynamic",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-filters-narrow-dark",
+      "file": "E06_list-filters-narrow-dark_actual.png",
+      "sha256": "66a93c1a02a227c01b4d3d8ea79442a215c353d44591270eb6b015393cf656d6",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "filters-expanded-first",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-tail-narrow-dark",
+      "file": "E06_list-tail-narrow-dark_actual.png",
+      "sha256": "c0e195b633c0d4b8ca9f29a4ba5ce36d9df1bdbe242791f916ad82253549cf7a",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "list-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3005.0/3005.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-management-narrow-dark",
+      "file": "E06_detail-management-narrow-dark_actual.png",
+      "sha256": "f329ba1a5429e57bd718f500688c27d80a1e75c89d31bd3368794051792f31bb",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "management-expanded",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_detail-tail-narrow-dark",
+      "file": "E06_detail-tail-narrow-dark_actual.png",
+      "sha256": "92d95ee35426e7827aca99322e2b2fa4eb0a31aa3e93b43c1f8e6b9f6b7d3fd2",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "detail-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3240.0/3240.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-help-dialog-dark",
+      "file": "E06_list-help-dialog-dark_actual.png",
+      "sha256": "031da29e6dbf2a4e2fda939a6d20d1a77182914ff9f9f2e33d997219aa1e796a",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "real-list-help",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_book-delete-dialog-dark",
+      "file": "E06_book-delete-dialog-dark_actual.png",
+      "sha256": "8175a44f0a573b8b9acf5885a88915352a0e0378c72c46d01f7585f8e1c43f12",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "delete-book-long-name",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_list-empty-light",
+      "file": "E06_list-empty-light_actual.png",
+      "sha256": "e8d5ff66fee9a07042156d904cb0d1260ce693535fbbeeecf364635935ee6cf1",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "no-entries",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-search-empty-dark",
+      "file": "E06_list-search-empty-dark_actual.png",
+      "sha256": "bafe856c2bdd0302a1166e4d3feb5fc19c899714953b129152c71919d5013942",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "nonempty-query-no-match",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=search:no-match -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_list-filter-empty-light",
+      "file": "E06_list-filter-empty-light_actual.png",
+      "sha256": "2e1080956f1732f5bca0809dbbdbdbecdf330a6d885e4a8a4df2f92664cf1bfc",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "active-filter-no-match",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:会话 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-new-required-narrow-light",
+      "file": "E06_editor-new-required-narrow-light_actual.png",
+      "sha256": "cf31c243cb55869ed4c40ef8cc0ec6a7a24240385f91e0f12ec04075753ad9ab",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "new-empty-default-sections",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-existing-light",
+      "file": "E06_editor-existing-light_actual.png",
+      "sha256": "d073649b7a8a6f84465cb82929cd3c711ac4a226ffef59ecf62a5bc429841640",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "existing-entry-full-fields",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-rules-narrow-light",
+      "file": "E06_editor-rules-narrow-light_actual.png",
+      "sha256": "5a46837adc046d23e37fdda4fdf632699d342fe7979d485a966896c382355636",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "rules-expanded",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-scope-narrow-light",
+      "file": "E06_editor-scope-narrow-light_actual.png",
+      "sha256": "e5836848ea58c2be179f8e7664804f631cfa64cf8692c7887e9e786555b79383",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "assistant-scope",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceUnclipped=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-advanced-tail-narrow-light",
+      "file": "E06_editor-advanced-tail-narrow-light_actual.png",
+      "sha256": "d8babb2a93a76c675d7535885e30ca6268c3253acf5cbf9f6705ad16d9be4ce7",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "advanced-and-preview-at-maximum",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2655.0/2655.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryUnclipped=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401500\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-body-sheet-light",
+      "file": "E06_editor-body-sheet-light_actual.png",
+      "sha256": "355d5a08bdeb896f89d78221cd8bd898aa2317237ffa52cf8dfcabc43ca5a215",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "body-at-maximum",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nbodyScroll=3397.0/3397.0\nbodyViewport=Rect.fromLTRB(64.0, 272.0, 576.0, 1075.0)\nbodyViewportSize=803\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=50\nbodyLastLine=4116.0/4200.0\nbodyLastLineInViewport=719.0/803.0 within 0/803.0\nbodyLastLineText=亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldUnclipped=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end"
+    },
+    {
+      "id": "E06_entry-delete-dialog-light",
+      "file": "E06_entry-delete-dialog-light_actual.png",
+      "sha256": "bee3c38a07e70967835b8c4c7159ef6f7e21d16b803b6d54233c9df9d706e8e2",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "delete-original-entry",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3072.0/3072.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_editor-rule-help-dialog-light",
+      "file": "E06_editor-rule-help-dialog-light_actual.png",
+      "sha256": "d56da2b7f3ccad121a8702e0661e131abb807cad4f729f9c4399be311cb29b4d",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "longest-real-rule-help",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_editor-book-popup-light",
+      "file": "E06_editor-book-popup-light_actual.png",
+      "sha256": "d1f4e9ba95a05474d272b721f33900c36bab154055d37d1f555621ea53e440f9",
+      "size": [
+        576,
+        1004
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "long-book-names-last-choice",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-popup-root",
+      "window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npopupScroll=350.0/350.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup"
+    },
+    {
+      "id": "E06_editor-conversation-popup-light",
+      "file": "E06_editor-conversation-popup-light_actual.png",
+      "sha256": "644a22ebdf4cdbe5f44d5a256a4acb81d8d2e9955f9e7d7184e81f8c868813e2",
+      "size": [
+        576,
+        814
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "fixed-time-long-conversations-last-choice",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-popup-root",
+      "window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npopupScroll=458.0/458.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 798.0)\nlastChoice=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup"
+    },
+    {
+      "id": "E06_editor-new-required-narrow-dark",
+      "file": "E06_editor-new-required-narrow-dark_actual.png",
+      "sha256": "e7e4dc5921c72f3979e4230e392eaed97ac343c93972f92e2293da9dd0ea6273",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "new-empty-default-sections",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-existing-dark",
+      "file": "E06_editor-existing-dark_actual.png",
+      "sha256": "9e3067aa626d2f0ff8d2a0756d329220e377fa27d5c96897acddb694077ae771",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "existing-entry-full-fields",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-rules-narrow-dark",
+      "file": "E06_editor-rules-narrow-dark_actual.png",
+      "sha256": "e27d5c6b002903e6a26bb60ba5ee4dea5c80b86abf0d09e6bd0626e8b548eeec",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "rules-expanded",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-scope-narrow-dark",
+      "file": "E06_editor-scope-narrow-dark_actual.png",
+      "sha256": "e52c943b0455557c604f175b87e4892095fc437e8a61dfbf04f247df6ce5dbfc",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "assistant-scope",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceUnclipped=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-advanced-tail-narrow-dark",
+      "file": "E06_editor-advanced-tail-narrow-dark_actual.png",
+      "sha256": "2aa033dfbbd229f0bb4815187a3383111033321c45af63c5c82616a8c385fd55",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "advanced-and-preview-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2655.0/2655.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryUnclipped=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401500\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_editor-body-sheet-dark",
+      "file": "E06_editor-body-sheet-dark_actual.png",
+      "sha256": "c3e072fb02358964b0de459f6cbc9bd4aaf2a83e3a02b54ab0e7df96a2abab4a",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "body-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nbodyScroll=3397.0/3397.0\nbodyViewport=Rect.fromLTRB(64.0, 272.0, 576.0, 1075.0)\nbodyViewportSize=803\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=50\nbodyLastLine=4116.0/4200.0\nbodyLastLineInViewport=719.0/803.0 within 0/803.0\nbodyLastLineText=亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldUnclipped=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end"
+    },
+    {
+      "id": "E06_entry-delete-dialog-dark",
+      "file": "E06_entry-delete-dialog-dark_actual.png",
+      "sha256": "d7b7ddac8e3475a3802276d1ffa787a70e473533a02110a3b6bdb227f28f6c0a",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "delete-original-entry",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3072.0/3072.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_editor-rule-help-dialog-dark",
+      "file": "E06_editor-rule-help-dialog-dark_actual.png",
+      "sha256": "7b700375b9575e39d28e64a3d47011a712f06beb52995ff29d07220a48b706b0",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "longest-real-rule-help",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_editor-book-popup-dark",
+      "file": "E06_editor-book-popup-dark_actual.png",
+      "sha256": "302dadb6b0f46811006bb76da8650a10222ebea6c12bba6607b10e428a2bb5ce",
+      "size": [
+        576,
+        1004
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "long-book-names-last-choice",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-popup-root",
+      "window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npopupScroll=350.0/350.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup"
+    },
+    {
+      "id": "E06_editor-conversation-popup-dark",
+      "file": "E06_editor-conversation-popup-dark_actual.png",
+      "sha256": "901fc1ab6406e308425f3e007b31655747150b9eba9be6424624e722381505c5",
+      "size": [
+        576,
+        814
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "fixed-time-long-conversations-last-choice",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-popup-root",
+      "window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n",
+      "measurements": "clockStartMillis=1791950400000\npopupScroll=458.0/458.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 798.0)\nlastChoice=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup"
+    },
+    {
+      "id": "E06_transfer-matcha-light",
+      "file": "E06_transfer-matcha-light_actual.png",
+      "sha256": "572d0c1d36524e607c7b628546217f92080fb2d857bb856f6fe49aa785da4e8e",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-matcha-dark",
+      "file": "E06_transfer-matcha-dark_actual.png",
+      "sha256": "089083666fccef775ccef1adde02e402fce15d41e0b4af740d1f80cca7685bdd",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-vanilla-light",
+      "file": "E06_transfer-vanilla-light_actual.png",
+      "sha256": "5241bc632801878ab890009ea19af4d22ea949979a6c3c268ed15e1f1a2ad892",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "vanilla",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-vanilla-dark",
+      "file": "E06_transfer-vanilla-dark_actual.png",
+      "sha256": "7fe780ba756c29f94d835a710c89f3e31a0f35638f3eca86cc941d962c261e73",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "vanilla",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-ocean-light",
+      "file": "E06_transfer-ocean-light_actual.png",
+      "sha256": "b908f2e0f63cc2131121674e8646297bf86be09f5cde94d0a2ea77f8fceae5ed",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "ocean",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-ocean-dark",
+      "file": "E06_transfer-ocean-dark_actual.png",
+      "sha256": "cee7d48d8e65df240b7c4009725e0674ecfeb2f47fb096a0bcc59bf71731c892",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "all-nonzero-counts",
+      "theme": "ocean",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-preview-dynamic-light",
+      "file": "E06_transfer-preview-dynamic-light_actual.png",
+      "sha256": "52223e03b2dda02cb6635e56e83407dd956e25d179fc50167d686fe5028099aa",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "preview-with-notices-conflicts",
+      "theme": "fixed-dynamic",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-source-dialog-light",
+      "file": "E06_transfer-source-dialog-light_actual.png",
+      "sha256": "001fe6aeca3a5ce91cda2bf8a3ce51863e160794b859db7aa05d0ba469eb4644",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "source-chooser",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Unclipped=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份"
+    },
+    {
+      "id": "E06_transfer-help-dialog-light",
+      "file": "E06_transfer-help-dialog-light_actual.png",
+      "sha256": "943e0227d48aa0dbbfd1d95b156e0beb1e9eb83a30a3690cc5abefb744436933",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "intro-help",
+      "theme": "matcha",
+      "dark": false,
+      "target": "independent-dialog-root",
+      "window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_transfer-preview-dynamic-dark",
+      "file": "E06_transfer-preview-dynamic-dark_actual.png",
+      "sha256": "29ff2c8c25aafbb3bac4316f8c2dec8f4ea657ae414b5b89d86fef46b0d72f0b",
+      "size": [
+        720,
+        1600
+      ],
+      "fontScale": 1,
+      "density": 2,
+      "stageDp": [
+        360,
+        800
+      ],
+      "state": "preview-with-notices-conflicts",
+      "theme": "fixed-dynamic",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-source-dialog-dark",
+      "file": "E06_transfer-source-dialog-dark_actual.png",
+      "sha256": "8bc282c3c9021064bbde303a39cfdefde658ece7057e66daa84a36699283dbe6",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "source-chooser",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Unclipped=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份"
+    },
+    {
+      "id": "E06_transfer-help-dialog-dark",
+      "file": "E06_transfer-help-dialog-dark_actual.png",
+      "sha256": "95807104c12d6aa203256a3a5923718f5fc4ba79f4ab6cac90057b0729372d4e",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "intro-help",
+      "theme": "matcha",
+      "dark": true,
+      "target": "independent-dialog-root",
+      "window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody"
+    },
+    {
+      "id": "E06_transfer-first-narrow-light",
+      "file": "E06_transfer-first-narrow-light_actual.png",
+      "sha256": "d5f373ac787928bda91699990c16280f233687e5fa9d8a291752e72323a7e08a",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "first-section",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\nsection=资料库备份\n资料库备份Export=Rect.fromLTRB(64.0, 935.0, 308.0, 1060.0)\n资料库备份ExportUnclipped=Rect.fromLTRB(64.0, 935.0, 308.0, 1060.0)\n资料库备份ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ExportFullyVisible=true\n资料库备份ExportTouch48dp=true\n资料库备份Import=Rect.fromLTRB(332.0, 935.0, 576.0, 1060.0)\n资料库备份ImportUnclipped=Rect.fromLTRB(332.0, 935.0, 576.0, 1060.0)\n资料库备份ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ImportFullyVisible=true\n资料库备份ImportTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-last-narrow-dark",
+      "file": "E06_transfer-last-narrow-dark_actual.png",
+      "sha256": "885ef084dea2abf425f20bc645bf8cc488b166ce035e61ee09810612a2c7982b",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "last-section-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=3300.0/3300.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包Export=Rect.fromLTRB(64.0, 1059.0, 308.0, 1184.0)\n预设包ExportUnclipped=Rect.fromLTRB(64.0, 1059.0, 308.0, 1184.0)\n预设包ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ExportFullyVisible=true\n预设包ExportTouch48dp=true\n预设包Import=Rect.fromLTRB(332.0, 1059.0, 576.0, 1184.0)\n预设包ImportUnclipped=Rect.fromLTRB(332.0, 1059.0, 576.0, 1184.0)\n预设包ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ImportFullyVisible=true\n预设包ImportTouch48dp=true\nsection=预设包\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-preview-notice-narrow-light",
+      "file": "E06_transfer-preview-notice-narrow-light_actual.png",
+      "sha256": "1b53a1d8b6e7dc9ac6a9ca307494230f723b58f15b2131f64b1610c02aab5278",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "preview-notices",
+      "theme": "matcha",
+      "dark": false,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus"
+    },
+    {
+      "id": "E06_transfer-preview-actions-narrow-dark",
+      "file": "E06_transfer-preview-actions-narrow-dark_actual.png",
+      "sha256": "c78b0df86fa0861aa1b8211d5729aa883bcaaf631208f183c8b2e40928273e96",
+      "size": [
+        640,
+        1280
+      ],
+      "fontScale": 2,
+      "density": 2,
+      "stageDp": [
+        320,
+        640
+      ],
+      "state": "preview-at-maximum",
+      "theme": "matcha",
+      "dark": true,
+      "target": "screenshot_stage",
+      "window": null,
+      "measurements": "clockStartMillis=1791950400000\npageScroll=7652.0/7652.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreview=Rect.fromLTRB(64.0, 910.0, 576.0, 1035.0)\nconfirmPreviewUnclipped=Rect.fromLTRB(64.0, 910.0, 576.0, 1035.0)\nconfirmPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreviewFullyVisible=true\nconfirmPreviewTouch48dp=true\ncancelPreview=Rect.fromLTRB(64.0, 1059.0, 576.0, 1184.0)\ncancelPreviewUnclipped=Rect.fromLTRB(64.0, 1059.0, 576.0, 1184.0)\ncancelPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\ncancelPreviewFullyVisible=true\ncancelPreviewTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus"
+    }
+  ]
+}

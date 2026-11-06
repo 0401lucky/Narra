@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" tests="47" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:18:54.627Z" hostname="LUCKY" time="21.413">
+  <properties/>
+  <testcase name="e06_entry_delete_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="1.576"/>
+  <testcase name="e06_editor_advanced_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="1.125"/>
+  <testcase name="e06_list_search_empty_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.7"/>
+  <testcase name="e06_list_filter_empty_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.46"/>
+  <testcase name="e06_list_vanilla_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.318"/>
+  <testcase name="e06_list_dynamic_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.389"/>
+  <testcase name="e06_list_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.375"/>
+  <testcase name="e06_editor_existing_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.332"/>
+  <testcase name="e06_editor_existing_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.373"/>
+  <testcase name="e06_list_dynamic_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.357"/>
+  <testcase name="e06_editor_rule_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.458"/>
+  <testcase name="e06_editor_advanced_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.684"/>
+  <testcase name="e06_detail_dynamic_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.414"/>
+  <testcase name="e06_list_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.384"/>
+  <testcase name="e06_book_delete_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.379"/>
+  <testcase name="e06_detail_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.378"/>
+  <testcase name="e06_editor_rules_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.441"/>
+  <testcase name="e06_editor_book_popup_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.502"/>
+  <testcase name="e06_editor_conversation_popup_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.95"/>
+  <testcase name="e06_editor_book_popup_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.388"/>
+  <testcase name="e06_list_ocean_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.325"/>
+  <testcase name="e06_editor_conversation_popup_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.459"/>
+  <testcase name="e06_list_vanilla_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.342"/>
+  <testcase name="e06_editor_new_required_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.413"/>
+  <testcase name="e06_detail_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.388"/>
+  <testcase name="e06_editor_rules_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.412"/>
+  <testcase name="e06_detail_dynamic_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.368"/>
+  <testcase name="e06_list_empty_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.273"/>
+  <testcase name="e06_list_matcha_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.294"/>
+  <testcase name="e06_list_ocean_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.294"/>
+  <testcase name="e06_editor_scope_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.48"/>
+  <testcase name="e06_detail_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.297"/>
+  <testcase name="e06_detail_management_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.362"/>
+  <testcase name="e06_book_delete_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.381"/>
+  <testcase name="e06_list_matcha_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.314"/>
+  <testcase name="e06_editor_scope_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.432"/>
+  <testcase name="e06_list_filters_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.459"/>
+  <testcase name="e06_editor_rule_help_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.434"/>
+  <testcase name="e06_editor_body_sheet_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.526"/>
+  <testcase name="e06_list_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.382"/>
+  <testcase name="e06_detail_management_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.394"/>
+  <testcase name="e06_editor_body_sheet_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.43"/>
+  <testcase name="e06_editor_new_required_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.425"/>
+  <testcase name="e06_entry_delete_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.444"/>
+  <testcase name="e06_list_filters_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.402"/>
+  <testcase name="e06_list_help_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.391"/>
+  <testcase name="e06_detail_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.285"/>
+  <system-out><![CDATA[Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_entry-delete-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-advanced-tail-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_list-search-empty-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-filter-empty-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-tail-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-existing-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_editor-existing-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_editor-rule-help-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-advanced-tail-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-tail-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_book-delete-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-tail-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-rules-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-book-popup-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=578304, width=576, height=1004) changed:false
+Roborazzi: E06_editor-conversation-popup-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=468864, width=576, height=814) changed:false
+Roborazzi: E06_editor-book-popup-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=578304, width=576, height=1004) changed:false
+Roborazzi: E06_list-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_editor-conversation-popup-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=468864, width=576, height=814) changed:false
+Roborazzi: E06_list-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_editor-new-required-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-tail-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-rules-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-empty-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_list-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_editor-scope-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_detail-management-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_book-delete-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_list-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E06_editor-scope-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_list-filters-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_editor-rule-help-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_editor-body-sheet-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_list-help-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-management-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_editor-body-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_editor-new-required-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_entry-delete-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_list-filters-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E06_list-help-dialog-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E06_detail-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" tests="1" skipped="1" failures="0" errors="0" timestamp="2026-11-05T22:53:49.983Z" hostname="LUCKY" time="186.011">
+  <properties/>
+  <testcase name="documentResult_readsOnlyMemoryUri_stripsBom_andKeepsSection" classname="com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest" time="185.119">
+    <skipped/>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

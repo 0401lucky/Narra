@@ -1,0 +1,17 @@
+image=640x1280
+colors=173
+clockStartMillis=1791950400000
+bodyScroll=4749.0/4749.0
+bodyViewport=Rect.fromLTRB(72.0, 272.0, 568.0, 1067.0)
+bodyViewportSize=795
+bodyLastMarker=正文末尾：灯塔一直亮着。
+bodyLineCount=66
+bodyLastLine=5460.0/5544.0
+bodyLastLineInViewport=711.0/795.0 within 0/795.0
+bodyLastLineText=直亮着。
+bodyLastLineVisible=true
+bodyField=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)
+bodyFieldUnclipped=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)
+bodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+bodyFieldFullyVisible=true
+bodyFieldTouch48dp=true

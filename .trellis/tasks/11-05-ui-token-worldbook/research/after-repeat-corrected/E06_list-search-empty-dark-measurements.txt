@@ -1,0 +1,9 @@
+clockStartMillis=1791950400000
+isolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO
+captureClockMillis=1791950400360
+locale=zh-CN
+timeZone=Asia/Shanghai
+qualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720
+density=2.0
+fontScale=1.0
+actions=search:no-match -> clear-window-owner-focus

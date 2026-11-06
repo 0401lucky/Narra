@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.609Z" hostname="LUCKY" time="0.009">
+  <properties/>
+  <testcase name="mapMessages_persistedActionAndSpecialIds_surviveEarlierPartInsertion" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.005"/>
+  <testcase name="mapMessages_streamingPreviewContentGrowth_keepsUiItemId" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.001"/>
+  <testcase name="mapMessages_protocolFallbackActionsAndSpecials_ignoreTransientPartIds" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.001"/>
+  <testcase name="mapMessages_prependOtherMessage_keepsExistingUiItemIds" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.001"/>
+  <testcase name="mapMessages_deleteOtherMessage_keepsRemainingUiItemIds" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.0"/>
+  <testcase name="mapMessages_duplicatePersistedActionIds_fallBackToDeterministicLocalOrdinals" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.001"/>
+  <testcase name="mapMessages_duplicatePersistedSpecialIds_fallBackToDeterministicLocalOrdinals" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.0"/>
+  <testcase name="mapMessages_sameSourceMultipleBubbles_producesUniqueUiItemIds" classname="com.example.myapplication.roleplay.RoleplayMessageUiIdentityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

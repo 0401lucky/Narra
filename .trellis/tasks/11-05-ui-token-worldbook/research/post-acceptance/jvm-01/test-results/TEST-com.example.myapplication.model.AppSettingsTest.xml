@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.AppSettingsTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.532Z" hostname="LUCKY" time="0.002">
+  <properties/>
+  <testcase name="hasConfiguredSearchSource_acceptsModelBuiltinSearchForGeminiChatCompletions" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolvedAssistants_prefersSavedOverrideForBuiltinAssistant" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolveFunctionModel_prefersDedicatedModelWhenConfigured" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolveFunctionModel_treatsExplicitModelAsCustomForCompatibility" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolveFunctionModel_fallsBackToChatModelWhenDedicatedModelMissing" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="activeProvider_returnsNullWhenAllProvidersDisabled" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_rejectsLlmSearchWithoutResponsesOrAnthropicSupport" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolvedAssistants_hidesDeprecatedGenericBuiltinAssistants" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="activeProvider_skipsDisabledSelectedProvider" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="resolveFunctionModel_returnsBlankWhenFunctionModeDisabled" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_rejectsLlmSearchForGoogleResponsesMode" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_rejectsModelBuiltinSearchForResponsesMode" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_rejectsLlmSearchWhenSearchModelDisabled" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="normalizedUserPersonaMasks_keepsProfileMaskBeforeCustomMasks" classname="com.example.myapplication.model.AppSettingsTest" time="0.001"/>
+  <testcase name="resolveFunctionProvider_usesAssignedProviderWithoutChangingChatProvider" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="normalizedUserPersonaMasks_wrapsExistingProfileAsBaseMask" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_rejectsModelBuiltinSearchForNonGoogleProvider" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <testcase name="hasConfiguredSearchSource_acceptsLlmSearchWhenProviderHasSearchModelAndResponsesMode" classname="com.example.myapplication.model.AppSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

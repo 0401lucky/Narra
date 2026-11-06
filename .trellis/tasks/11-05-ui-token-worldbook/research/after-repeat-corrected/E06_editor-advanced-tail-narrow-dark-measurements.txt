@@ -1,0 +1,17 @@
+clockStartMillis=1791950400000
+preview=production-previewHit:matched
+pageScroll=2655.0/2655.0
+pageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+deleteEntry=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)
+deleteEntryUnclipped=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)
+deleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+deleteEntryFullyVisible=true
+deleteEntryTouch48dp=true
+isolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO
+captureClockMillis=1791950401500
+locale=zh-CN
+timeZone=Asia/Shanghai
+qualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640
+density=2.0
+fontScale=2.0
+actions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus

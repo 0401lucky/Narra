@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:26:12.143Z" hostname="LUCKY" time="13.371">
+  <properties/>
+  <testcase name="bookPopup_namesUseNativePopupPixelsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.833"/>
+  <testcase name="list_selectedFilterAndReadonlyStoppedStatusRemainReadable" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.947"/>
+  <testcase name="list_titlesStatusPillsAndFocusedSearchUseReadableRealSurfaces" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="1.431"/>
+  <testcase name="editor_bodySheetTextAndSaveUseTheRealSheetSurfaceAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="5.294"/>
+  <testcase name="editor_requiredMessageAndDisabledSaveKeepReadablePixels" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.688"/>
+  <testcase name="helpDialog_readsItsOwnViewPixelsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.515"/>
+  <testcase name="detail_busySaveAndDeleteHaveReadableActualPixels" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.549"/>
+  <testcase name="editor_disabledSecondaryKeywordRemainsReadableWithoutBecomingEditable" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.557"/>
+  <testcase name="editor_selectedRoleAndPreviewTextStayReadableAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.923"/>
+  <testcase name="conversationPopup_titleAndRelativeTimeUseActualPopupSurface" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="0.581"/>
+  <testcase name="editor_selectedModeRegexAndFocusedLabelUseTheirActualContainers" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest" time="1.045"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

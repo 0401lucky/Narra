@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:07.772Z" hostname="LUCKY" time="1.693">
+  <properties/>
+  <testcase name="reading_successPersistsCompleteDraftBeforeOpening" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" time="0.34"/>
+  <testcase name="reading_failureKeepsDraftAndDoesNotOpen" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" time="0.315"/>
+  <testcase name="thirteenSkins_preserveHistoricalGeometryTailAndGlassUntilExplicitReset" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" time="0.383"/>
+  <testcase name="topBack_successPersistsCompleteDraftAndCallsNavigationOnce" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" time="0.331"/>
+  <testcase name="topBack_failureKeepsDraftAndDoesNotNavigate" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest" time="0.321"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

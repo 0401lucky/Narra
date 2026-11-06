@@ -1,0 +1,50 @@
+title=选择导入来源
+target=independent-dialog-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)
+Printing with useUnmergedTree = 'true'
+Node #1619 at (l=0.0, t=0.0, r=640.0, b=854.0)px
+ |-Node #1620 at (l=0.0, t=0.0, r=640.0, b=854.0)px
+   [IsDialog]
+    |-Node #1621 at (l=0.0, t=0.0, r=640.0, b=854.0)px
+      PaneTitle = '对话框'
+       |-Node #1622 at (l=0.0, t=0.0, r=640.0, b=854.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #1625 at (l=48.0, t=48.0, r=480.0, b=156.0)px
+          | Text = '[选择导入来源]'
+          | [Heading]
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1627 at (l=48.0, t=188.0, r=592.0, b=415.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@17821458'
+          | Text = '[从相册选 Tavern PNG 角色卡，或从文件选 JSON / 文本。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1632 at (l=179.0, t=463.0, r=592.0, b=572.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #1634 at (l=203.0, t=479.0, r=568.0, b=556.0)px
+          |    Text = '[从相册（PNG）]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1635 at (l=151.0, t=580.0, r=592.0, b=689.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #1637 at (l=175.0, t=596.0, r=568.0, b=673.0)px
+          |    Text = '[从文件（JSON）]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #1638 at (l=440.0, t=697.0, r=592.0, b=806.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #1640 at (l=464.0, t=713.0, r=568.0, b=790.0)px
+               Text = '[取消]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

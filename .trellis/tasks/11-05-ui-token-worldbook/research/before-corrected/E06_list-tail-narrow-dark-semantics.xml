@@ -1,0 +1,51 @@
+<semantics id="E06_list-tail-narrow-dark" fontScale="2.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #3382 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #3383 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #3405 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'worldbook_list'
+    | CollectionInfo = 'CollectionInfo(rowCount=8, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@179b961e'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=3045.0, maxValue=3045.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #3455 at (l=40.0, t=96.0, r=600.0, b=805.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  | Text = '[独立规则 2：归船的约定, 旅人遵循海岸的约定，在天黑之前返回旧港。, 全局, 关键词：归航, 已停用]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3467 at (l=40.0, t=833.0, r=600.0, b=1208.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  | Text = '[末项：归航, 潮退后归航。, 全局]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3476 at (l=40.0, t=137.0, r=600.0, b=228.0)px
+    |    Shape = 'RectangleShape'
+    |     |-Node #3478 at (l=48.0, t=141.0, r=592.0, b=224.0)px
+    |       Text = '[独立条目]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #3387 at (l=0.0, t=0.0, r=640.0, b=133.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #3389 at (l=16.0, t=23.0, r=112.0, b=119.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #3392 at (l=120.0, t=19.0, r=330.0, b=122.0)px
+       | Text = '[世界书]'
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #3393 at (l=400.0, t=16.0, r=600.0, b=125.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[新增]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

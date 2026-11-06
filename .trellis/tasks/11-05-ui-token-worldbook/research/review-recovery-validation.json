@@ -1,0 +1,11 @@
+{
+  "checkedAtUtc": "2026-11-06T02:45:54.569429+00:00",
+  "correctedPreviewGeometryPassed": 3,
+  "negativeGuardsRejected": [
+    "old_title_only_capture",
+    "claimed_visible_body_outside_viewport",
+    "unaffected_before_image_drift"
+  ],
+  "inMemorySimulationOnly": true,
+  "scriptSha256": "0833a738cb98f8bc796e3346c586b9654177a6d37665f09d7312d93e6e8d4cdd"
+}

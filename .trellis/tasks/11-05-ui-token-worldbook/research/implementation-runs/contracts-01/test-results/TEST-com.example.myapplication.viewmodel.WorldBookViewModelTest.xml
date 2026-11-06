@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.WorldBookViewModelTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:17:54.811Z" hostname="LUCKY" time="0.13">
+  <properties/>
+  <testcase name="deleteBook_removesAllEntriesInSameBookOnly" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.063"/>
+  <testcase name="deleteBook_successMessageContainsDeleteKeyword" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.01"/>
+  <testcase name="renameBook_successMessageContainsRenameKeyword" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.01"/>
+  <testcase name="saveEntry_emitsSavedMessage" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.009"/>
+  <testcase name="uiState_entries_followsRepositoryUpdates" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.008"/>
+  <testcase name="renameBook_failureEmitsRetryMessage" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.009"/>
+  <testcase name="renameBook_updatesAllEntriesInSameBook" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.008"/>
+  <testcase name="deleteBook_failureEmitsRetryMessage" classname="com.example.myapplication.viewmodel.WorldBookViewModelTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" tests="8" skipped="0" failures="1" errors="0" timestamp="2026-11-06T01:37:36.722Z" hostname="LUCKY" time="17.056">
+  <properties/>
+  <testcase name="editor_switchNamesAndHelpHaveIndependent48dpTouchTargets" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="10.735"/>
+  <testcase name="detail_longTitleAndBothManagementActionsCanBeReadAndReached" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.832"/>
+  <testcase name="editor_allElevenHelpEntrypointsOpenCorrectWindowsWithoutEditingState" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="1.39"/>
+  <testcase name="editor_bothPopupLastChoicesHaveNativePixelsAndCompleteTouchBounds" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="1.299"/>
+  <testcase name="list_helpIsIndependentAndCloseIsReachableAt200Percent" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.423"/>
+  <testcase name="editor_longKeywordHasFullTextAndRemovesExactlyOneToken" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.395"/>
+  <testcase name="list_narrowHeaderFiltersAndLastEntryRemainReachable" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.41">
+    <failure message="java.lang.AssertionError: 文字段落不得超出布局：value=世界书 size=210 x 103 constraints=Constraints(minWidth = 0, maxWidth = 288, minHeight = 0, maxHeight = 1256) overflowWidth=true overflowHeight=false paragraph=288.0x103.0 exceededMaxLines=false lines=1 maxLines=2147483647 bounds=Rect.fromLTRB(120.0, 19.0, 330.0, 122.0) line0=0.0,0.0,210.0,103.0 ellipsized=false" type="java.lang.AssertionError">java.lang.AssertionError: 文字段落不得超出布局：value=世界书 size=210 x 103 constraints=Constraints(minWidth = 0, maxWidth = 288, minHeight = 0, maxHeight = 1256) overflowWidth=true overflowHeight=false paragraph=288.0x103.0 exceededMaxLines=false lines=1 maxLines=2147483647 bounds=Rect.fromLTRB(120.0, 19.0, 330.0, 122.0) line0=0.0,0.0,210.0,103.0 ellipsized=false
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookTestSupport.assertCompleteText(P06WorldBookTestSupport.kt:79)
+	at com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest.list_narrowHeaderFiltersAndLastEntryRemainReachable(WorldBookAccessibilityTest.kt:26)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$testWithDisposal$1.evaluate(AndroidComposeTestRule.android.kt:322)
+	at org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:54)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invokeSuspend(AndroidComposeTestRule.android.kt:334)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invokeSuspend(ComposeUiTest.android.kt:605)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt)
+	at androidx.compose.ui.test.IdlingStrategy.withStrategy$suspendImpl(IdlingStrategy.android.kt:55)
+	at androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invokeSuspend(ComposeUiTest.android.kt:602)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt)
+	at kotlinx.coroutines.test.TestBuildersKt__TestBuildersKt$runTest$2$1$1.invokeSuspend(TestBuilders.kt:317)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.test.TestDispatcher.processEvent$kotlinx_coroutines_test(TestDispatcher.kt:24)
+	at kotlinx.coroutines.test.TestCoroutineScheduler.tryRunNextTaskUnless$kotlinx_coroutines_test(TestCoroutineScheduler.kt:99)
+	at kotlinx.coroutines.test.TestBuildersKt__TestBuildersKt$runTest$2$1$workRunner$1.invokeSuspend(TestBuilders.kt:326)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at kotlinx.coroutines.test.TestBuildersJvmKt.createTestResult(TestBuildersJvm.kt:10)
+	at kotlinx.coroutines.test.TestBuildersKt__TestBuildersKt.runTest-8Mi8wO0(TestBuilders.kt:309)
+	at kotlinx.coroutines.test.TestBuildersKt.runTest-8Mi8wO0(Unknown Source)
+	at kotlinx.coroutines.test.TestBuildersKt__TestBuildersKt.runTest-8Mi8wO0(TestBuilders.kt:167)
+	at kotlinx.coroutines.test.TestBuildersKt.runTest-8Mi8wO0(Unknown Source)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:585)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:334)
+	at com.example.myapplication.ui.screenshot.P06RenderTest$restoreP06Environment$1$1.evaluate(P06RenderTest.kt:55)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:542)
+	at org.robolectric.internal.SandboxTestRunner.lambda$executeInSandbox$4(SandboxTestRunner.java:429)
+	at org.robolectric.internal.SandboxTestRunner.runInSandbox(SandboxTestRunner.java:455)
+	at org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:420)
+	at org.robolectric.internal.SandboxTestRunner$5.evaluate(SandboxTestRunner.java:405)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.robolectric.internal.SandboxTestRunner.access$000(SandboxTestRunner.java:64)
+	at org.robolectric.internal.SandboxTestRunner$4.evaluate(SandboxTestRunner.java:294)
+	at org.robolectric.internal.SandboxTestRunner$2.evaluate(SandboxTestRunner.java:260)
+	at org.robolectric.internal.SandboxTestRunner$3.lambda$evaluate$0(SandboxTestRunner.java:280)
+	at org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThreadWithClassLoader$1(Sandbox.java:112)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+</failure>
+  </testcase>
+  <testcase name="editor_longBodyInternalTailAndFixedActionsFitAt200Percent" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest" time="0.5"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

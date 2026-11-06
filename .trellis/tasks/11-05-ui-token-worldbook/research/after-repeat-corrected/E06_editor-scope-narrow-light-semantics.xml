@@ -1,0 +1,149 @@
+<semantics id="E06_editor-scope-narrow-light" fontScale="2.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #7355 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #7356 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #7377 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'worldbook_editor'
+    | CollectionInfo = 'CollectionInfo(rowCount=7, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@5737a6a6'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #7379 at (l=32.0, t=141.0, r=332.0, b=218.0)px
+    |  | Text = '[已启用 · 角色]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #7383 at (l=32.0, t=250.0, r=512.0, b=346.0)px
+    |  | ContentDescription = '[展开基本信息]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已收起'
+    |  | Text = '[基本信息]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7386 at (l=512.0, t=250.0, r=608.0, b=346.0)px
+    |  | ContentDescription = '[基本信息：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7430 at (l=32.0, t=396.0, r=512.0, b=492.0)px
+    |  | ContentDescription = '[展开命中规则]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已收起'
+    |  | Text = '[命中规则]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7433 at (l=512.0, t=396.0, r=608.0, b=492.0)px
+    |  | ContentDescription = '[命中规则：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7568 at (l=32.0, t=542.0, r=512.0, b=638.0)px
+    |  | ContentDescription = '[折叠作用域]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已展开'
+    |  | Text = '[作用域]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7571 at (l=512.0, t=542.0, r=608.0, b=638.0)px
+    |  | ContentDescription = '[作用域：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7598 at (l=32.0, t=654.0, r=608.0, b=1190.0)px
+    |  |  |-Node #7602 at (l=32.0, t=670.0, r=200.0, b=766.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[全局]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #7606 at (l=216.0, t=670.0, r=436.0, b=766.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[可挂载]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #7610 at (l=32.0, t=782.0, r=200.0, b=878.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[角色]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #7614 at (l=216.0, t=782.0, r=384.0, b=878.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'false'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[会话]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #7620 at (l=32.0, t=910.0, r=608.0, b=1062.0)px
+    |  |  | Focused = 'false'
+    |  |  | Role = 'Checkbox'
+    |  |  | Selected = 'true'
+    |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |  | Text = '[守灯人：来自群岛北端的林澈]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #7624 at (l=32.0, t=1078.0, r=356.0, b=1174.0)px
+    |  |    Focused = 'false'
+    |  |    Role = 'Checkbox'
+    |  |    Selected = 'false'
+    |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  |    Text = '[远行的旅人]'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #7577 at (l=32.0, t=1240.0, r=512.0, b=1336.0)px
+    |  | ContentDescription = '[展开状态与高级]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已收起'
+    |  | Text = '[状态与高级]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #7580 at (l=512.0, t=1240.0, r=608.0, b=1336.0)px
+    |    ContentDescription = '[状态与高级：查看说明]'
+    |    Focused = 'false'
+    |    Role = 'Button'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |    Actions = [OnClick, RequestFocus]
+    |    MergeDescendants = 'true'
+    |-Node #7360 at (l=0.0, t=0.0, r=640.0, b=133.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #7362 at (l=16.0, t=23.0, r=112.0, b=119.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #7365 at (l=120.0, t=19.0, r=400.0, b=122.0)px
+       | Text = '[编辑条目]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #7366 at (l=408.0, t=16.0, r=608.0, b=125.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[保存]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

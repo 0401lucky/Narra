@@ -1,0 +1,130 @@
+<semantics id="E06_transfer-preview-dynamic-dark" fontScale="1.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #1463 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #1464 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #1483 at (l=0.0, t=120.0, r=720.0, b=1600.0)px
+    | CollectionInfo = 'CollectionInfo(rowCount=11, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1cbb8cc8'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=4584.0, maxValue=4684.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #1642 at (l=48.0, t=48.0, r=672.0, b=95.0)px
+    |  | Text = '[导入预览]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #1643 at (l=40.0, t=131.0, r=680.0, b=2267.0)px
+    |    IsContainer = 'true'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |-Node #1646 at (l=76.0, t=179.0, r=644.0, b=325.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1649 at (l=108.0, t=203.0, r=396.0, b=250.0)px
+    |     |  | Text = '[来源：上下文数据包]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1650 at (l=108.0, t=260.0, r=332.0, b=301.0)px
+    |     |    Text = '[范围：资料库备份]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1651 at (l=76.0, t=345.0, r=644.0, b=593.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1653 at (l=76.0, t=345.0, r=86.0, b=593.0)px
+    |     |  | Shape = 'RectangleShape'
+    |     |  |-Node #1656 at (l=122.0, t=393.0, r=138.0, b=409.0)px
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  |-Node #1657 at (l=154.0, t=377.0, r=346.0, b=424.0)px
+    |     |  | Text = '[安全上限提示]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1658 at (l=122.0, t=440.0, r=608.0, b=561.0)px
+    |     |    Text = '[• 部分内容已按安全上限截断。
+• 有 2 条摘要分段缺少对应会话，导入时将跳过。]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1659 at (l=76.0, t=613.0, r=644.0, b=759.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1662 at (l=108.0, t=637.0, r=204.0, b=684.0)px
+    |     |  | Text = '[角色卡]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1663 at (l=108.0, t=694.0, r=159.0, b=735.0)px
+    |     |    Text = '[2 条]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1664 at (l=76.0, t=779.0, r=644.0, b=925.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1667 at (l=108.0, t=803.0, r=204.0, b=850.0)px
+    |     |  | Text = '[世界书]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1668 at (l=108.0, t=860.0, r=159.0, b=901.0)px
+    |     |    Text = '[6 条]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1669 at (l=76.0, t=945.0, r=644.0, b=1091.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1672 at (l=108.0, t=969.0, r=172.0, b=1016.0)px
+    |     |  | Text = '[记忆]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1673 at (l=108.0, t=1026.0, r=159.0, b=1067.0)px
+    |     |    Text = '[3 条]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1674 at (l=76.0, t=1111.0, r=644.0, b=1257.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1677 at (l=108.0, t=1135.0, r=172.0, b=1182.0)px
+    |     |  | Text = '[摘要]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1678 at (l=108.0, t=1192.0, r=159.0, b=1233.0)px
+    |     |    Text = '[2 条]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1679 at (l=76.0, t=1277.0, r=644.0, b=1423.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1682 at (l=108.0, t=1301.0, r=172.0, b=1348.0)px
+    |     |  | Text = '[预设]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1683 at (l=108.0, t=1358.0, r=159.0, b=1399.0)px
+    |     |    Text = '[1 条]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1684 at (l=76.0, t=1443.0, r=644.0, b=1971.0)px
+    |     | IsContainer = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     |  |-Node #1686 at (l=76.0, t=1443.0, r=86.0, b=1971.0)px
+    |     |  | Shape = 'RectangleShape'
+    |     |  |-Node #1689 at (l=122.0, t=1491.0, r=138.0, b=1507.0)px
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  |-Node #1690 at (l=154.0, t=1475.0, r=380.0, b=1522.0)px
+    |     |  | Text = '[检测到 7 条冲突]'
+    |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |  |-Node #1691 at (l=122.0, t=1538.0, r=608.0, b=1939.0)px
+    |     |    Text = '[• 角色 / 群岛档案 1：旅人与守灯人的旧日约定
+• 世界书 / 群岛档案 2：旅人与守灯人的旧日约定
+• 角色 / 群岛档案 3：旅人与守灯人的旧日约定
+• 世界书 / 群岛档案 4：旅人与守灯人的旧日约定
+• 角色 / 群岛档案 5：旅人与守灯人的旧日约定]'
+    |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #1692 at (l=76.0, t=1991.0, r=644.0, b=2095.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[确认导入]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #1695 at (l=76.0, t=2115.0, r=644.0, b=2219.0)px
+    |       Focused = 'false'
+    |       Role = 'Button'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |       Text = '[取消]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |       MergeDescendants = 'true'
+    |-Node #1468 at (l=0.0, t=0.0, r=720.0, b=120.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #1470 at (l=16.0, t=16.0, r=112.0, b=112.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #1473 at (l=120.0, t=32.0, r=252.0, b=97.0)px
+         Text = '[资料库]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

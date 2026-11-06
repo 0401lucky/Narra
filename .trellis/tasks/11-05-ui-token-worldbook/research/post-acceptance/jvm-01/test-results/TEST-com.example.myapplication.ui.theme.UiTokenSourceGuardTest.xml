@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:31.829Z" hostname="LUCKY" time="2.836">
+  <properties/>
+  <testcase name="audit_removedOrDuplicateExceptions_failInsteadOfSilentlyExpandingWhitelist" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.025"/>
+  <testcase name="worldBookAndTransferScopes_rejectNewDefaultsAndSharedHelperBodyChanges" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="1.904"/>
+  <testcase name="audit_brandPalette_requiresExactPathDeclarationValueAndMultiplicity" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <testcase name="audit_preciseGeometryException_doesNotApproveOtherLayoutInSameDeclaration" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.001"/>
+  <testcase name="scan_multilineAndQualifiedCallsAndArithmetic_areReported" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <testcase name="audit_relocatedDefaultsAndNewHelpers_cannotEscapeRegisteredScope" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <testcase name="scan_commentsEscapedStringsRawStringsAndCharacters_areIgnored" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.001"/>
+  <testcase name="scan_tokensUserGeometryIconBorderWidthAndSystemInsets_areAllowed" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <testcase name="providerSources_eachRejectsNewLiteralWithoutFileLevelExemption" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.768"/>
+  <testcase name="scan_fixedRgbDecimalAndNamedColors_failWhileUserArgbAndChannelsAreAllowed" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.001"/>
+  <testcase name="migratedSources_haveNoUnapprovedDefaultsOrStaleExceptions" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.134"/>
+  <testcase name="sourceRegistration_componentAndThemeHelpersRequireInventory" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <testcase name="audit_missingDuplicateDeclarationsAndMissingOrNewFiles_fail" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.001"/>
+  <testcase name="audit_explicitOverloads_scanEitherBodyAndRejectMissingExtraOrStaleCount" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.001"/>
+  <testcase name="scan_literalDefaultShapesColorsAndLayoutExpressions_areReported" classname="com.example.myapplication.ui.theme.UiTokenSourceGuardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

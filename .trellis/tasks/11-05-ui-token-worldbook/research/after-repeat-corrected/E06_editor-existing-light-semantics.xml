@@ -1,0 +1,337 @@
+<semantics id="E06_editor-existing-light" fontScale="1.0" target="screenshot_stage"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #3759 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #3760 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #3781 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'worldbook_editor'
+    | CollectionInfo = 'CollectionInfo(rowCount=7, columnCount=1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@5737a6a6'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #3783 at (l=32.0, t=128.0, r=193.0, b=169.0)px
+    |  | Text = '[已启用 · 角色]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #3787 at (l=32.0, t=201.0, r=592.0, b=297.0)px
+    |  | ContentDescription = '[折叠基本信息]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已展开'
+    |  | Text = '[基本信息]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3790 at (l=592.0, t=201.0, r=688.0, b=297.0)px
+    |  | ContentDescription = '[基本信息：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3792 at (l=32.0, t=313.0, r=688.0, b=1321.0)px
+    |  |  |-Node #3794 at (l=32.0, t=329.0, r=688.0, b=457.0)px
+    |  |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |  |  | EditableText = '白塔城的潮汐：旅人与守灯人的约定'
+    |  |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@643a6296'
+    |  |  | Focused = 'false'
+    |  |  | ImeAction = 'Default'
+    |  |  | InputText = '白塔城的潮汐：旅人与守灯人的约定'
+    |  |  | IsEditable = 'true'
+    |  |  | Text = '[标题]'
+    |  |  | TextSelectionRange = 'TextRange(0, 0)'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |-Node #3804 at (l=32.0, t=489.0, r=688.0, b=1145.0)px
+    |  |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |  |  | EditableText = '第 1 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 2 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 3 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 4 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 5 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 6 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 7 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 8 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 9 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 10 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 11 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 12 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 13 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 14 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 15 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 16 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+正文末尾：灯塔一直亮着。'
+    |  |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@4f22f899'
+    |  |  | Focused = 'false'
+    |  |  | ImeAction = 'Default'
+    |  |  | InputText = '第 1 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 2 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 3 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 4 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 5 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 6 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 7 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 8 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 9 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 10 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 11 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 12 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 13 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 14 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 15 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 16 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+正文末尾：灯塔一直亮着。'
+    |  |  | IsEditable = 'true'
+    |  |  | Text = '[内容]'
+    |  |  | TextSelectionRange = 'TextRange(0, 0)'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, ScrollBy, ScrollByOffset, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |  |  | MergeDescendants = 'true'
+    |  |  |  |-Node #3810 at (l=592.0, t=777.0, r=688.0, b=873.0)px
+    |  |  |    ContentDescription = '[全屏编辑正文]'
+    |  |  |    Focused = 'false'
+    |  |  |    Role = 'Button'
+    |  |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |  |    Actions = [OnClick, RequestFocus]
+    |  |  |    MergeDescendants = 'true'
+    |  |  |-Node #3818 at (l=32.0, t=1177.0, r=688.0, b=1305.0)px
+    |  |    ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |  |    EditableText = '海风档案：群岛旅人与旧日传说'
+    |  |    FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@4b1ceada'
+    |  |    Focused = 'false'
+    |  |    ImeAction = 'Default'
+    |  |    InputText = '海风档案：群岛旅人与旧日传说'
+    |  |    IsEditable = 'true'
+    |  |    Role = 'DropdownList'
+    |  |    Text = '[所属世界书]'
+    |  |    TextSelectionRange = 'TextRange(0, 0)'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |  |    MergeDescendants = 'true'
+    |  |-Node #3834 at (l=32.0, t=1371.0, r=592.0, b=1467.0)px
+    |  | ContentDescription = '[折叠命中规则]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | StateDescription = '已展开'
+    |  | Text = '[命中规则]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3837 at (l=592.0, t=1371.0, r=688.0, b=1467.0)px
+    |  | ContentDescription = '[命中规则：查看说明]'
+    |  | Focused = 'false'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  | Actions = [OnClick, RequestFocus]
+    |  | MergeDescendants = 'true'
+    |  |-Node #3839 at (l=32.0, t=1483.0, r=688.0, b=3366.0)px
+    |     |-Node #3843 at (l=40.0, t=1532.0, r=568.0, b=1579.0)px
+    |     | Text = '[匹配模式]'
+    |     | [Heading]
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3844 at (l=584.0, t=1507.0, r=680.0, b=1603.0)px
+    |     | ContentDescription = '[匹配模式：查看说明]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | Actions = [OnClick, RequestFocus]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3848 at (l=32.0, t=1627.0, r=152.0, b=1723.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Checkbox'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[包含]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3852 at (l=168.0, t=1627.0, r=288.0, b=1723.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Checkbox'
+    |     | Selected = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[整词]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3856 at (l=304.0, t=1627.0, r=424.0, b=1723.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Checkbox'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[正则]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3861 at (l=32.0, t=1755.0, r=144.0, b=1796.0)px
+    |     | Text = '[主关键词]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3862 at (l=32.0, t=1820.0, r=688.0, b=1932.0)px
+    |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |     | ContentDescription = '[主关键词]'
+    |     | EditableText = ''
+    |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@7498871d'
+    |     | Focused = 'false'
+    |     | ImeAction = 'Done'
+    |     | InputText = ''
+    |     | IsEditable = 'true'
+    |     | Text = '[添加关键词]'
+    |     | TextSelectionRange = 'TextRange(0, 0)'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3874 at (l=32.0, t=1956.0, r=228.0, b=2052.0)px
+    |     | ContentDescription = '[移除 白塔城]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[白塔城]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3880 at (l=32.0, t=2068.0, r=508.0, b=2164.0)px
+    |     | ContentDescription = '[移除 远方海岸的守灯人与古老约定]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[远方海岸的守灯人与古老约定]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3886 at (l=32.0, t=2180.0, r=428.0, b=2276.0)px
+    |     | ContentDescription = '[移除 /islands?,harbor/i]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[正则 /islands?,harbor/i]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3893 at (l=32.0, t=2308.0, r=88.0, b=2349.0)px
+    |     | Text = '[别名]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3894 at (l=32.0, t=2373.0, r=688.0, b=2485.0)px
+    |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |     | ContentDescription = '[别名]'
+    |     | EditableText = ''
+    |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@438175ca'
+    |     | Focused = 'false'
+    |     | ImeAction = 'Done'
+    |     | InputText = ''
+    |     | IsEditable = 'true'
+    |     | Text = '[人物简称、地名别称]'
+    |     | TextSelectionRange = 'TextRange(0, 0)'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3906 at (l=32.0, t=2509.0, r=200.0, b=2605.0)px
+    |     | ContentDescription = '[移除 灯塔]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[灯塔]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3912 at (l=216.0, t=2509.0, r=384.0, b=2605.0)px
+    |     | ContentDescription = '[移除 旧港]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[旧港]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3918 at (l=32.0, t=2637.0, r=688.0, b=2765.0)px
+    |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |     | EditableText = '8'
+    |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@1bbfab13'
+    |     | Focused = 'false'
+    |     | ImeAction = 'Default'
+    |     | InputText = '8'
+    |     | IsEditable = 'true'
+    |     | Text = '[优先级]'
+    |     | TextSelectionRange = 'TextRange(0, 0)'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3930 at (l=32.0, t=2825.0, r=488.0, b=2866.0)px
+    |     | Text = '[次级匹配]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3931 at (l=488.0, t=2797.0, r=584.0, b=2893.0)px
+    |     | ContentDescription = '[次级匹配：查看说明]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | Actions = [OnClick, RequestFocus]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3933 at (l=584.0, t=2797.0, r=688.0, b=2893.0)px
+    |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+    |     | ContentDescription = '[次级匹配]'
+    |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@3759c884'
+    |     | Focused = 'false'
+    |     | Role = 'Switch'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | ToggleableState = 'On'
+    |     | Actions = [OnClick, OnFillData, RequestFocus]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3936 at (l=32.0, t=2925.0, r=172.0, b=2966.0)px
+    |     | Text = '[次级关键词]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3937 at (l=32.0, t=2990.0, r=688.0, b=3102.0)px
+    |     | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |     | ContentDescription = '[次级关键词]'
+    |     | EditableText = ''
+    |     | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@749011d'
+    |     | Focused = 'false'
+    |     | ImeAction = 'Done'
+    |     | InputText = ''
+    |     | IsEditable = 'true'
+    |     | Text = '[添加次级关键词]'
+    |     | TextSelectionRange = 'TextRange(0, 0)'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3949 at (l=32.0, t=3126.0, r=200.0, b=3222.0)px
+    |     | ContentDescription = '[移除 旅人]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[旅人]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3955 at (l=216.0, t=3126.0, r=384.0, b=3222.0)px
+    |     | ContentDescription = '[移除 潮汐]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[潮汐]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3963 at (l=32.0, t=3282.0, r=488.0, b=3323.0)px
+    |     | Text = '[区分大小写]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3964 at (l=488.0, t=3254.0, r=584.0, b=3350.0)px
+    |     | ContentDescription = '[区分大小写：查看说明]'
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | Actions = [OnClick, RequestFocus]
+    |     | MergeDescendants = 'true'
+    |     |-Node #3966 at (l=584.0, t=3254.0, r=688.0, b=3350.0)px
+    |       ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+    |       ContentDescription = '[区分大小写]'
+    |       FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@4f2e1b1b'
+    |       Focused = 'false'
+    |       Role = 'Switch'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |       ToggleableState = 'Off'
+    |       Actions = [OnClick, OnFillData, RequestFocus]
+    |       MergeDescendants = 'true'
+    |-Node #3764 at (l=0.0, t=0.0, r=720.0, b=120.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #3766 at (l=16.0, t=16.0, r=112.0, b=112.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #3769 at (l=120.0, t=32.0, r=296.0, b=97.0)px
+       | Text = '[编辑条目]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #3770 at (l=536.0, t=16.0, r=688.0, b=112.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[保存]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

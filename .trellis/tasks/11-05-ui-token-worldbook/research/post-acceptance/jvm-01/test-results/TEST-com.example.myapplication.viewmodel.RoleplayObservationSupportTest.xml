@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.RoleplayObservationSupportTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:36.544Z" hostname="LUCKY" time="0.017">
+  <properties/>
+  <testcase name="observeCurrentMessages_skipsRoomUpdatesWhileSending" classname="com.example.myapplication.viewmodel.RoleplayObservationSupportTest" time="0.005"/>
+  <testcase name="observeMappedMessages_onlyReactsToMapperInputs" classname="com.example.myapplication.viewmodel.RoleplayObservationSupportTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

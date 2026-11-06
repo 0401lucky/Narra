@@ -1,0 +1,16 @@
+{
+  "exitCode": 1,
+  "tests": 222,
+  "failures": 64,
+  "errors": 0,
+  "skipped": 0,
+  "acceptedScreenshotPasses": 158,
+  "expectedMissingBaselineFailures": 64,
+  "unexpectedFailures": [],
+  "correctedActualsMatchingAfter": 63,
+  "changedActuals": [],
+  "changedProductSources": [],
+  "changedCaptureSources": [],
+  "changedAcceptedPngs": [],
+  "acceptedPngCount": 158
+}

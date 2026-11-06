@@ -1,0 +1,63 @@
+{
+  "verifiedAtUtc": "2026-11-06T03:28:31.989166+00:00",
+  "postAcceptanceQualityGatePassed": true,
+  "rounds": {
+    "screenshots-01": {
+      "tests": 222,
+      "suites": 17,
+      "exitCode": 0,
+      "actualTestTask": true,
+      "baselineCountBeforeAndAfter": 221,
+      "changedBaselines": 0,
+      "rawEvidenceFilesVerified": 642,
+      "summarySha256": "e312a18452b2d2aac8ecd3126447d6c4ea45ee1239891b366e4f2159d9b61ea5",
+      "evidenceManifestSha256": "07ca888e599ffc1d3569705df9b91770d955572d33059212eb1d7697209f58f5"
+    },
+    "jvm-01": {
+      "tests": 1973,
+      "suites": 261,
+      "exitCode": 0,
+      "actualTestTask": true,
+      "baselineCountBeforeAndAfter": 221,
+      "changedBaselines": 0,
+      "rawEvidenceFilesVerified": 552,
+      "summarySha256": "d7e215eb2fea497ef691de584ae41eb00d005833cd177ae670f410619e3421ed",
+      "evidenceManifestSha256": "0bf2a6a110a152a0e15112bfd384d1098e3612f996ecd8c35db1448f11e15cfb"
+    }
+  },
+  "acceptedBaselineCount": 221,
+  "originalBaselinesUnchanged": 158,
+  "newAcceptedBaselinesUnchanged": 63,
+  "acceptedPngManifestSha256": "3505b249aa6cf5604937aa1057768da6ad1cc744039e07700db7dd4867459ba7",
+  "currentSourcesMatchAcceptedCapture": true,
+  "productionAndConfigSources": 14,
+  "captureSources": 9,
+  "lintAndTypecheck": "Prior build-01 successful evidence retained; no source fixes or additional reruns in this check",
+  "lintSeverityCounts": {
+    "Warning": 55,
+    "Hint": 3
+  },
+  "codeFixes": [],
+  "remainingEvidenceLimits": [
+    "device document/photo pickers",
+    "real IME and TalkBack",
+    "device system bars and material rendering",
+    "physical performance",
+    "new visual baselines in remote CI"
+  ],
+  "contextIndependentlyLoaded": [
+    "saved native hook complete (all specs and prd/design/implement)",
+    "research/context-loading.md",
+    "research/capture-and-shared-contracts.md",
+    "research/screenshot-matrix.json",
+    "research/entry-list-detail.md",
+    "research/entry-list-detail-validation.md",
+    "research/editor-contracts-tests.md",
+    "research/editor-validation.md",
+    "research/context-transfer.md",
+    "research/context-transfer-validation.md",
+    "verification.md",
+    "research/final-check.md",
+    "research/visual-acceptance.json"
+  ]
+}

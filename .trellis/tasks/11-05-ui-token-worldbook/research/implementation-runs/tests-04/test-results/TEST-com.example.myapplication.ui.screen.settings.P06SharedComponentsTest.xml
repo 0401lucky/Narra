@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:25:53.827Z" hostname="LUCKY" time="12.451">
+  <properties/>
+  <testcase name="introAndSectionHeader_keepOldLimitsAndForwardExplicitLayout" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="9.202"/>
+  <testcase name="primaryButton_keepsLegacyDisabledAlphaAndForwardsOptIn" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="0.413"/>
+  <testcase name="allHelpWrappers_forwardActualWindowShapeActionColorAndCloseSize" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="1.065"/>
+  <testcase name="primaryButton_forwardsShapeAndContentPadding" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="0.176"/>
+  <testcase name="outlinedButton_keepsLegacyDisabledAlphaAndForwardsOptIn" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="0.187"/>
+  <testcase name="hintCardAndStatusPill_forwardExplicitShapeAndPadding" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="0.195"/>
+  <testcase name="outlinedButton_forwardsShapeAndContentPadding" classname="com.example.myapplication.ui.screen.settings.P06SharedComponentsTest" time="0.137"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

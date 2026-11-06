@@ -25,7 +25,7 @@ data class ScreenshotCase(
 }
 
 /**
- * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04 / E05 / E10 / E11。
+ * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04 / E05 / E06 / E10 / E11。
  *
  * 测试、基准计数守卫与运行清单都从这里取数据；新增/删除用例必须同步更新
  * [expectedFamilyCounts]，守卫会在数量不符时失败。
@@ -255,8 +255,45 @@ object ScreenshotCases {
             "P11 提供商模型空态 · dark"))
     }
 
+    private val e06Cases: List<ScreenshotCase> = buildList {
+        val worldBookClass = "WorldBookScreenshotE06Test"
+        val transferClass = "ContextTransferScreenshotE06Test"
+        themeTokens.forEach { theme ->
+            shadeTokens.forEach { shade ->
+                add(case(worldBookClass, "E06_list-$theme-$shade.png", "P06 世界书列表 · $theme · $shade"))
+                add(case(transferClass, "E06_transfer-$theme-$shade.png", "P06 资料库概览 · $theme · $shade"))
+            }
+        }
+        shadeTokens.forEach { shade ->
+            listOf("detail", "list-dynamic", "detail-dynamic", "editor-existing").forEach { scene ->
+                add(case(worldBookClass, "E06_$scene-$shade.png", "P06 世界书真实页面 · $scene · $shade"))
+            }
+            listOf(
+                "list-filters-narrow", "list-tail-narrow", "detail-management-narrow", "detail-tail-narrow",
+                "list-help-dialog", "book-delete-dialog", "editor-new-required-narrow", "editor-rules-narrow",
+                "editor-scope-narrow", "editor-advanced-tail-narrow", "editor-body-sheet", "entry-delete-dialog",
+                "editor-rule-help-dialog", "editor-book-popup", "editor-conversation-popup",
+            ).forEach { scene ->
+                add(case(worldBookClass, "E06_$scene-$shade.png", "P06 世界书真实页面 / 窗口 · $scene · $shade · 200%",
+                    NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+            }
+            add(case(transferClass, "E06_transfer-preview-dynamic-$shade.png", "P06 资料库预览 · 固定动态色 · $shade"))
+            listOf("source-dialog", "help-dialog").forEach { scene ->
+                add(case(transferClass, "E06_transfer-$scene-$shade.png", "P06 资料库真实窗口 · $scene · $shade · 200%",
+                    NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+            }
+        }
+        listOf("list-empty-light", "list-search-empty-dark", "list-filter-empty-light").forEach { scene ->
+            add(case(worldBookClass, "E06_$scene.png", "P06 世界书三类空态 · $scene"))
+        }
+        listOf("first-narrow-light", "last-narrow-dark", "preview-notice-narrow-light", "preview-actions-narrow-dark").forEach { scene ->
+            add(case(transferClass, "E06_transfer-$scene.png", "P06 资料库资源组 / 预览 · $scene · 200%",
+                NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+        }
+    }
+
     val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
-        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases + e10Cases + e11Cases
+        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases + e06Cases + e10Cases + e11Cases
 
     /** 冻结的分族数量：缺场景、零测试或静默删减都会让守卫失败。 */
     val expectedFamilyCounts: Map<String, Int> = mapOf(
@@ -271,6 +308,7 @@ object ScreenshotCases {
         "C01" to 2,
         "E04" to 14,
         "E05" to 18,
+        "E06" to 63,
         "E10" to 16,
         "E11" to 32,
     )

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:12:09.226Z" hostname="LUCKY" time="16.815">
+  <properties/>
+  <testcase name="threePhotoSources_keepImageOnlyAndPendingSection_andNullLeavesExistingPreview" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="11.125"/>
+  <testcase name="allFiveExports_keepFilenamesAndSections_andOnlyWriteAfterResult" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.776"/>
+  <testcase name="allFiveImports_keepSectionAndSourceContracts_andCloseDialogBeforeResult" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.696"/>
+  <testcase name="readOnlyOverview_keepsAllZeroCountsWithoutClickableAncestors" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.292"/>
+  <testcase name="readPermissionFailure_isRedacted_andDoesNotPreviewOrConsumeVmMessage" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.312"/>
+  <testcase name="writePermissionFailure_isRedacted_withoutImportOrVmMessageSideEffects" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.296"/>
+  <testcase name="preview_showsPositiveCountsAllNoticesAndOnlyFirstFiveConflicts_thenCancelOnlyDismisses" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.378"/>
+  <testcase name="busy_disablesAllTransferAndPreviewActions_withoutBlockingReturnOrChangingPreview" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="0.607"/>
+  <testcase name="sixHelpEntrances_andSourceCancel_areIndependent48dpActionsAtTwoHundredPercent" classname="com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest" time="1.364"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

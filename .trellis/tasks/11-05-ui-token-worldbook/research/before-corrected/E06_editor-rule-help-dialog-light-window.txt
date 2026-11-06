@@ -1,0 +1,31 @@
+title=命中规则
+target=independent-dialog-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)
+Printing with useUnmergedTree = 'true'
+Node #8295 at (l=0.0, t=0.0, r=640.0, b=915.0)px
+ |-Node #8296 at (l=0.0, t=0.0, r=640.0, b=915.0)px
+   [IsDialog]
+    |-Node #8297 at (l=0.0, t=0.0, r=640.0, b=915.0)px
+      PaneTitle = '对话框'
+       |-Node #8298 at (l=0.0, t=0.0, r=640.0, b=915.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          |-Node #8301 at (l=48.0, t=48.0, r=328.0, b=151.0)px
+          | Text = '[命中规则]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #8303 at (l=48.0, t=183.0, r=592.0, b=710.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@179b961e'
+          | Text = '[关键词匹配后，条目正文会提供给角色作为参考。输入关键词后用回车或逗号确认，也支持 /pattern/flags 正则。优先级默认为 0，数值越大越优先。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #8306 at (l=388.0, t=758.0, r=592.0, b=867.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #8308 at (l=412.0, t=774.0, r=568.0, b=851.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

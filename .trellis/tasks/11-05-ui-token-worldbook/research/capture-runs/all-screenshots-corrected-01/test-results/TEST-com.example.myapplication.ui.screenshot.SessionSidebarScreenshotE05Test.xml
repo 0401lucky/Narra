@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T02:44:14.688Z" hostname="LUCKY" time="9.094">
+  <properties/>
+  <testcase name="e05_main_ocean_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.298"/>
+  <testcase name="e05_main_vanilla_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.202"/>
+  <testcase name="e05_group_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.486"/>
+  <testcase name="e05_main_matcha_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.189"/>
+  <testcase name="e05_main_ocean_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.176"/>
+  <testcase name="e05_main_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.596"/>
+  <testcase name="e05_model_sheet_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.776"/>
+  <testcase name="e05_main_vanilla_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.266"/>
+  <testcase name="e05_main_dynamic_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.227"/>
+  <testcase name="e05_main_matcha_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.199"/>
+  <testcase name="e05_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.602"/>
+  <testcase name="e05_main_narrow_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.627"/>
+  <testcase name="e05_theme_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.589"/>
+  <testcase name="e05_reset_dialog_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.798"/>
+  <testcase name="e05_theme_narrow_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.737"/>
+  <testcase name="e05_preset_sheet_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.994"/>
+  <testcase name="e05_main_dynamic_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.296"/>
+  <testcase name="e05_mask_sheet_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="1.009"/>
+  <system-out><![CDATA[Roborazzi: E05_main-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_main-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_group-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_main-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_main-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_main-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E05_model-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_main-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_main-dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E05_main-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E05_help-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_main-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_theme-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E05_reset-dialog-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_theme-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E05_preset-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E05_main-dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E05_mask-sheet-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

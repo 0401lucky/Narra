@@ -1,0 +1,2205 @@
+{
+  "expected_new_cases": 63,
+  "complete_pairs": 63,
+  "changed_pairs": 63,
+  "stable_repeat_pairs": 63,
+  "old_baselines_unchanged": 158,
+  "independent_windows_per_phase": 18,
+  "popups_per_phase": 4,
+  "accepted": false,
+  "before_manifest_sha256": "215ae4f85d88cafe3e47c09e1a24f4883e006a0a05d342cb5fbc83e087877bae",
+  "after_manifest_sha256": "a991f48d3801372acbaa3bd752185454059531a6ce0d9e9bc8a09ef50143b49b",
+  "repeat_manifest_sha256": "814d6dc50ac23765023b65d7cc8a7460db1ae9d88e6a611c78089edeb83aa73e",
+  "capture_environment": {
+    "fixedEpochMillis": 1791950400000,
+    "clock": "Robolectric ShadowPausedSystemClock; virtual time advances with deterministic UI actions; restored after each test",
+    "locale": "zh-CN",
+    "timeZone": "Asia/Shanghai",
+    "density": 2.0,
+    "sdk": 35,
+    "graphicsMode": "NATIVE",
+    "application": "android.app.Application"
+  },
+  "before_source_sha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookBookDetailScreen.kt": "c5992b35548234618a71398e4d8ae634c0647a7bd3cd6b381ac6b6f004db44ea",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookContentFullscreenSheet.kt": "f85fdbbee3e8ccbc8e12d1361b3bc3914c19beedf9dfa278c5ed2a126de73915",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditScreen.kt": "3786cfe92fc026a597914d66bdff2944545ebf35fde45f2083eb1347973b2223",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditSections.kt": "b42cf17b457304629cab3a02dd653881baa9342c34d0e34e7413ebe22ca7ea41",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListScreen.kt": "6e79b3d976d77352aa95d6b12f4572f0ce55a7ad1e1417744813c7bf88ee79d3",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListStyle.kt": "f758ca0f9b146adb95401a79dd40a3b04552f61d0e9ae6ae21a7596d7f30c22c",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ContextTransferScreen.kt": "033fd37d456fb149a4576d972290b64e4ab6477084fc9183702dfd16de8d5a23",
+    "app/src/main/java/com/example/myapplication/ui/component/worldbook/KeywordChipInput.kt": "d8b123eb366e0edce84b00310bcc9affa60db5491082ec2b99eff905ce34ba81",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592",
+    "gradle.properties": "eb455746f9a9e4c5882c0aab957715c3321e6580d8ca18a765ede07a51b45667",
+    "app/build.gradle": "cd272a6c8769bfafa391c328ab9e7183c1c4e0631ffa6dfdf89d4ba05bc6d16f",
+    "docs/updates/dev.json": "bfbb8d97279e6eda1a4b1e5a7005d27f0345e464cfca68d6d29494ee72541963"
+  },
+  "supplemental_original_sources": {
+    "app/src/main/java/com/example/myapplication/ui/component/NarraButton.kt": {
+      "originalFile": "research/source-extensions/NarraButton.original.kt",
+      "originalSha256": "0ce7b7d69bf779d2a033e5a962746bb1e708fb845c58b8c4e3241e5a1acd827d",
+      "gitBlob": "da4921b04a99fe5aaa56614e29d425c1b28ea1ae"
+    }
+  },
+  "after_source_sha256": {
+    "app/build.gradle": "cd272a6c8769bfafa391c328ab9e7183c1c4e0631ffa6dfdf89d4ba05bc6d16f",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraButton.kt": "364611ed5ad86911db513e33aff749fc1eb8ccb47f9fa096deddac8f88ad56bf",
+    "app/src/main/java/com/example/myapplication/ui/component/worldbook/KeywordChipInput.kt": "7c1d58645e608d4e40e95e771d43c7c98d2fc0d892948da1e91b72eb22069cf0",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ContextTransferScreen.kt": "e94893743b0e27852011d9589da38a1b2292ffe5bedc57ff24ab09376e05739d",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "f3bba87287acdf79d554e4095767c797be2226108c0aa763cb743a37c5548190",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookBookDetailScreen.kt": "9e7080c47f4e4441c486ba177de73f86d33c46e4d6a0018b1360b7a5d3d0540b",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookContentFullscreenSheet.kt": "a49f1c5b780167a5af0fd9d86e50f41f7c476a534de78f05d878daf4687e3d85",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditScreen.kt": "2e7759b27c16463ce0be04e6943b06cd72f058932fc210c7fd897e66eb236c7c",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookEditSections.kt": "04532f3c52e6ad7d803782a64599d5d7b774d1683976cdc1d9b69a94fc669b36",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListScreen.kt": "fc2883bccea7f7fc05d278d300ac14edc4a7613f770d60dfd6e95cfb6a8ea702",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/worldbook/WorldBookListStyle.kt": "f758ca0f9b146adb95401a79dd40a3b04552f61d0e9ae6ae21a7596d7f30c22c",
+    "docs/updates/dev.json": "bfbb8d97279e6eda1a4b1e5a7005d27f0345e464cfca68d6d29494ee72541963",
+    "gradle.properties": "eb455746f9a9e4c5882c0aab957715c3321e6580d8ca18a765ede07a51b45667"
+  },
+  "cases": [
+    {
+      "id": "E06_list-matcha-light",
+      "label": "列表混合书目与独立条目 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-matcha-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-matcha-light_actual.png",
+      "before_sha256": "b819939f00a8c0b9133d27b4dec239a0ca5a87fb37a4eb81c8e296bf5b53a6e1",
+      "after_sha256": "d941a0b30bb954bb6e890a6b39070913171a90c13fd358869691a78b68dd96a4",
+      "repeat_sha256": "d941a0b30bb954bb6e890a6b39070913171a90c13fd358869691a78b68dd96a4",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304119,
+      "changed_ratio": 0.2639921875,
+      "before": "before/E06_list-matcha-light.png",
+      "after": "after/E06_list-matcha-light.png",
+      "diff": "diff/E06_list-matcha-light.png"
+    },
+    {
+      "id": "E06_list-matcha-dark",
+      "label": "列表混合书目与独立条目 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-matcha-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-matcha-dark_actual.png",
+      "before_sha256": "eb8a61ab14591623b2fb229ef2bb5bd74a699531ad5d57067d9e351b1a89607e",
+      "after_sha256": "2cc21c0bf6047500b9877c8b3fe0a3a5cce094d3a30e7edcdd4405fd663b2ff5",
+      "repeat_sha256": "2cc21c0bf6047500b9877c8b3fe0a3a5cce094d3a30e7edcdd4405fd663b2ff5",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304419,
+      "changed_ratio": 0.2642526041666667,
+      "before": "before/E06_list-matcha-dark.png",
+      "after": "after/E06_list-matcha-dark.png",
+      "diff": "diff/E06_list-matcha-dark.png"
+    },
+    {
+      "id": "E06_list-vanilla-light",
+      "label": "列表混合书目与独立条目 · 香草 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-vanilla-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-vanilla-light_actual.png",
+      "before_sha256": "503ae40ccfa047818808952ed620f05cf2b1dbafc8cdadad68f404e662a2c07a",
+      "after_sha256": "25c839f8b7bd494ea1b3141c61a1fc46a077fd6556c527afd07a127e0cd56a15",
+      "repeat_sha256": "25c839f8b7bd494ea1b3141c61a1fc46a077fd6556c527afd07a127e0cd56a15",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304196,
+      "changed_ratio": 0.2640590277777778,
+      "before": "before/E06_list-vanilla-light.png",
+      "after": "after/E06_list-vanilla-light.png",
+      "diff": "diff/E06_list-vanilla-light.png"
+    },
+    {
+      "id": "E06_list-vanilla-dark",
+      "label": "列表混合书目与独立条目 · 香草 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-vanilla-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-vanilla-dark_actual.png",
+      "before_sha256": "68ef0ac06df9ffa5c9f477d3e55bed34919c2586da618eda164da51efe052ba1",
+      "after_sha256": "e01637c6ff2284035bb688074ec6ff3eb7d62f0149671ccbd55bd5497a547adc",
+      "repeat_sha256": "e01637c6ff2284035bb688074ec6ff3eb7d62f0149671ccbd55bd5497a547adc",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304444,
+      "changed_ratio": 0.26427430555555553,
+      "before": "before/E06_list-vanilla-dark.png",
+      "after": "after/E06_list-vanilla-dark.png",
+      "diff": "diff/E06_list-vanilla-dark.png"
+    },
+    {
+      "id": "E06_list-ocean-light",
+      "label": "列表混合书目与独立条目 · 海洋 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-ocean-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-ocean-light_actual.png",
+      "before_sha256": "4f2dc985dda52fca6ceffaf4a1f6f724b2f788dff50d84542ddbcb7aa6b5c2f5",
+      "after_sha256": "d3375325427ece8ff097d52c70eec650c79067e296b8413588a1a76ac0ca1f2c",
+      "repeat_sha256": "d3375325427ece8ff097d52c70eec650c79067e296b8413588a1a76ac0ca1f2c",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304199,
+      "changed_ratio": 0.26406163194444443,
+      "before": "before/E06_list-ocean-light.png",
+      "after": "after/E06_list-ocean-light.png",
+      "diff": "diff/E06_list-ocean-light.png"
+    },
+    {
+      "id": "E06_list-ocean-dark",
+      "label": "列表混合书目与独立条目 · 海洋 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-ocean-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-ocean-dark_actual.png",
+      "before_sha256": "3e2ea9c75ca0c031e4e0abdd78c65387ce9cc373c1ec55ed2940a4fe170bc0eb",
+      "after_sha256": "4e2d07b194ac0ce9027036b2547128c11caf529fe5057df36e68f1921b500f4a",
+      "repeat_sha256": "4e2d07b194ac0ce9027036b2547128c11caf529fe5057df36e68f1921b500f4a",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 304066,
+      "changed_ratio": 0.2639461805555556,
+      "before": "before/E06_list-ocean-dark.png",
+      "after": "after/E06_list-ocean-dark.png",
+      "diff": "diff/E06_list-ocean-dark.png"
+    },
+    {
+      "id": "E06_detail-light",
+      "label": "书目详情 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-light_actual.png",
+      "before_sha256": "aacaebf7c69496a4de25a13ef0f036b2735496bd659aec2672c6349adec8246f",
+      "after_sha256": "ba5cb980abf3c9e77a7814228dcaee00926b14e200aa386535f9577f3ff74c79",
+      "repeat_sha256": "ba5cb980abf3c9e77a7814228dcaee00926b14e200aa386535f9577f3ff74c79",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 270488,
+      "changed_ratio": 0.2347986111111111,
+      "before": "before/E06_detail-light.png",
+      "after": "after/E06_detail-light.png",
+      "diff": "diff/E06_detail-light.png"
+    },
+    {
+      "id": "E06_list-dynamic-light",
+      "label": "列表固定动态色 · 固定动态色 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-dynamic-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-dynamic-light_actual.png",
+      "before_sha256": "568a223a54c363cbc6a3b79c94b95d124da509114e1bddb694134daa440ac2b8",
+      "after_sha256": "a1016a9fead715c52192d035c0eeca2dfe4c028cdef1e5af84e081dd2a4d22eb",
+      "repeat_sha256": "a1016a9fead715c52192d035c0eeca2dfe4c028cdef1e5af84e081dd2a4d22eb",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus",
+      "changed_pixels": 195708,
+      "changed_ratio": 0.16988541666666668,
+      "before": "before/E06_list-dynamic-light.png",
+      "after": "after/E06_list-dynamic-light.png",
+      "diff": "diff/E06_list-dynamic-light.png"
+    },
+    {
+      "id": "E06_detail-dynamic-light",
+      "label": "书目管理固定动态色 · 固定动态色 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-dynamic-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-dynamic-light_actual.png",
+      "before_sha256": "49142b1f540cbfa1a0f33cfee6d18cd3da664e88c7cb9fcd3feb6394de3e59ec",
+      "after_sha256": "3ead41ec43f2a9bff3aafa24d1321aa7fd81d25983cc01d0ef96281f0c21e62e",
+      "repeat_sha256": "3ead41ec43f2a9bff3aafa24d1321aa7fd81d25983cc01d0ef96281f0c21e62e",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(40.0, 545.0, 680.0, 649.0)\nrenameUnclipped=Rect.fromLTRB(40.0, 545.0, 680.0, 649.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(40.0, 673.0, 680.0, 777.0)\ndeleteBookUnclipped=Rect.fromLTRB(40.0, 673.0, 680.0, 777.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus",
+      "changed_pixels": 249324,
+      "changed_ratio": 0.21642708333333333,
+      "before": "before/E06_detail-dynamic-light.png",
+      "after": "after/E06_detail-dynamic-light.png",
+      "diff": "diff/E06_detail-dynamic-light.png"
+    },
+    {
+      "id": "E06_list-filters-narrow-light",
+      "label": "列表筛选首项 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-filters-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-filters-narrow-light_actual.png",
+      "before_sha256": "350cbafb5e80ec4a13008080f67326444564870ead637d866e5f468b72648019",
+      "after_sha256": "7e79e5459eb636dc3f9a2027679cd1e2640aaf223c5d26ec1667c134b45f5427",
+      "repeat_sha256": "7e79e5459eb636dc3f9a2027679cd1e2640aaf223c5d26ec1667c134b45f5427",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus",
+      "changed_pixels": 124781,
+      "changed_ratio": 0.152320556640625,
+      "before": "before/E06_list-filters-narrow-light.png",
+      "after": "after/E06_list-filters-narrow-light.png",
+      "diff": "diff/E06_list-filters-narrow-light.png"
+    },
+    {
+      "id": "E06_list-tail-narrow-light",
+      "label": "列表真实末项 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-tail-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-tail-narrow-light_actual.png",
+      "before_sha256": "1ea92247729464d74f4d64dd57e23d8b6d2ee111cb878aee9bc6e09f7f3644a4",
+      "after_sha256": "abbc273fcf8b9258bd48798162e7c3d88270a71e2cfa90b3d3fa91d128ca2757",
+      "repeat_sha256": "abbc273fcf8b9258bd48798162e7c3d88270a71e2cfa90b3d3fa91d128ca2757",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3045.0/3045.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryUnclipped=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3005.0/3005.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 169624,
+      "changed_ratio": 0.207060546875,
+      "before": "before/E06_list-tail-narrow-light.png",
+      "after": "after/E06_list-tail-narrow-light.png",
+      "diff": "diff/E06_list-tail-narrow-light.png"
+    },
+    {
+      "id": "E06_detail-management-narrow-light",
+      "label": "管理保存与删除 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-management-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-management-narrow-light_actual.png",
+      "before_sha256": "69c8e4fa3a5b344a7e7951d7206d3efe96417be6c97f789bc9c66096a57ee431",
+      "after_sha256": "17c767e94f160f1bb301e2b8c6d8c93264dfec76aa361fcbc5357bda222c6d06",
+      "repeat_sha256": "17c767e94f160f1bb301e2b8c6d8c93264dfec76aa361fcbc5357bda222c6d06",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(40.0, 751.0, 600.0, 884.0)\nrenameUnclipped=Rect.fromLTRB(40.0, 751.0, 600.0, 884.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(40.0, 908.0, 600.0, 1041.0)\ndeleteBookUnclipped=Rect.fromLTRB(40.0, 908.0, 600.0, 1041.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus",
+      "changed_pixels": 357837,
+      "changed_ratio": 0.436812744140625,
+      "before": "before/E06_detail-management-narrow-light.png",
+      "after": "after/E06_detail-management-narrow-light.png",
+      "diff": "diff/E06_detail-management-narrow-light.png"
+    },
+    {
+      "id": "E06_detail-tail-narrow-light",
+      "label": "书目详情真实末项 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-tail-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-tail-narrow-light_actual.png",
+      "before_sha256": "389de193f42337ef95893e4ed7c30bf0ba19b4076d8673e0be6fd6e04ca8297f",
+      "after_sha256": "699757c56d790f46e1b89c36c06408650102fcfa56f08a28bbb3a8a1c3acb515",
+      "repeat_sha256": "699757c56d790f46e1b89c36c06408650102fcfa56f08a28bbb3a8a1c3acb515",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3192.0/3192.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryUnclipped=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3240.0/3240.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 227352,
+      "changed_ratio": 0.277529296875,
+      "before": "before/E06_detail-tail-narrow-light.png",
+      "after": "after/E06_detail-tail-narrow-light.png",
+      "diff": "diff/E06_detail-tail-narrow-light.png"
+    },
+    {
+      "id": "E06_list-help-dialog-light",
+      "label": "列表帮助窗口 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-help-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-help-dialog-light_actual.png",
+      "before_sha256": "6b620515fa4fe013aa339ec53cb08846131cf905ce2c8cca0bca826f53211c44",
+      "after_sha256": "9f58d6ccba05dd6f08efa1bbe3dd4ddfdd09af68943acb6adb69032bdbd193f7",
+      "repeat_sha256": "9f58d6ccba05dd6f08efa1bbe3dd4ddfdd09af68943acb6adb69032bdbd193f7",
+      "before_window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "after_window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody",
+      "changed_pixels": 77116,
+      "changed_ratio": 0.0941357421875,
+      "before": "before/E06_list-help-dialog-light.png",
+      "after": "after/E06_list-help-dialog-light.png",
+      "diff": "diff/E06_list-help-dialog-light.png"
+    },
+    {
+      "id": "E06_book-delete-dialog-light",
+      "label": "删除整本确认 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_book-delete-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_book-delete-dialog-light_actual.png",
+      "before_sha256": "6789b1ad4efca38a693975b5d09d3d75e8141703ba534e229b8cd894ac749755",
+      "after_sha256": "f834da40989ed13223320dc1b6450049046668a48f7133305c68cc8014c842ce",
+      "repeat_sha256": "f834da40989ed13223320dc1b6450049046668a48f7133305c68cc8014c842ce",
+      "before_window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "after_window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody",
+      "changed_pixels": 113951,
+      "changed_ratio": 0.139100341796875,
+      "before": "before/E06_book-delete-dialog-light.png",
+      "after": "after/E06_book-delete-dialog-light.png",
+      "diff": "diff/E06_book-delete-dialog-light.png"
+    },
+    {
+      "id": "E06_detail-dark",
+      "label": "书目详情 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-dark_actual.png",
+      "before_sha256": "7514c6ab693d114e2948cd3ee2180855de5783be28d845cd5477c8f807d46fe6",
+      "after_sha256": "e4ba2aa4f9eb46aa1e3155372eb8ce6e327083c7bd2764fbacc5e788154055be",
+      "repeat_sha256": "e4ba2aa4f9eb46aa1e3155372eb8ce6e327083c7bd2764fbacc5e788154055be",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400150\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 270837,
+      "changed_ratio": 0.2351015625,
+      "before": "before/E06_detail-dark.png",
+      "after": "after/E06_detail-dark.png",
+      "diff": "diff/E06_detail-dark.png"
+    },
+    {
+      "id": "E06_list-dynamic-dark",
+      "label": "列表固定动态色 · 固定动态色 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-dynamic-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-dynamic-dark_actual.png",
+      "before_sha256": "6f3f31b7f547d0412d9e65187840b855852efbfcceddc1c99a376d087941423b",
+      "after_sha256": "74a8722544413f7eb9c1e64b003b894a0e2deab33222a0dd5dcc4e989c041cd2",
+      "repeat_sha256": "74a8722544413f7eb9c1e64b003b894a0e2deab33222a0dd5dcc4e989c041cd2",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:全局 -> clear-window-owner-focus",
+      "changed_pixels": 195741,
+      "changed_ratio": 0.1699140625,
+      "before": "before/E06_list-dynamic-dark.png",
+      "after": "after/E06_list-dynamic-dark.png",
+      "diff": "diff/E06_list-dynamic-dark.png"
+    },
+    {
+      "id": "E06_detail-dynamic-dark",
+      "label": "书目管理固定动态色 · 固定动态色 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-dynamic-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-dynamic-dark_actual.png",
+      "before_sha256": "5083b8bf6381566fff6ece17eae5a3f4d878217d2a6fe1b3600cf654f40a4666",
+      "after_sha256": "7751b3b02e4e1a87f50842597e6964952646c3374d2744466b32dd9a9f90f562",
+      "repeat_sha256": "7751b3b02e4e1a87f50842597e6964952646c3374d2744466b32dd9a9f90f562",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(40.0, 545.0, 680.0, 649.0)\nrenameUnclipped=Rect.fromLTRB(40.0, 545.0, 680.0, 649.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(40.0, 673.0, 680.0, 777.0)\ndeleteBookUnclipped=Rect.fromLTRB(40.0, 673.0, 680.0, 777.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 553.0, 688.0, 657.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 681.0, 688.0, 785.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 720.0, 1600.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=management -> clear-window-owner-focus",
+      "changed_pixels": 249493,
+      "changed_ratio": 0.21657378472222222,
+      "before": "before/E06_detail-dynamic-dark.png",
+      "after": "after/E06_detail-dynamic-dark.png",
+      "diff": "diff/E06_detail-dynamic-dark.png"
+    },
+    {
+      "id": "E06_list-filters-narrow-dark",
+      "label": "列表筛选首项 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-filters-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-filters-narrow-dark_actual.png",
+      "before_sha256": "c306fc2fea7f4f7f64f9fa28c3251c9ff8826184d0a0d8f615b2e714e86878d3",
+      "after_sha256": "66a93c1a02a227c01b4d3d8ea79442a215c353d44591270eb6b015393cf656d6",
+      "repeat_sha256": "66a93c1a02a227c01b4d3d8ea79442a215c353d44591270eb6b015393cf656d6",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400300\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=filters:expand -> clear-window-owner-focus",
+      "changed_pixels": 124879,
+      "changed_ratio": 0.152440185546875,
+      "before": "before/E06_list-filters-narrow-dark.png",
+      "after": "after/E06_list-filters-narrow-dark.png",
+      "diff": "diff/E06_list-filters-narrow-dark.png"
+    },
+    {
+      "id": "E06_list-tail-narrow-dark",
+      "label": "列表真实末项 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-tail-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-tail-narrow-dark_actual.png",
+      "before_sha256": "f1fd32504d8dbbda14e6d6d5f453cc08d1b64281943bf6293e79406626a8c98d",
+      "after_sha256": "c0e195b633c0d4b8ca9f29a4ba5ce36d9df1bdbe242791f916ad82253549cf7a",
+      "repeat_sha256": "c0e195b633c0d4b8ca9f29a4ba5ce36d9df1bdbe242791f916ad82253549cf7a",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3045.0/3045.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryUnclipped=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3005.0/3005.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-standalone-3\nlastLazyKey=entry-p06-standalone-3\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 169903,
+      "changed_ratio": 0.207401123046875,
+      "before": "before/E06_list-tail-narrow-dark.png",
+      "after": "after/E06_list-tail-narrow-dark.png",
+      "diff": "diff/E06_list-tail-narrow-dark.png"
+    },
+    {
+      "id": "E06_detail-management-narrow-dark",
+      "label": "管理保存与删除 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-management-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-management-narrow-dark_actual.png",
+      "before_sha256": "44628d8ea6bb4177cbd0bcb086d873ae3ab1e82ce6d838b72da6478e58d19532",
+      "after_sha256": "f329ba1a5429e57bd718f500688c27d80a1e75c89d31bd3368794051792f31bb",
+      "repeat_sha256": "f329ba1a5429e57bd718f500688c27d80a1e75c89d31bd3368794051792f31bb",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(40.0, 751.0, 600.0, 884.0)\nrenameUnclipped=Rect.fromLTRB(40.0, 751.0, 600.0, 884.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(40.0, 908.0, 600.0, 1041.0)\ndeleteBookUnclipped=Rect.fromLTRB(40.0, 908.0, 600.0, 1041.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nrename=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameUnclipped=Rect.fromLTRB(32.0, 843.0, 608.0, 968.0)\nrenameViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nrenameFullyVisible=true\nrenameTouch48dp=true\ndeleteBook=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookUnclipped=Rect.fromLTRB(32.0, 992.0, 608.0, 1117.0)\ndeleteBookViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteBookFullyVisible=true\ndeleteBookTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400420\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> clear-window-owner-focus",
+      "changed_pixels": 357852,
+      "changed_ratio": 0.4368310546875,
+      "before": "before/E06_detail-management-narrow-dark.png",
+      "after": "after/E06_detail-management-narrow-dark.png",
+      "diff": "diff/E06_detail-management-narrow-dark.png"
+    },
+    {
+      "id": "E06_detail-tail-narrow-dark",
+      "label": "书目详情真实末项 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_detail-tail-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_detail-tail-narrow-dark_actual.png",
+      "before_sha256": "eaddaaddb5a3be751c5b3567b3eb0dafed982f78e03a5b524cca780ac2bd0ba8",
+      "after_sha256": "92d95ee35426e7827aca99322e2b2fa4eb0a31aa3e93b43c1f8e6b9f6b7d3fd2",
+      "repeat_sha256": "92d95ee35426e7827aca99322e2b2fa4eb0a31aa3e93b43c1f8e6b9f6b7d3fd2",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3192.0/3192.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryUnclipped=Rect.fromLTRB(40.0, 833.0, 600.0, 1208.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3240.0/3240.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryId=p06-book-entry-6\nlastLazyKey=p06-book-entry-6\nlastEntry=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryUnclipped=Rect.fromLTRB(32.0, 857.0, 608.0, 1216.0)\nlastEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlastEntryFullyVisible=true\nlastEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 227616,
+      "changed_ratio": 0.2778515625,
+      "before": "before/E06_detail-tail-narrow-dark.png",
+      "after": "after/E06_detail-tail-narrow-dark.png",
+      "diff": "diff/E06_detail-tail-narrow-dark.png"
+    },
+    {
+      "id": "E06_list-help-dialog-dark",
+      "label": "列表帮助窗口 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-help-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-help-dialog-dark_actual.png",
+      "before_sha256": "33828d252f8e509576fbe13113d9d31ad8f92a7fa365455ef609370853a3017f",
+      "after_sha256": "031da29e6dbf2a4e2fda939a6d20d1a77182914ff9f9f2e33d997219aa1e796a",
+      "repeat_sha256": "031da29e6dbf2a4e2fda939a6d20d1a77182914ff9f9f2e33d997219aa1e796a",
+      "before_window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "after_window": "title=世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 485.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 533.0, 592.0, 642.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 690.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400450\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:worldbook -> scroll-end:windowBody",
+      "changed_pixels": 76530,
+      "changed_ratio": 0.09342041015625,
+      "before": "before/E06_list-help-dialog-dark.png",
+      "after": "after/E06_list-help-dialog-dark.png",
+      "diff": "diff/E06_list-help-dialog-dark.png"
+    },
+    {
+      "id": "E06_book-delete-dialog-dark",
+      "label": "删除整本确认 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_book-delete-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_book-delete-dialog-dark_actual.png",
+      "before_sha256": "cdb83b6b7e32a0b8460799e0bd58581f75f32bbb32e3bbb3cbdd56bb5f9af20e",
+      "after_sha256": "8175a44f0a573b8b9acf5885a88915352a0e0378c72c46d01f7585f8e1c43f12",
+      "repeat_sha256": "8175a44f0a573b8b9acf5885a88915352a0e0378c72c46d01f7585f8e1c43f12",
+      "before_window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "after_window": "title=删除整本世界书\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 650.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 666.0, 496.0, 775.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Unclipped=Rect.fromLTRB(72.0, 666.0, 224.0, 775.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 823.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400660\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=management -> delete-book:open -> scroll-end:windowBody",
+      "changed_pixels": 112657,
+      "changed_ratio": 0.137520751953125,
+      "before": "before/E06_book-delete-dialog-dark.png",
+      "after": "after/E06_book-delete-dialog-dark.png",
+      "diff": "diff/E06_book-delete-dialog-dark.png"
+    },
+    {
+      "id": "E06_list-empty-light",
+      "label": "无世界书 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-empty-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-empty-light_actual.png",
+      "before_sha256": "e654b60b290762c40a8e586f423bbdb1838d7c09646ee2f4ca56db773db85133",
+      "after_sha256": "e8d5ff66fee9a07042156d904cb0d1260ce693535fbbeeecf364635935ee6cf1",
+      "repeat_sha256": "e8d5ff66fee9a07042156d904cb0d1260ce693535fbbeeecf364635935ee6cf1",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 31673,
+      "changed_ratio": 0.02749392361111111,
+      "before": "before/E06_list-empty-light.png",
+      "after": "after/E06_list-empty-light.png",
+      "diff": "diff/E06_list-empty-light.png"
+    },
+    {
+      "id": "E06_list-search-empty-dark",
+      "label": "搜索无结果 · 抹茶 · 深色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-search-empty-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-search-empty-dark_actual.png",
+      "before_sha256": "39fbe65429e0444ac390d2deac9679c67267df5e5813d6b6f10f7374bcfa6585",
+      "after_sha256": "bafe856c2bdd0302a1166e4d3feb5fc19c899714953b129152c71919d5013942",
+      "repeat_sha256": "bafe856c2bdd0302a1166e4d3feb5fc19c899714953b129152c71919d5013942",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=search:no-match -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=search:no-match -> clear-window-owner-focus",
+      "changed_pixels": 39346,
+      "changed_ratio": 0.03415451388888889,
+      "before": "before/E06_list-search-empty-dark.png",
+      "after": "after/E06_list-search-empty-dark.png",
+      "diff": "diff/E06_list-search-empty-dark.png"
+    },
+    {
+      "id": "E06_list-filter-empty-light",
+      "label": "筛选无结果 · 抹茶 · 浅色",
+      "group": "worldbook",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_list-filter-empty-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_list-filter-empty-light_actual.png",
+      "before_sha256": "40b4363d17b06ec37e67e0b67c1b35c20c15974431806ca8bd7eb506d578d868",
+      "after_sha256": "2e1080956f1732f5bca0809dbbdbdbecdf330a6d885e4a8a4df2f92664cf1bfc",
+      "repeat_sha256": "2e1080956f1732f5bca0809dbbdbdbecdf330a6d885e4a8a4df2f92664cf1bfc",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:会话 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400390\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=filters:expand -> filter:会话 -> clear-window-owner-focus",
+      "changed_pixels": 96896,
+      "changed_ratio": 0.08411111111111111,
+      "before": "before/E06_list-filter-empty-light.png",
+      "after": "after/E06_list-filter-empty-light.png",
+      "diff": "diff/E06_list-filter-empty-light.png"
+    },
+    {
+      "id": "E06_editor-new-required-narrow-light",
+      "label": "新建条目必填门槛 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-new-required-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-new-required-narrow-light_actual.png",
+      "before_sha256": "826dca5748bd84baa84f98741c8b0292671c21d481f68c7f5441ab964c9ccd27",
+      "after_sha256": "cf31c243cb55869ed4c40ef8cc0ec6a7a24240385f91e0f12ec04075753ad9ab",
+      "repeat_sha256": "cf31c243cb55869ed4c40ef8cc0ec6a7a24240385f91e0f12ec04075753ad9ab",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 122721,
+      "changed_ratio": 0.149805908203125,
+      "before": "before/E06_editor-new-required-narrow-light.png",
+      "after": "after/E06_editor-new-required-narrow-light.png",
+      "diff": "diff/E06_editor-new-required-narrow-light.png"
+    },
+    {
+      "id": "E06_editor-existing-light",
+      "label": "已有条目编辑 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-existing-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-existing-light_actual.png",
+      "before_sha256": "6f5cf9271dcdf1765b87138b80e4c01d241df1e049e8964a787e16735ba014bc",
+      "after_sha256": "d073649b7a8a6f84465cb82929cd3c711ac4a226ffef59ecf62a5bc429841640",
+      "repeat_sha256": "d073649b7a8a6f84465cb82929cd3c711ac4a226ffef59ecf62a5bc429841640",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 207934,
+      "changed_ratio": 0.1804982638888889,
+      "before": "before/E06_editor-existing-light.png",
+      "after": "after/E06_editor-existing-light.png",
+      "diff": "diff/E06_editor-existing-light.png"
+    },
+    {
+      "id": "E06_editor-rules-narrow-light",
+      "label": "命中规则与长关键词 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-rules-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-rules-narrow-light_actual.png",
+      "before_sha256": "9e64beca128dc6b764ebfba1161533ffae76ed4ea2d08c4794dc0f9f8b64a6bf",
+      "after_sha256": "5a46837adc046d23e37fdda4fdf632699d342fe7979d485a966896c382355636",
+      "repeat_sha256": "5a46837adc046d23e37fdda4fdf632699d342fe7979d485a966896c382355636",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(40.0, 1128.0, 600.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(40.0, 1128.0, 600.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus",
+      "changed_pixels": 118282,
+      "changed_ratio": 0.14438720703125,
+      "before": "before/E06_editor-rules-narrow-light.png",
+      "after": "after/E06_editor-rules-narrow-light.png",
+      "diff": "diff/E06_editor-rules-narrow-light.png"
+    },
+    {
+      "id": "E06_editor-scope-narrow-light",
+      "label": "角色作用域与长名称 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-scope-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-scope-narrow-light_actual.png",
+      "before_sha256": "f89c699508f3b552dc91fa19c4a92cd6e39c4148645fad5b06b4e747c89d9e0a",
+      "after_sha256": "e5836848ea58c2be179f8e7664804f631cfa64cf8692c7887e9e786555b79383",
+      "repeat_sha256": "e5836848ea58c2be179f8e7664804f631cfa64cf8692c7887e9e786555b79383",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(40.0, 950.0, 600.0, 1102.0)\nassistantChoiceUnclipped=Rect.fromLTRB(40.0, 950.0, 600.0, 1102.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceUnclipped=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus",
+      "changed_pixels": 165880,
+      "changed_ratio": 0.202490234375,
+      "before": "before/E06_editor-scope-narrow-light.png",
+      "after": "after/E06_editor-scope-narrow-light.png",
+      "diff": "diff/E06_editor-scope-narrow-light.png"
+    },
+    {
+      "id": "E06_editor-advanced-tail-narrow-light",
+      "label": "高级参数及真实末尾 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-advanced-tail-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-advanced-tail-narrow-light_actual.png",
+      "before_sha256": "ac3e04f9289ccfd7260bf921f796d392b53b1d9fd609537b976a33ac1b92d256",
+      "after_sha256": "d8babb2a93a76c675d7535885e30ca6268c3253acf5cbf9f6705ad16d9be4ce7",
+      "repeat_sha256": "d8babb2a93a76c675d7535885e30ca6268c3253acf5cbf9f6705ad16d9be4ce7",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2671.0/2671.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(40.0, 960.0, 600.0, 1093.0)\ndeleteEntryUnclipped=Rect.fromLTRB(40.0, 960.0, 600.0, 1093.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401485\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2655.0/2655.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryUnclipped=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401500\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 90276,
+      "changed_ratio": 0.1102001953125,
+      "before": "before/E06_editor-advanced-tail-narrow-light.png",
+      "after": "after/E06_editor-advanced-tail-narrow-light.png",
+      "diff": "diff/E06_editor-advanced-tail-narrow-light.png"
+    },
+    {
+      "id": "E06_editor-body-sheet-light",
+      "label": "全屏正文长文末尾 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-body-sheet-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-body-sheet-light_actual.png",
+      "before_sha256": "015f7a54ffdb40d89ab9159b9219847a9ac9740ef669553080b692320ba69efe",
+      "after_sha256": "355d5a08bdeb896f89d78221cd8bd898aa2317237ffa52cf8dfcabc43ca5a215",
+      "repeat_sha256": "355d5a08bdeb896f89d78221cd8bd898aa2317237ffa52cf8dfcabc43ca5a215",
+      "before_window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nbodyScroll=4749.0/4749.0\nbodyViewport=Rect.fromLTRB(72.0, 272.0, 568.0, 1067.0)\nbodyViewportSize=795\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=66\nbodyLastLine=5460.0/5544.0\nbodyLastLineInViewport=711.0/795.0 within 0/795.0\nbodyLastLineText=直亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)\nbodyFieldUnclipped=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(504.0, 120.0, 600.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(504.0, 120.0, 600.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(40.0, 1123.0, 600.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(40.0, 1123.0, 600.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end",
+      "after_measurements": "clockStartMillis=1791950400000\nbodyScroll=3397.0/3397.0\nbodyViewport=Rect.fromLTRB(64.0, 272.0, 576.0, 1075.0)\nbodyViewportSize=803\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=50\nbodyLastLine=4116.0/4200.0\nbodyLastLineInViewport=719.0/803.0 within 0/803.0\nbodyLastLineText=亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldUnclipped=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end",
+      "changed_pixels": 151371,
+      "changed_ratio": 0.184779052734375,
+      "before": "before/E06_editor-body-sheet-light.png",
+      "after": "after/E06_editor-body-sheet-light.png",
+      "diff": "diff/E06_editor-body-sheet-light.png"
+    },
+    {
+      "id": "E06_entry-delete-dialog-light",
+      "label": "原条目删除确认 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_entry-delete-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_entry-delete-dialog-light_actual.png",
+      "before_sha256": "f2bcc327d20e7015ec5c008b60616a8a1277b88960f5b88c9381d0d9d4754183",
+      "after_sha256": "bee3c38a07e70967835b8c4c7159ef6f7e21d16b803b6d54233c9df9d706e8e2",
+      "repeat_sha256": "bee3c38a07e70967835b8c4c7159ef6f7e21d16b803b6d54233c9df9d706e8e2",
+      "before_window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "after_window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3176.0/3176.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3072.0/3072.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody",
+      "changed_pixels": 94864,
+      "changed_ratio": 0.11580078125,
+      "before": "before/E06_entry-delete-dialog-light.png",
+      "after": "after/E06_entry-delete-dialog-light.png",
+      "diff": "diff/E06_entry-delete-dialog-light.png"
+    },
+    {
+      "id": "E06_editor-rule-help-dialog-light",
+      "label": "编辑最长真实说明 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-rule-help-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-rule-help-dialog-light_actual.png",
+      "before_sha256": "a63bad7cc0ff530899c211fca74f62c04999e802c24bd7abd3fac1b1e91de222",
+      "after_sha256": "d56da2b7f3ccad121a8702e0661e131abb807cad4f729f9c4399be311cb29b4d",
+      "repeat_sha256": "d56da2b7f3ccad121a8702e0661e131abb807cad4f729f9c4399be311cb29b4d",
+      "before_window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "after_window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody",
+      "changed_pixels": 44733,
+      "changed_ratio": 0.054605712890625,
+      "before": "before/E06_editor-rule-help-dialog-light.png",
+      "after": "after/E06_editor-rule-help-dialog-light.png",
+      "diff": "diff/E06_editor-rule-help-dialog-light.png"
+    },
+    {
+      "id": "E06_editor-book-popup-light",
+      "label": "所属世界书菜单 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "popup",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        560,
+        1004
+      ],
+      "after_size_px": [
+        576,
+        1004
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-book-popup-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-book-popup-light_actual.png",
+      "before_sha256": "8ed4531f560a4b5b3a6f9646988f02e0fc1c7b2c9d2e2e0026627d45f79b30d8",
+      "after_sha256": "d1f4e9ba95a05474d272b721f33900c36bab154055d37d1f555621ea53e440f9",
+      "repeat_sha256": "d1f4e9ba95a05474d272b721f33900c36bab154055d37d1f555621ea53e440f9",
+      "before_window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\n",
+      "after_window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npopupScroll=188.0/188.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup",
+      "after_measurements": "clockStartMillis=1791950400000\npopupScroll=350.0/350.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup",
+      "changed_pixels": 568711,
+      "changed_ratio": 0.9834118387560867,
+      "before": "before/E06_editor-book-popup-light.png",
+      "after": "after/E06_editor-book-popup-light.png",
+      "diff": "diff/E06_editor-book-popup-light.png"
+    },
+    {
+      "id": "E06_editor-conversation-popup-light",
+      "label": "所属会话菜单 · 抹茶 · 浅色",
+      "group": "editor",
+      "kind": "popup",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        560,
+        854
+      ],
+      "after_size_px": [
+        576,
+        814
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-conversation-popup-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-conversation-popup-light_actual.png",
+      "before_sha256": "d85d93a196c93f018beb93d7fa4c8749c3562b4f9f01e66efa9e7a295d92fd76",
+      "after_sha256": "644a22ebdf4cdbe5f44d5a256a4acb81d8d2e9955f9e7d7184e81f8c868813e2",
+      "repeat_sha256": "644a22ebdf4cdbe5f44d5a256a4acb81d8d2e9955f9e7d7184e81f8c868813e2",
+      "before_window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\n",
+      "after_window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npopupScroll=218.0/218.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 838.0)\nlastChoice=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup",
+      "after_measurements": "clockStartMillis=1791950400000\npopupScroll=458.0/458.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 798.0)\nlastChoice=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup",
+      "changed_pixels": 489685,
+      "changed_ratio": 0.9954889571948998,
+      "before": "before/E06_editor-conversation-popup-light.png",
+      "after": "after/E06_editor-conversation-popup-light.png",
+      "diff": "diff/E06_editor-conversation-popup-light.png"
+    },
+    {
+      "id": "E06_editor-new-required-narrow-dark",
+      "label": "新建条目必填门槛 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-new-required-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-new-required-narrow-dark_actual.png",
+      "before_sha256": "41e00f3dc1bd9b3b352b09fad9a68657d1a223c93381cc58a85152be914f5399",
+      "after_sha256": "e7e4dc5921c72f3979e4230e392eaed97ac343c93972f92e2293da9dd0ea6273",
+      "repeat_sha256": "e7e4dc5921c72f3979e4230e392eaed97ac343c93972f92e2293da9dd0ea6273",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400210\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 122708,
+      "changed_ratio": 0.1497900390625,
+      "before": "before/E06_editor-new-required-narrow-dark.png",
+      "after": "after/E06_editor-new-required-narrow-dark.png",
+      "diff": "diff/E06_editor-new-required-narrow-dark.png"
+    },
+    {
+      "id": "E06_editor-existing-dark",
+      "label": "已有条目编辑 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-existing-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-existing-dark_actual.png",
+      "before_sha256": "084b0f4e97b88b8f17554591116f40480f7d6fffefecb6b888382c54bf7320c6",
+      "after_sha256": "9e3067aa626d2f0ff8d2a0756d329220e377fa27d5c96897acddb694077ae771",
+      "repeat_sha256": "9e3067aa626d2f0ff8d2a0756d329220e377fa27d5c96897acddb694077ae771",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 207943,
+      "changed_ratio": 0.18050607638888888,
+      "before": "before/E06_editor-existing-dark.png",
+      "after": "after/E06_editor-existing-dark.png",
+      "diff": "diff/E06_editor-existing-dark.png"
+    },
+    {
+      "id": "E06_editor-rules-narrow-dark",
+      "label": "命中规则与长关键词 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-rules-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-rules-narrow-dark_actual.png",
+      "before_sha256": "c5ef9d0a3f7ecf1ee70b32eb6c4e1d59f93a1f5d877ff29dd5b3f13796856ca0",
+      "after_sha256": "e27d5c6b002903e6a26bb60ba5ee4dea5c80b86abf0d09e6bd0626e8b548eeec",
+      "repeat_sha256": "e27d5c6b002903e6a26bb60ba5ee4dea5c80b86abf0d09e6bd0626e8b548eeec",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(40.0, 1128.0, 600.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(40.0, 1128.0, 600.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nlongKeyword=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordUnclipped=Rect.fromLTRB(32.0, 1128.0, 608.0, 1280.0)\nlongKeywordViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nlongKeywordFullyVisible=true\nlongKeywordTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> clear-window-owner-focus",
+      "changed_pixels": 118325,
+      "changed_ratio": 0.144439697265625,
+      "before": "before/E06_editor-rules-narrow-dark.png",
+      "after": "after/E06_editor-rules-narrow-dark.png",
+      "diff": "diff/E06_editor-rules-narrow-dark.png"
+    },
+    {
+      "id": "E06_editor-scope-narrow-dark",
+      "label": "角色作用域与长名称 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-scope-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-scope-narrow-dark_actual.png",
+      "before_sha256": "56995d11ee185c4f345cf471ece0b09392218bf19c70d79bfb0e295a0807bc07",
+      "after_sha256": "e52c943b0455557c604f175b87e4892095fc437e8a61dfbf04f247df6ce5dbfc",
+      "repeat_sha256": "e52c943b0455557c604f175b87e4892095fc437e8a61dfbf04f247df6ce5dbfc",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(40.0, 950.0, 600.0, 1102.0)\nassistantChoiceUnclipped=Rect.fromLTRB(40.0, 950.0, 600.0, 1102.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nassistantChoice=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceUnclipped=Rect.fromLTRB(32.0, 910.0, 608.0, 1062.0)\nassistantChoiceViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nassistantChoiceFullyVisible=true\nassistantChoiceTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950400600\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> clear-window-owner-focus",
+      "changed_pixels": 165895,
+      "changed_ratio": 0.202508544921875,
+      "before": "before/E06_editor-scope-narrow-dark.png",
+      "after": "after/E06_editor-scope-narrow-dark.png",
+      "diff": "diff/E06_editor-scope-narrow-dark.png"
+    },
+    {
+      "id": "E06_editor-advanced-tail-narrow-dark",
+      "label": "高级参数及真实末尾 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-advanced-tail-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-advanced-tail-narrow-dark_actual.png",
+      "before_sha256": "8eb186604d266dd287925c5e88a217a4308b046fd86379750ce85a28b45b5a13",
+      "after_sha256": "2aa033dfbbd229f0bb4815187a3383111033321c45af63c5c82616a8c385fd55",
+      "repeat_sha256": "2aa033dfbbd229f0bb4815187a3383111033321c45af63c5c82616a8c385fd55",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2671.0/2671.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(40.0, 960.0, 600.0, 1093.0)\ndeleteEntryUnclipped=Rect.fromLTRB(40.0, 960.0, 600.0, 1093.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401485\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npreview=production-previewHit:matched\npageScroll=2655.0/2655.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntry=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryUnclipped=Rect.fromLTRB(32.0, 964.0, 608.0, 1089.0)\ndeleteEntryViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ndeleteEntryFullyVisible=true\ndeleteEntryTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\ncaptureClockMillis=1791950401500\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:状态与高级 -> advanced -> section:试命中（预览） -> preview -> scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 90346,
+      "changed_ratio": 0.11028564453125,
+      "before": "before/E06_editor-advanced-tail-narrow-dark.png",
+      "after": "after/E06_editor-advanced-tail-narrow-dark.png",
+      "diff": "diff/E06_editor-advanced-tail-narrow-dark.png"
+    },
+    {
+      "id": "E06_editor-body-sheet-dark",
+      "label": "全屏正文长文末尾 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-body-sheet-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-body-sheet-dark_actual.png",
+      "before_sha256": "388e2e0b736c02c3209d68f24017bf9e5ae03638d5790f1ed62386d138565aee",
+      "after_sha256": "c3e072fb02358964b0de459f6cbc9bd4aaf2a83e3a02b54ab0e7df96a2abab4a",
+      "repeat_sha256": "c3e072fb02358964b0de459f6cbc9bd4aaf2a83e3a02b54ab0e7df96a2abab4a",
+      "before_window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=编辑正文\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nbodyScroll=4749.0/4749.0\nbodyViewport=Rect.fromLTRB(72.0, 272.0, 568.0, 1067.0)\nbodyViewportSize=795\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=66\nbodyLastLine=5460.0/5544.0\nbodyLastLineInViewport=711.0/795.0 within 0/795.0\nbodyLastLineText=直亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)\nbodyFieldUnclipped=Rect.fromLTRB(40.0, 240.0, 600.0, 1099.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(504.0, 120.0, 600.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(504.0, 120.0, 600.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(40.0, 1123.0, 600.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(40.0, 1123.0, 600.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end",
+      "after_measurements": "clockStartMillis=1791950400000\nbodyScroll=3397.0/3397.0\nbodyViewport=Rect.fromLTRB(64.0, 272.0, 576.0, 1075.0)\nbodyViewportSize=803\nbodyFocused=false\nbodyLastMarker=正文末尾：灯塔一直亮着。\nbodyLineCount=50\nbodyLastLine=4116.0/4200.0\nbodyLastLineInViewport=719.0/803.0 within 0/803.0\nbodyLastLineText=亮着。\nbodyLastLineVisible=true\nbodyField=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldUnclipped=Rect.fromLTRB(32.0, 240.0, 608.0, 1107.0)\nbodyFieldViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nbodyFieldFullyVisible=true\nbodyFieldTouch48dp=true\ncancelBody=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyUnclipped=Rect.fromLTRB(512.0, 120.0, 608.0, 216.0)\ncancelBodyViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\ncancelBodyFullyVisible=true\ncancelBodyTouch48dp=true\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n保存并返回=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Unclipped=Rect.fromLTRB(32.0, 1131.0, 608.0, 1256.0)\n保存并返回Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n保存并返回FullyVisible=true\n保存并返回Touch48dp=true\ncaptureClockMillis=1791950400720\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-body-sheet -> clear-window-owner-focus -> body-scrollBy:end",
+      "changed_pixels": 149460,
+      "changed_ratio": 0.1824462890625,
+      "before": "before/E06_editor-body-sheet-dark.png",
+      "after": "after/E06_editor-body-sheet-dark.png",
+      "diff": "diff/E06_editor-body-sheet-dark.png"
+    },
+    {
+      "id": "E06_entry-delete-dialog-dark",
+      "label": "原条目删除确认 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_entry-delete-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_entry-delete-dialog-dark_actual.png",
+      "before_sha256": "606897d56adbeb85379f002a21edea2918603f9fc486c840f4929ffafc0535cc",
+      "after_sha256": "d7b7ddac8e3475a3802276d1ffa787a70e473533a02110a3b6bdb227f28f6c0a",
+      "repeat_sha256": "d7b7ddac8e3475a3802276d1ffa787a70e473533a02110a3b6bdb227f28f6c0a",
+      "before_window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "after_window": "title=删除世界书条目\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3176.0/3176.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3072.0/3072.0\npageViewport=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 48.0, 496.0, 575.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n确认删除=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Unclipped=Rect.fromLTRB(240.0, 591.0, 496.0, 700.0)\n确认删除Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n确认删除FullyVisible=true\n确认删除Touch48dp=true\n取消=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Unclipped=Rect.fromLTRB(72.0, 591.0, 224.0, 700.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400615\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> delete-entry:open -> scroll-end:windowBody",
+      "changed_pixels": 78330,
+      "changed_ratio": 0.09561767578125,
+      "before": "before/E06_entry-delete-dialog-dark.png",
+      "after": "after/E06_entry-delete-dialog-dark.png",
+      "diff": "diff/E06_entry-delete-dialog-dark.png"
+    },
+    {
+      "id": "E06_editor-rule-help-dialog-dark",
+      "label": "编辑最长真实说明 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-rule-help-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-rule-help-dialog-dark_actual.png",
+      "before_sha256": "9a397aa9ab452abac3b0e78c46c8c3282346932007b2ba88fbff6096273b0aa0",
+      "after_sha256": "7b700375b9575e39d28e64a3d47011a712f06beb52995ff29d07220a48b706b0",
+      "repeat_sha256": "7b700375b9575e39d28e64a3d47011a712f06beb52995ff29d07220a48b706b0",
+      "before_window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "after_window": "title=命中规则\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400555\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:rules -> scroll-end:windowBody",
+      "changed_pixels": 44760,
+      "changed_ratio": 0.054638671875,
+      "before": "before/E06_editor-rule-help-dialog-dark.png",
+      "after": "after/E06_editor-rule-help-dialog-dark.png",
+      "diff": "diff/E06_editor-rule-help-dialog-dark.png"
+    },
+    {
+      "id": "E06_editor-book-popup-dark",
+      "label": "所属世界书菜单 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "popup",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        560,
+        1004
+      ],
+      "after_size_px": [
+        576,
+        1004
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-book-popup-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-book-popup-dark_actual.png",
+      "before_sha256": "f55bae91c273c520f4be49dc108f217abd24e5c710460a9db2f65775c71b8a0c",
+      "after_sha256": "302dadb6b0f46811006bb76da8650a10222ebea6c12bba6607b10e428a2bb5ce",
+      "repeat_sha256": "302dadb6b0f46811006bb76da8650a10222ebea6c12bba6607b10e428a2bb5ce",
+      "before_window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\n",
+      "after_window": "title=远行笔记：最后一卷的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npopupScroll=188.0/188.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 836.0, 560.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 560.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup",
+      "after_measurements": "clockStartMillis=1791950400000\npopupScroll=350.0/350.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 988.0)\nlastChoice=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)\n远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)\n远行笔记：最后一卷的灯塔与归途FullyVisible=true\n远行笔记：最后一卷的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950400705\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=open-book-popup -> scroll-end:popup",
+      "changed_pixels": 568714,
+      "changed_ratio": 0.9834170263390881,
+      "before": "before/E06_editor-book-popup-dark.png",
+      "after": "after/E06_editor-book-popup-dark.png",
+      "diff": "diff/E06_editor-book-popup-dark.png"
+    },
+    {
+      "id": "E06_editor-conversation-popup-dark",
+      "label": "所属会话菜单 · 抹茶 · 深色",
+      "group": "editor",
+      "kind": "popup",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        560,
+        854
+      ],
+      "after_size_px": [
+        576,
+        814
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_editor-conversation-popup-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_editor-conversation-popup-dark_actual.png",
+      "before_sha256": "b6a090877743aeec581a9779fa9096c17c2987ec5f897001372a881b82528932",
+      "after_sha256": "901fc1ab6406e308425f3e007b31655747150b9eba9be6424624e722381505c5",
+      "repeat_sha256": "901fc1ab6406e308425f3e007b31655747150b9eba9be6424624e722381505c5",
+      "before_window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\n",
+      "after_window": "title=末次会话：暴雨后的灯塔与归途\ntarget=independent-popup-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\npopupScroll=218.0/218.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 838.0)\nlastChoice=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup",
+      "after_measurements": "clockStartMillis=1791950400000\npopupScroll=458.0/458.0\npopupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 798.0)\nlastChoice=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceUnclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\nlastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\nlastChoiceFullyVisible=true\nlastChoiceTouch48dp=true\nlastChoiceIdentity=conversationId=p06-conversation-5\nisolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO\n末次会话：暴雨后的灯塔与归途=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 535.0, 576.0, 798.0)\n末次会话：暴雨后的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)\n末次会话：暴雨后的灯塔与归途FullyVisible=true\n末次会话：暴雨后的灯塔与归途Touch48dp=true\npopupViewOwner=androidx.compose.ui.window.PopupLayout\npopupRenderer=native Canvas drawing the independent Popup AndroidComposeView\ncaptureClockMillis=1791950401080\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:基本信息 -> section:命中规则 -> section:作用域 -> scope:conversation -> open-conversation-popup -> scroll-end:popup",
+      "changed_pixels": 489685,
+      "changed_ratio": 0.9954889571948998,
+      "before": "before/E06_editor-conversation-popup-dark.png",
+      "after": "after/E06_editor-conversation-popup-dark.png",
+      "diff": "diff/E06_editor-conversation-popup-dark.png"
+    },
+    {
+      "id": "E06_transfer-matcha-light",
+      "label": "资料库概览 · 抹茶 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-matcha-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-matcha-light_actual.png",
+      "before_sha256": "585261696f35d614d24fc4386bd69a5ad3dc55f588f831bacb3814eb218f3fe7",
+      "after_sha256": "572d0c1d36524e607c7b628546217f92080fb2d857bb856f6fe49aa785da4e8e",
+      "repeat_sha256": "572d0c1d36524e607c7b628546217f92080fb2d857bb856f6fe49aa785da4e8e",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 138461,
+      "changed_ratio": 0.12019184027777778,
+      "before": "before/E06_transfer-matcha-light.png",
+      "after": "after/E06_transfer-matcha-light.png",
+      "diff": "diff/E06_transfer-matcha-light.png"
+    },
+    {
+      "id": "E06_transfer-matcha-dark",
+      "label": "资料库概览 · 抹茶 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-matcha-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-matcha-dark_actual.png",
+      "before_sha256": "64b8edb346b515d024d3e6c9bd8d24b467b17bf934ac9dcab0632570146fd553",
+      "after_sha256": "089083666fccef775ccef1adde02e402fce15d41e0b4af740d1f80cca7685bdd",
+      "repeat_sha256": "089083666fccef775ccef1adde02e402fce15d41e0b4af740d1f80cca7685bdd",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 136712,
+      "changed_ratio": 0.1186736111111111,
+      "before": "before/E06_transfer-matcha-dark.png",
+      "after": "after/E06_transfer-matcha-dark.png",
+      "diff": "diff/E06_transfer-matcha-dark.png"
+    },
+    {
+      "id": "E06_transfer-vanilla-light",
+      "label": "资料库概览 · 香草 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-vanilla-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-vanilla-light_actual.png",
+      "before_sha256": "a1b4a85b580b4904cadbae9fef4c5313990ac4ba8003ef902cc56ff6bd4e6ad7",
+      "after_sha256": "5241bc632801878ab890009ea19af4d22ea949979a6c3c268ed15e1f1a2ad892",
+      "repeat_sha256": "5241bc632801878ab890009ea19af4d22ea949979a6c3c268ed15e1f1a2ad892",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 138461,
+      "changed_ratio": 0.12019184027777778,
+      "before": "before/E06_transfer-vanilla-light.png",
+      "after": "after/E06_transfer-vanilla-light.png",
+      "diff": "diff/E06_transfer-vanilla-light.png"
+    },
+    {
+      "id": "E06_transfer-vanilla-dark",
+      "label": "资料库概览 · 香草 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-vanilla-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-vanilla-dark_actual.png",
+      "before_sha256": "86ddab8c9d86d03586f888d1ee9ba05255e8b87ea15d170801625c76d23935e6",
+      "after_sha256": "7fe780ba756c29f94d835a710c89f3e31a0f35638f3eca86cc941d962c261e73",
+      "repeat_sha256": "7fe780ba756c29f94d835a710c89f3e31a0f35638f3eca86cc941d962c261e73",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 136712,
+      "changed_ratio": 0.1186736111111111,
+      "before": "before/E06_transfer-vanilla-dark.png",
+      "after": "after/E06_transfer-vanilla-dark.png",
+      "diff": "diff/E06_transfer-vanilla-dark.png"
+    },
+    {
+      "id": "E06_transfer-ocean-light",
+      "label": "资料库概览 · 海洋 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-ocean-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-ocean-light_actual.png",
+      "before_sha256": "03526f38d117b104eaddf7aa9998115d8eb46ca41d43e4a6debb27fb58c32830",
+      "after_sha256": "b908f2e0f63cc2131121674e8646297bf86be09f5cde94d0a2ea77f8fceae5ed",
+      "repeat_sha256": "b908f2e0f63cc2131121674e8646297bf86be09f5cde94d0a2ea77f8fceae5ed",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 138461,
+      "changed_ratio": 0.12019184027777778,
+      "before": "before/E06_transfer-ocean-light.png",
+      "after": "after/E06_transfer-ocean-light.png",
+      "diff": "diff/E06_transfer-ocean-light.png"
+    },
+    {
+      "id": "E06_transfer-ocean-dark",
+      "label": "资料库概览 · 海洋 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-ocean-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-ocean-dark_actual.png",
+      "before_sha256": "238ad0e3104f5e5a4e3526833cd0e41d053081cc8fe5a0df014d805abd914f96",
+      "after_sha256": "cee7d48d8e65df240b7c4009725e0674ecfeb2f47fb096a0bcc59bf71731c892",
+      "repeat_sha256": "cee7d48d8e65df240b7c4009725e0674ecfeb2f47fb096a0bcc59bf71731c892",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400165\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 136712,
+      "changed_ratio": 0.1186736111111111,
+      "before": "before/E06_transfer-ocean-dark.png",
+      "after": "after/E06_transfer-ocean-dark.png",
+      "diff": "diff/E06_transfer-ocean-dark.png"
+    },
+    {
+      "id": "E06_transfer-preview-dynamic-light",
+      "label": "导入预览固定动态色 · 固定动态色 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-preview-dynamic-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-preview-dynamic-light_actual.png",
+      "before_sha256": "692f39cabfb293b463cbb0f0cffd559328e43b2a30df8403110180e8f3311318",
+      "after_sha256": "52223e03b2dda02cb6635e56e83407dd956e25d179fc50167d686fe5028099aa",
+      "repeat_sha256": "52223e03b2dda02cb6635e56e83407dd956e25d179fc50167d686fe5028099aa",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 370779,
+      "changed_ratio": 0.32185677083333336,
+      "before": "before/E06_transfer-preview-dynamic-light.png",
+      "after": "after/E06_transfer-preview-dynamic-light.png",
+      "diff": "diff/E06_transfer-preview-dynamic-light.png"
+    },
+    {
+      "id": "E06_transfer-source-dialog-light",
+      "label": "导入来源三动作 · 抹茶 · 浅色",
+      "group": "transfer",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-source-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-source-dialog-light_actual.png",
+      "before_sha256": "f9110d329b5c4324813900794eaf0149f2f4aa63da358e8524b88674392102c9",
+      "after_sha256": "001fe6aeca3a5ce91cda2bf8a3ce51863e160794b859db7aa05d0ba469eb4644",
+      "repeat_sha256": "001fe6aeca3a5ce91cda2bf8a3ce51863e160794b859db7aa05d0ba469eb4644",
+      "before_window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n",
+      "after_window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(48.0, 671.0, 489.0, 780.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(48.0, 671.0, 489.0, 780.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(497.5, 671.0, 593.5, 855.0)\n取消Unclipped=Rect.fromLTRB(498.0, 671.0, 593.0, 855.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n取消FullyVisible=false\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份",
+      "after_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Unclipped=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份",
+      "changed_pixels": 608568,
+      "changed_ratio": 0.742880859375,
+      "before": "before/E06_transfer-source-dialog-light.png",
+      "after": "after/E06_transfer-source-dialog-light.png",
+      "diff": "diff/E06_transfer-source-dialog-light.png"
+    },
+    {
+      "id": "E06_transfer-help-dialog-light",
+      "label": "资料库长标题帮助 · 抹茶 · 浅色",
+      "group": "transfer",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-help-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-help-dialog-light_actual.png",
+      "before_sha256": "64d8a992ae6f976c69f039b879316b38ab3ab23c054274228d4c3962c0413794",
+      "after_sha256": "943e0227d48aa0dbbfd1d95b156e0beb1e9eb83a30a3690cc5abefb744436933",
+      "repeat_sha256": "943e0227d48aa0dbbfd1d95b156e0beb1e9eb83a30a3690cc5abefb744436933",
+      "before_window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "after_window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody",
+      "changed_pixels": 35668,
+      "changed_ratio": 0.0435400390625,
+      "before": "before/E06_transfer-help-dialog-light.png",
+      "after": "after/E06_transfer-help-dialog-light.png",
+      "diff": "diff/E06_transfer-help-dialog-light.png"
+    },
+    {
+      "id": "E06_transfer-preview-dynamic-dark",
+      "label": "导入预览固定动态色 · 固定动态色 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 1,
+      "stage_dp": [
+        360,
+        800
+      ],
+      "density": 2,
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-preview-dynamic-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-preview-dynamic-dark_actual.png",
+      "before_sha256": "07c1cccd1b5323c7a4406e653ead496c2bfc8a324b8a1308c941804b9384d68c",
+      "after_sha256": "29ff2c8c25aafbb3bac4316f8c2dec8f4ea657ae414b5b89d86fef46b0d72f0b",
+      "repeat_sha256": "29ff2c8c25aafbb3bac4316f8c2dec8f4ea657ae414b5b89d86fef46b0d72f0b",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400315\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw360dp-w360dp-h800dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1600x720\ndensity=2.0\nfontScale=1.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 367981,
+      "changed_ratio": 0.3194279513888889,
+      "before": "before/E06_transfer-preview-dynamic-dark.png",
+      "after": "after/E06_transfer-preview-dynamic-dark.png",
+      "diff": "diff/E06_transfer-preview-dynamic-dark.png"
+    },
+    {
+      "id": "E06_transfer-source-dialog-dark",
+      "label": "导入来源三动作 · 抹茶 · 深色",
+      "group": "transfer",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-source-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-source-dialog-dark_actual.png",
+      "before_sha256": "51be73cacf5b770cff76ed9b6fbbb39fa276c614e056cb30a55e2687dfbd7346",
+      "after_sha256": "8bc282c3c9021064bbde303a39cfdefde658ece7057e66daa84a36699283dbe6",
+      "repeat_sha256": "8bc282c3c9021064bbde303a39cfdefde658ece7057e66daa84a36699283dbe6",
+      "before_window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n",
+      "after_window": "title=选择导入来源\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(48.0, 671.0, 489.0, 780.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(48.0, 671.0, 489.0, 780.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(497.5, 671.0, 593.5, 855.0)\n取消Unclipped=Rect.fromLTRB(498.0, 671.0, 593.0, 855.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 828.0)\n取消FullyVisible=false\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份",
+      "after_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n从相册（PNG）=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Unclipped=Rect.fromLTRB(179.0, 463.0, 592.0, 572.0)\n从相册（PNG）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从相册（PNG）FullyVisible=true\n从相册（PNG）Touch48dp=true\n从文件（JSON）=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Unclipped=Rect.fromLTRB(151.0, 580.0, 592.0, 689.0)\n从文件（JSON）Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n从文件（JSON）FullyVisible=true\n从文件（JSON）Touch48dp=true\n取消=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Unclipped=Rect.fromLTRB(440.0, 697.0, 592.0, 806.0)\n取消Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 854.0)\n取消FullyVisible=true\n取消Touch48dp=true\ncaptureClockMillis=1791950400630\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> import:资料库备份",
+      "changed_pixels": 608213,
+      "changed_ratio": 0.742447509765625,
+      "before": "before/E06_transfer-source-dialog-dark.png",
+      "after": "after/E06_transfer-source-dialog-dark.png",
+      "diff": "diff/E06_transfer-source-dialog-dark.png"
+    },
+    {
+      "id": "E06_transfer-help-dialog-dark",
+      "label": "资料库长标题帮助 · 抹茶 · 深色",
+      "group": "transfer",
+      "kind": "dialog",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-help-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-help-dialog-dark_actual.png",
+      "before_sha256": "7a271639100f170780c658a1ed71e7bd461c88d92b424b408ca143bd6b708026",
+      "after_sha256": "95807104c12d6aa203256a3a5923718f5fc4ba79f4ab6cac90057b0729372d4e",
+      "repeat_sha256": "95807104c12d6aa203256a3a5923718f5fc4ba79f4ab6cac90057b0729372d4e",
+      "before_window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "after_window": "title=管理 Narra 本地资源包\ntarget=independent-dialog-root\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n",
+      "before_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody",
+      "after_measurements": "clockStartMillis=1791950400000\nwindowBodyScroll=0.0/0.0\nwindowBodyViewport=Rect.fromLTRB(48.0, 273.0, 592.0, 650.0)\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\n知道了=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Unclipped=Rect.fromLTRB(388.0, 698.0, 592.0, 807.0)\n知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)\n知道了FullyVisible=true\n知道了Touch48dp=true\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=help:intro -> scroll-end:windowBody",
+      "changed_pixels": 35640,
+      "changed_ratio": 0.043505859375,
+      "before": "before/E06_transfer-help-dialog-dark.png",
+      "after": "after/E06_transfer-help-dialog-dark.png",
+      "diff": "diff/E06_transfer-help-dialog-dark.png"
+    },
+    {
+      "id": "E06_transfer-first-narrow-light",
+      "label": "首个资源组双操作 · 抹茶 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-first-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-first-narrow-light_actual.png",
+      "before_sha256": "31bd8fc413925b17b33caf0303119b362b36574923089e59bdb16e0af2a0d854",
+      "after_sha256": "d5f373ac787928bda91699990c16280f233687e5fa9d8a291752e72323a7e08a",
+      "repeat_sha256": "d5f373ac787928bda91699990c16280f233687e5fa9d8a291752e72323a7e08a",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\n资料库备份Export=Rect.fromLTRB(76.0, 941.0, 310.0, 1149.0)\n资料库备份ExportUnclipped=Rect.fromLTRB(76.0, 941.0, 310.0, 1149.0)\n资料库备份ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ExportFullyVisible=true\n资料库备份ExportTouch48dp=true\n资料库备份Import=Rect.fromLTRB(330.0, 941.0, 564.0, 1149.0)\n资料库备份ImportUnclipped=Rect.fromLTRB(330.0, 941.0, 564.0, 1149.0)\n资料库备份ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ImportFullyVisible=true\n资料库备份ImportTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\nsection=资料库备份\n资料库备份Export=Rect.fromLTRB(64.0, 935.0, 308.0, 1060.0)\n资料库备份ExportUnclipped=Rect.fromLTRB(64.0, 935.0, 308.0, 1060.0)\n资料库备份ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ExportFullyVisible=true\n资料库备份ExportTouch48dp=true\n资料库备份Import=Rect.fromLTRB(332.0, 935.0, 576.0, 1060.0)\n资料库备份ImportUnclipped=Rect.fromLTRB(332.0, 935.0, 576.0, 1060.0)\n资料库备份ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n资料库备份ImportFullyVisible=true\n资料库备份ImportTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=section:资料库备份 -> clear-window-owner-focus",
+      "changed_pixels": 158149,
+      "changed_ratio": 0.193052978515625,
+      "before": "before/E06_transfer-first-narrow-light.png",
+      "after": "after/E06_transfer-first-narrow-light.png",
+      "diff": "diff/E06_transfer-first-narrow-light.png"
+    },
+    {
+      "id": "E06_transfer-last-narrow-dark",
+      "label": "末个资源组双操作 · 抹茶 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-last-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-last-narrow-dark_actual.png",
+      "before_sha256": "a7f8a73de79034e2e09c70536c9cf2b75c3d3f2ca09433ea8e7837eaa0ceb11c",
+      "after_sha256": "885ef084dea2abf425f20bc645bf8cc488b166ce035e61ee09810612a2c7982b",
+      "repeat_sha256": "885ef084dea2abf425f20bc645bf8cc488b166ce035e61ee09810612a2c7982b",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=3551.0/3551.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包Export=Rect.fromLTRB(76.0, 960.0, 310.0, 1168.0)\n预设包ExportUnclipped=Rect.fromLTRB(76.0, 960.0, 310.0, 1168.0)\n预设包ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ExportFullyVisible=true\n预设包ExportTouch48dp=true\n预设包Import=Rect.fromLTRB(330.0, 960.0, 564.0, 1168.0)\n预设包ImportUnclipped=Rect.fromLTRB(330.0, 960.0, 564.0, 1168.0)\n预设包ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ImportFullyVisible=true\n预设包ImportTouch48dp=true\nsection=预设包\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=3300.0/3300.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包Export=Rect.fromLTRB(64.0, 1059.0, 308.0, 1184.0)\n预设包ExportUnclipped=Rect.fromLTRB(64.0, 1059.0, 308.0, 1184.0)\n预设包ExportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ExportFullyVisible=true\n预设包ExportTouch48dp=true\n预设包Import=Rect.fromLTRB(332.0, 1059.0, 576.0, 1184.0)\n预设包ImportUnclipped=Rect.fromLTRB(332.0, 1059.0, 576.0, 1184.0)\n预设包ImportViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\n预设包ImportFullyVisible=true\n预设包ImportTouch48dp=true\nsection=预设包\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400360\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 266752,
+      "changed_ratio": 0.325625,
+      "before": "before/E06_transfer-last-narrow-dark.png",
+      "after": "after/E06_transfer-last-narrow-dark.png",
+      "diff": "diff/E06_transfer-last-narrow-dark.png"
+    },
+    {
+      "id": "E06_transfer-preview-notice-narrow-light",
+      "label": "预览安全提示首段 · 抹茶 · 浅色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-preview-notice-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-preview-notice-narrow-light_actual.png",
+      "before_sha256": "5ed2e968bbe38d3a722bdbeb752448639e8a85f7021de101518bf3df42f6a31e",
+      "after_sha256": "1b53a1d8b6e7dc9ac6a9ca307494230f723b58f15b2131f64b1610c02aab5278",
+      "repeat_sha256": "1b53a1d8b6e7dc9ac6a9ca307494230f723b58f15b2131f64b1610c02aab5278",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npreviewConflicts=7\npreviewNotices=部分内容已按安全上限截断。 / 有 2 条摘要分段缺少对应会话，导入时将跳过。\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400435\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=clear-window-owner-focus",
+      "changed_pixels": 267700,
+      "changed_ratio": 0.3267822265625,
+      "before": "before/E06_transfer-preview-notice-narrow-light.png",
+      "after": "after/E06_transfer-preview-notice-narrow-light.png",
+      "diff": "diff/E06_transfer-preview-notice-narrow-light.png"
+    },
+    {
+      "id": "E06_transfer-preview-actions-narrow-dark",
+      "label": "预览冲突与确认取消 · 抹茶 · 深色",
+      "group": "transfer",
+      "kind": "stage",
+      "font_scale": 2,
+      "stage_dp": [
+        320,
+        640
+      ],
+      "density": 2,
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/11-05-ui-token-worldbook/research/before/E06_transfer-preview-actions-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/11-05-ui-token-worldbook/research/after/E06_transfer-preview-actions-narrow-dark_actual.png",
+      "before_sha256": "558f6e47d562a849209bded53167b1f5b02cfa85a9370e64b8d95484ab59acc9",
+      "after_sha256": "c78b0df86fa0861aa1b8211d5729aa883bcaaf631208f183c8b2e40928273e96",
+      "repeat_sha256": "c78b0df86fa0861aa1b8211d5729aa883bcaaf631208f183c8b2e40928273e96",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "clockStartMillis=1791950400000\npageScroll=7753.0/7753.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreview=Rect.fromLTRB(76.0, 882.0, 564.0, 1015.0)\nconfirmPreviewUnclipped=Rect.fromLTRB(76.0, 882.0, 564.0, 1015.0)\nconfirmPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreviewFullyVisible=true\nconfirmPreviewTouch48dp=true\ncancelPreview=Rect.fromLTRB(76.0, 1035.0, 564.0, 1168.0)\ncancelPreviewUnclipped=Rect.fromLTRB(76.0, 1035.0, 564.0, 1168.0)\ncancelPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\ncancelPreviewFullyVisible=true\ncancelPreviewTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "after_measurements": "clockStartMillis=1791950400000\npageScroll=7652.0/7652.0\npageViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreview=Rect.fromLTRB(64.0, 910.0, 576.0, 1035.0)\nconfirmPreviewUnclipped=Rect.fromLTRB(64.0, 910.0, 576.0, 1035.0)\nconfirmPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\nconfirmPreviewFullyVisible=true\nconfirmPreviewTouch48dp=true\ncancelPreview=Rect.fromLTRB(64.0, 1059.0, 576.0, 1184.0)\ncancelPreviewUnclipped=Rect.fromLTRB(64.0, 1059.0, 576.0, 1184.0)\ncancelPreviewViewport=Rect.fromLTRB(0.0, 127.0, 640.0, 1280.0)\ncancelPreviewFullyVisible=true\ncancelPreviewTouch48dp=true\nisolation=Application; local UiState; intercepted registry; 0 launches; 0 reads; 0 writes; no AppGraph/API\ncaptureClockMillis=1791950400375\nlocale=zh-CN\ntimeZone=Asia/Shanghai\nqualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640\ndensity=2.0\nfontScale=2.0\nactions=scroll-end:page -> clear-window-owner-focus",
+      "changed_pixels": 179354,
+      "changed_ratio": 0.21893798828125,
+      "before": "before/E06_transfer-preview-actions-narrow-dark.png",
+      "after": "after/E06_transfer-preview-actions-narrow-dark.png",
+      "diff": "diff/E06_transfer-preview-actions-narrow-dark.png"
+    }
+  ]
+}

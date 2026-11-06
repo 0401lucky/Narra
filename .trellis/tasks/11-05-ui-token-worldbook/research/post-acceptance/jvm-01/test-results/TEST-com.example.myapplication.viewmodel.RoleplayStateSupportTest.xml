@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.RoleplayStateSupportTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:36.682Z" hostname="LUCKY" time="0.002">
+  <properties/>
+  <testcase name="applySessionStartResult_appliesMismatchFlagsAndHistoryState" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.001"/>
+  <testcase name="applyRestartSessionSuccess_clearsSuggestionsAndNotice" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="leaveScenario_disablesOfflineReplay" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applySettings_updatesSettingsAssistantAndProviderInfo" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="finishSending_resetsStreamingAndSendingFlags" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyRestartSessionSuccess_resetsLongMemoryCountAndContextStatus" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyPreparedEdit_restoresInputAndClearsTransientState" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applySessionStartResult_skipsMismatchDialogWhenSuppressed" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyScenarioLoadFailure_marksLoadingStopped" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="dismissAssistantMismatchDialog_withSuppressionUpdatesNotice" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyCurrentSession_resetsContextWhenSessionBecomesNull" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.001"/>
+  <testcase name="applySuggestionDraft_setsInputAndClearsSuggestionState" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="enterAndLeaveScenario_clearQuotedReplyState" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyScenarios_keepsSelectedScenarioWhenStillPresent" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="resetAndRestartSession_clearSameSessionScopedFields" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="applyPromptContext_updatesCountsAndDebugDump" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="publishOfflineReplayContent_lastChunkCompletesAndKeepsFinalContent" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <testcase name="prepareOfflineReplay_installsNonBlankSeedAndReadyPhase" classname="com.example.myapplication.viewmodel.RoleplayStateSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,72 @@
+title=远行笔记：最后一卷的灯塔与归途
+target=independent-popup-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)
+Printing with useUnmergedTree = 'true'
+Node #5580 at (l=0.0, t=0.0, r=576.0, b=1004.0)px
+ |-Node #5581 at (l=0.0, t=0.0, r=576.0, b=1004.0)px
+   [IsPopup]
+    |-Node #5582 at (l=0.0, t=0.0, r=576.0, b=1004.0)px
+      IsContainer = 'true'
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+       |-Node #5583 at (l=0.0, t=16.0, r=576.0, b=988.0)px
+         IsTraversalGroup = 'true'
+         Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@5737a6a6'
+         VerticalScrollAxisRange = 'ScrollAxisRange(value=350.0, maxValue=350.0, reverseScrolling=false)'
+         Actions = [ScrollBy, ScrollByOffset]
+          |-Node #5584 at (l=0.0, t=-334.0, r=576.0, b=-150.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5586 at (l=24.0, t=-318.0, r=552.0, b=-166.0)px
+          |    Text = '[海风档案：群岛旅人与旧日传说]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5587 at (l=0.0, t=-150.0, r=576.0, b=34.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5589 at (l=24.0, t=-134.0, r=552.0, b=18.0)px
+          |    Text = '[群岛植物志：春天的海岸]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5590 at (l=0.0, t=34.0, r=576.0, b=143.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5592 at (l=24.0, t=50.0, r=544.0, b=127.0)px
+          |    Text = '[潮汐书信与旅人的约定]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5593 at (l=0.0, t=143.0, r=576.0, b=252.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5595 at (l=24.0, t=159.0, r=492.0, b=236.0)px
+          |    Text = '[旧港城的街巷与回忆]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5596 at (l=0.0, t=252.0, r=576.0, b=436.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5598 at (l=24.0, t=268.0, r=552.0, b=420.0)px
+          |    Text = '[灯塔值班簿：漫长冬夜里的回声]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5599 at (l=0.0, t=436.0, r=576.0, b=620.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5601 at (l=24.0, t=452.0, r=552.0, b=604.0)px
+          |    Text = '[海岸航海图：迷雾之后的群山]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5602 at (l=0.0, t=620.0, r=576.0, b=804.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5604 at (l=24.0, t=636.0, r=552.0, b=788.0)px
+          |    Text = '[远海来信：夏天尚未完成的旅程]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5605 at (l=0.0, t=804.0, r=576.0, b=988.0)px
+            Focused = 'false'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #5607 at (l=24.0, t=820.0, r=552.0, b=972.0)px
+               Text = '[远行笔记：最后一卷的灯塔与归途]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

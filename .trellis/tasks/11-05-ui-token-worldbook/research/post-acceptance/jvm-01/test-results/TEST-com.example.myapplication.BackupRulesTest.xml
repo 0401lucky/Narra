@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.BackupRulesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:16.591Z" hostname="LUCKY" time="0.079">
+  <properties/>
+  <testcase name="backupRules_excludeVoiceDirectories" classname="com.example.myapplication.BackupRulesTest" time="0.068"/>
+  <testcase name="dataExtractionRules_excludeVoiceDirectoriesFromBackupAndTransfer" classname="com.example.myapplication.BackupRulesTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

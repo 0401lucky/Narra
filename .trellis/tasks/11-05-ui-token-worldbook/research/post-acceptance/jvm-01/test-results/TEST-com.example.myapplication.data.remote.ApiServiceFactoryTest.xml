@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.remote.ApiServiceFactoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:18.219Z" hostname="LUCKY" time="0.002">
+  <properties/>
+  <testcase name="normalizeBaseUrl_allowsLoopbackHttpEndpointForLocalTesting" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.001"/>
+  <testcase name="normalizeBaseUrl_convertsGeminiBaseUrlToOpenAiCompatibleEndpoint" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_keepsOfficialAnthropicEndpointWhenUsingAnthropicProtocol" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_rejectsGeminiNativeGenerateContentEndpoint" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_rejectsBlankInput" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.001"/>
+  <testcase name="normalizeBaseUrl_rejectsRemoteHttpEndpoint" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_keepsExistingTrailingSlash" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_rejectsGeminiFullChatCompletionsEndpoint" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <testcase name="normalizeBaseUrl_trimsAndAppendsTrailingSlash" classname="com.example.myapplication.data.remote.ApiServiceFactoryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

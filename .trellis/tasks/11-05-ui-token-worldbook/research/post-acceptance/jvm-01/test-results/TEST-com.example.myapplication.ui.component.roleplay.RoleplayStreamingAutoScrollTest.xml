@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:03.068Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="listBoundarySupport_distinguishesNearBottomAndMissingLastItem" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.003"/>
+  <testcase name="nextRoleplayAutoFollowMode_userLeavesAndReturns_recoversFollowing" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.001"/>
+  <testcase name="decideRoleplayAutoScrollAction_userAwayFromBottom_doesNotFollow" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.0"/>
+  <testcase name="decideRoleplayAutoScrollAction_firstLoadedList_positionsOnce" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.0"/>
+  <testcase name="coalescedRoleplayScrollDueAtMillis_signalsInsideWindow_shareDeadline" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.0"/>
+  <testcase name="decideRoleplayAutoScrollAction_streamingGrowth_followsNearBottom" classname="com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

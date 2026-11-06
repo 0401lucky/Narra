@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" tests="47" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:12.896Z" hostname="LUCKY" time="18.907">
+  <properties/>
+  <testcase name="e06_entry_delete_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="1.057"/>
+  <testcase name="e06_editor_advanced_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="1.287"/>
+  <testcase name="e06_list_search_empty_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.413"/>
+  <testcase name="e06_list_filter_empty_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.448"/>
+  <testcase name="e06_list_vanilla_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.352"/>
+  <testcase name="e06_list_dynamic_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.405"/>
+  <testcase name="e06_list_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.514"/>
+  <testcase name="e06_editor_existing_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.357"/>
+  <testcase name="e06_editor_existing_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.363"/>
+  <testcase name="e06_list_dynamic_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.384"/>
+  <testcase name="e06_editor_rule_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.403"/>
+  <testcase name="e06_editor_advanced_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.598"/>
+  <testcase name="e06_detail_dynamic_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.225"/>
+  <testcase name="e06_list_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.361"/>
+  <testcase name="e06_book_delete_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.346"/>
+  <testcase name="e06_detail_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.333"/>
+  <testcase name="e06_editor_rules_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.412"/>
+  <testcase name="e06_editor_book_popup_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.413"/>
+  <testcase name="e06_editor_conversation_popup_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.596"/>
+  <testcase name="e06_editor_book_popup_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.456"/>
+  <testcase name="e06_list_ocean_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.251"/>
+  <testcase name="e06_editor_conversation_popup_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.482"/>
+  <testcase name="e06_list_vanilla_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.242"/>
+  <testcase name="e06_editor_new_required_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.387"/>
+  <testcase name="e06_detail_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.391"/>
+  <testcase name="e06_editor_rules_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.406"/>
+  <testcase name="e06_detail_dynamic_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.248"/>
+  <testcase name="e06_list_empty_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.218"/>
+  <testcase name="e06_list_matcha_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.271"/>
+  <testcase name="e06_list_ocean_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.22"/>
+  <testcase name="e06_editor_scope_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.413"/>
+  <testcase name="e06_detail_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.231"/>
+  <testcase name="e06_detail_management_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.34"/>
+  <testcase name="e06_book_delete_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.351"/>
+  <testcase name="e06_list_matcha_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.23"/>
+  <testcase name="e06_editor_scope_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.393"/>
+  <testcase name="e06_list_filters_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.363"/>
+  <testcase name="e06_editor_rule_help_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.454"/>
+  <testcase name="e06_editor_body_sheet_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.473"/>
+  <testcase name="e06_list_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.377"/>
+  <testcase name="e06_detail_management_narrow_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.36"/>
+  <testcase name="e06_editor_body_sheet_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.36"/>
+  <testcase name="e06_editor_new_required_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.372"/>
+  <testcase name="e06_entry_delete_dialog_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.38"/>
+  <testcase name="e06_list_filters_narrow_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.359"/>
+  <testcase name="e06_list_help_dialog_light" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.376"/>
+  <testcase name="e06_detail_dark" classname="com.example.myapplication.ui.screenshot.WorldBookScreenshotE06Test" time="0.221"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

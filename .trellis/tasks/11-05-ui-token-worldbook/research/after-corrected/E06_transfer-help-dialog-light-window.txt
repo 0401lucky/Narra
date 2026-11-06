@@ -1,0 +1,31 @@
+title=管理 Narra 本地资源包
+target=independent-dialog-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 855.0)
+Printing with useUnmergedTree = 'true'
+Node #806 at (l=0.0, t=0.0, r=640.0, b=855.0)px
+ |-Node #807 at (l=0.0, t=0.0, r=640.0, b=855.0)px
+   [IsDialog]
+    |-Node #808 at (l=0.0, t=0.0, r=640.0, b=855.0)px
+      PaneTitle = '对话框'
+       |-Node #809 at (l=0.0, t=0.0, r=640.0, b=855.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #812 at (l=48.0, t=48.0, r=592.0, b=241.0)px
+          | Text = '[管理 Narra 本地资源包]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #814 at (l=48.0, t=273.0, r=592.0, b=650.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@22015108'
+          | Text = '[角色包、世界书包、记忆档案包和预设包都在这里导入导出。只处理本地资料，不包含 API Key。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #817 at (l=388.0, t=698.0, r=592.0, b=807.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #819 at (l=412.0, t=714.0, r=568.0, b=791.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

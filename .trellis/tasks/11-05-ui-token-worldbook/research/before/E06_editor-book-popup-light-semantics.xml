@@ -1,0 +1,68 @@
+<semantics id="E06_editor-book-popup-light" fontScale="2.0" target="independent-popup-root"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #5289 at (l=0.0, t=0.0, r=560.0, b=1004.0)px
+ |-Node #5290 at (l=0.0, t=0.0, r=560.0, b=1004.0)px
+   [IsPopup]
+    |-Node #5291 at (l=0.0, t=0.0, r=560.0, b=1004.0)px
+      IsContainer = 'true'
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+       |-Node #5292 at (l=0.0, t=16.0, r=560.0, b=988.0)px
+         IsTraversalGroup = 'true'
+         Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@48e2ac69'
+         VerticalScrollAxisRange = 'ScrollAxisRange(value=188.0, maxValue=188.0, reverseScrolling=false)'
+         Actions = [ScrollBy, ScrollByOffset]
+          |-Node #5293 at (l=0.0, t=-172.0, r=560.0, b=-20.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5295 at (l=24.0, t=-172.0, r=536.0, b=-20.0)px
+          |    Text = '[海风档案：群岛旅人与旧日传说]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5296 at (l=0.0, t=-20.0, r=560.0, b=132.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5298 at (l=24.0, t=-20.0, r=536.0, b=132.0)px
+          |    Text = '[群岛植物志：春天的海岸]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5299 at (l=0.0, t=132.0, r=560.0, b=284.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5301 at (l=24.0, t=132.0, r=536.0, b=284.0)px
+          |    Text = '[潮汐书信与旅人的约定]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5302 at (l=0.0, t=284.0, r=560.0, b=380.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5304 at (l=24.0, t=294.0, r=492.0, b=371.0)px
+          |    Text = '[旧港城的街巷与回忆]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5305 at (l=0.0, t=380.0, r=560.0, b=532.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5307 at (l=24.0, t=380.0, r=536.0, b=532.0)px
+          |    Text = '[灯塔值班簿：漫长冬夜里的回声]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5308 at (l=0.0, t=532.0, r=560.0, b=684.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5310 at (l=24.0, t=532.0, r=536.0, b=684.0)px
+          |    Text = '[海岸航海图：迷雾之后的群山]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5311 at (l=0.0, t=684.0, r=560.0, b=836.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #5313 at (l=24.0, t=684.0, r=536.0, b=836.0)px
+          |    Text = '[远海来信：夏天尚未完成的旅程]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5314 at (l=0.0, t=836.0, r=560.0, b=988.0)px
+            Focused = 'false'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #5316 at (l=24.0, t=836.0, r=536.0, b=988.0)px
+               Text = '[远行笔记：最后一卷的灯塔与归途]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

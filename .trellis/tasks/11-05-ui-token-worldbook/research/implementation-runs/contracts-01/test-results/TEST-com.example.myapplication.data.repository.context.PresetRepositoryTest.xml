@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.context.PresetRepositoryTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:17:54.107Z" hostname="LUCKY" time="0.194">
+  <properties/>
+  <testcase name="ensureBuiltInPresets_doesNotOverwriteUserModifiedBuiltIn" classname="com.example.myapplication.data.repository.context.PresetRepositoryTest" time="0.153"/>
+  <testcase name="upsertPreset_roundTripsSamplerEntriesAndMarksCustomAsModified" classname="com.example.myapplication.data.repository.context.PresetRepositoryTest" time="0.005"/>
+  <testcase name="ensureBuiltInPresets_insertsDefaultPresets" classname="com.example.myapplication.data.repository.context.PresetRepositoryTest" time="0.018"/>
+  <testcase name="upsertPreset_doesNotModifyExistingBuiltInPreset" classname="com.example.myapplication.data.repository.context.PresetRepositoryTest" time="0.017"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

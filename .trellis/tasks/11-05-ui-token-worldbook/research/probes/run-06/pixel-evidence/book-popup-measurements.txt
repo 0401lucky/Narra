@@ -1,0 +1,11 @@
+image=560x736
+colors=111
+clockStartMillis=1791950400000
+popupScroll=0.0/0.0
+popupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 720.0)
+lastChoice=Rect.fromLTRB(0.0, 568.0, 560.0, 720.0)
+lastChoiceUnclipped=Rect.fromLTRB(0.0, 568.0, 560.0, 720.0)
+lastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 736.0)
+lastChoiceFullyVisible=true
+lastChoiceTouch48dp=true
+lastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途

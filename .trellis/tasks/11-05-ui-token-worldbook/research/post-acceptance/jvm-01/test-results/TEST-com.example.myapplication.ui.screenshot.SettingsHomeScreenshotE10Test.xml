@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:07.034Z" hostname="LUCKY" time="3.517">
+  <properties/>
+  <testcase name="e10_display_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.379"/>
+  <testcase name="e10_home_ocean_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.075"/>
+  <testcase name="e10_home_dynamic_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.063"/>
+  <testcase name="e10_home_matcha_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.074"/>
+  <testcase name="e10_theme_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.378"/>
+  <testcase name="e10_home_vanilla_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.064"/>
+  <testcase name="e10_theme_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.361"/>
+  <testcase name="e10_home_narrow_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.362"/>
+  <testcase name="e10_mode_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.362"/>
+  <testcase name="e10_home_matcha_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.085"/>
+  <testcase name="e10_display_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.379"/>
+  <testcase name="e10_home_ocean_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.068"/>
+  <testcase name="e10_mode_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.366"/>
+  <testcase name="e10_home_narrow_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.351"/>
+  <testcase name="e10_home_dynamic_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.073"/>
+  <testcase name="e10_home_vanilla_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.07"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

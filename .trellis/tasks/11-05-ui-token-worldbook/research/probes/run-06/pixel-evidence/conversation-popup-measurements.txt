@@ -1,0 +1,11 @@
+image=560x854
+colors=111
+clockStartMillis=1791950400000
+popupScroll=218.0/218.0
+popupViewport=Rect.fromLTRB(0.0, 16.0, 560.0, 838.0)
+lastChoice=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)
+lastChoiceUnclipped=Rect.fromLTRB(0.0, 615.0, 560.0, 838.0)
+lastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 560.0, 854.0)
+lastChoiceFullyVisible=true
+lastChoiceTouch48dp=true
+lastChoiceIdentity=conversationId=p06-conversation-5

@@ -1,0 +1,24 @@
+clockStartMillis=1791950400000
+popupScroll=350.0/350.0
+popupViewport=Rect.fromLTRB(0.0, 16.0, 576.0, 988.0)
+lastChoice=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)
+lastChoiceUnclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)
+lastChoiceViewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)
+lastChoiceFullyVisible=true
+lastChoiceTouch48dp=true
+lastChoiceIdentity=sourceBookName=远行笔记：最后一卷的灯塔与归途
+isolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO
+远行笔记：最后一卷的灯塔与归途=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)
+远行笔记：最后一卷的灯塔与归途Unclipped=Rect.fromLTRB(0.0, 804.0, 576.0, 988.0)
+远行笔记：最后一卷的灯塔与归途Viewport=Rect.fromLTRB(0.0, 0.0, 576.0, 1004.0)
+远行笔记：最后一卷的灯塔与归途FullyVisible=true
+远行笔记：最后一卷的灯塔与归途Touch48dp=true
+popupViewOwner=androidx.compose.ui.window.PopupLayout
+popupRenderer=native Canvas drawing the independent Popup AndroidComposeView
+captureClockMillis=1791950400705
+locale=zh-CN
+timeZone=Asia/Shanghai
+qualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640
+density=2.0
+fontScale=2.0
+actions=open-book-popup -> scroll-end:popup

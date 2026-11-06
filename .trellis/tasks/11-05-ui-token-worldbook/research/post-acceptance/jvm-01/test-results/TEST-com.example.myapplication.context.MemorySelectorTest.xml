@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.context.MemorySelectorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:16.701Z" hostname="LUCKY" time="0.04">
+  <properties/>
+  <testcase name="select_prioritizesPinnedAndScopedEntries" classname="com.example.myapplication.context.MemorySelectorTest" time="0.021"/>
+  <testcase name="select_returnsEmptyWhenAssistantMemoryDisabled" classname="com.example.myapplication.context.MemorySelectorTest" time="0.0"/>
+  <testcase name="select_chatKeepsPinnedEntryEvenWhenIrrelevant" classname="com.example.myapplication.context.MemorySelectorTest" time="0.007"/>
+  <testcase name="select_roleplayPrioritizesConversationContextAndRelevance" classname="com.example.myapplication.context.MemorySelectorTest" time="0.009"/>
+  <testcase name="select_chatPrefersRelevantEntryOverRecentlyUsedWhenTruncated" classname="com.example.myapplication.context.MemorySelectorTest" time="0.002"/>
+  <testcase name="select_ignoresAssistantScopedLongTermMemoriesWhenUsingGlobalMemory" classname="com.example.myapplication.context.MemorySelectorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

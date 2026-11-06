@@ -1,0 +1,12 @@
+{"file":".trellis/tasks/11-05-ui-token-worldbook/research/context-loading.md","reason":"必须按检查点补读全部完整研究，核对三份规划正文及截断提示"}
+{"file":".trellis/spec/backend/index.md","reason":"Android层规范与共享消费者边界"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"UI导航VM仓储与测试源集职责"}
+{"file":".trellis/spec/backend/ui-token-contract.md","reason":"实际令牌色彩200%48dp窗口稳定与人工接纳"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"保存返回消息弹层及状态契约"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"保留当前取消错误边界及脱敏"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"用户数据隔离与原存储规范化不变"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"不泄漏数据包正文凭据或敏感路径"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"最小验证Fake与截图缺图计数零像素门禁"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"公共参数单一所有者及全部消费者"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"真实入口回调平台文件与写入边界"}
+{"file":".trellis/tasks/11-05-ui-token-worldbook/research/capture-and-shared-contracts.md","reason":"真实窗口稳定捕获与共享守卫策略"}

@@ -82,6 +82,10 @@
   将这类失败与旧图差异 / 行为失败分开报告。确认后仅接纳审阅过的图再最终 verify。
 - 若产品改动后才发现捕获前置有误，需要重取before，应使用原始提交的隔离副本，仅覆盖修正后的捕获测试；记录原始提交、覆盖文件/产物哈希和当前工作区未变证明。前后使用相同滚动/窗口策略，不把after反作before；要求滚到底的场景须证明末项整个操作区可见。
 - Material页签的按压水波可能在`waitForIdle`甚至推进Compose/主Looper后仍产生非确定性颗粒。若差异量化只落在该区域，可把截图专用导航改为真实控件的`SemanticsActions.OnClick`，继续驱动原回调；真实触控/48dp行为测试保持实际点击，不删除产品动画。P11修正后在原始提交隔离副本重取before，并以两轮after逐张SHA相同证明稳定；已接纳图发生变化时，只对变化图再次人工确认后替换。
+- Popup的真实语义root不保证`fetchImage(SemanticsNode)`返回该窗口的像素；P06实测会回退为底层Activity裁片。沿用`P06RenderTest.renderPopupBitmap`：验证owner不是主Activity、实际root为`PopupLayout`且尺寸匹配，再用原生`Canvas`绘制该独立`AndroidComposeView`。`P06PopupPixelGuardTest`用不同底色的Activity/Popup证明底页像素会失败；不能只检查图片非空或存在`IsPopup`。Dialog/Sheet仍沿用已验证的独立Dialog捕获路径。
+- 相对时间截图使用Robolectric虚拟时钟，不改宿主系统时间。生产包的`System.currentTimeMillis()`需由相应`@Config(instrumentedPackages=...)`实际插桩并用真实页面文本验证。恢复虚拟uptime/尺寸/字体应在Compose释放且Activity进入`DESTROYED`之后，由外层TestRule执行；在Composition存活时回拨时钟会导致持续重排。P06的`restoreP06Environment`与时间探针给出该顺序的可执行示例。
+- 预览/提示截图不能只`reveal`标题后断言`assertIsDisplayed`，标题可能刚好位于视口下缘而正文全部在外。P06的`alignPreviewForCapture`按真实来源行或notice容器对齐，检查完整正文、计数行和首条冲突的实际边界；`ContextTransferPreviewCaptureTest`要求旧标题-only取景失败。捕获策略修正需同源补before，不把稳定但取景错误的图片交给用户接纳。
+- 隔离checkout的换行字节可能不同于历史工作树的混合CRLF/LF。保留原raw SHA记录，为重取的before逐文件验证原始Git blob并明确字节策略，同时核对相同捕获覆盖源码、环境/场景参数及未改取景场景的PNG哈希；不能将“规范化后代码一致”伪装成原raw SHA相同。
 
 ### 性能
 

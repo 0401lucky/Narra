@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ContextTransferColorsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:12:26.055Z" hostname="LUCKY" time="10.254">
+  <properties/>
+  <testcase name="previewCountsNoticesAndConflicts_useTheirRealReadingSurfacesAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ContextTransferColorsTest" time="3.361"/>
+  <testcase name="overviewAndAllResourceGroups_useReadableTextOnActualSurfacesAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ContextTransferColorsTest" time="3.66"/>
+  <testcase name="sourceAndHelpDialogs_keepReadableBodyAndActionsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ContextTransferColorsTest" time="0.976"/>
+  <testcase name="busyButtons_keepReadableRenderedTextAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ContextTransferColorsTest" time="2.246"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

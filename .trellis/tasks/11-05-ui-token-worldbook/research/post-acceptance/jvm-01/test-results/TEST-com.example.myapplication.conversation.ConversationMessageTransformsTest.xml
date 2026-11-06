@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.ConversationMessageTransformsTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:17.290Z" hostname="LUCKY" time="0.01">
+  <properties/>
+  <testcase name="applyAiPhotoUpdate_updatesMatchingPhotoAction" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.002"/>
+  <testcase name="hasSufficientSummaryCoverage_returnsTrueOnlyWhenSummaryCoversOlderMessages" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.0"/>
+  <testcase name="applyTransferUpdates_supportsRejectedTransferStatus" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.001"/>
+  <testcase name="applyGiftImageUpdate_updatesMatchingGiftPart" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.001"/>
+  <testcase name="trimRequestMessagesWithSummary_keepsRecentWindowWhenSummaryExists" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.001"/>
+  <testcase name="trimRequestMessagesWithSummary_keepsAllMessagesWhenSummaryCoverageIsStale" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.0"/>
+  <testcase name="trimRequestMessagesWithSummary_keepsAllMessagesWithoutSummaryCoverage" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.001"/>
+  <testcase name="deleteMessageAndClearReferences_returnsNotFoundWithoutChangingMessages" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.001"/>
+  <testcase name="applyTransferUpdates_updatesMatchingTransferPart" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.0"/>
+  <testcase name="trimRequestMessagesWithSummary_keepsAllMessagesWhenWindowIsLargerThanMessageCount" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.0"/>
+  <testcase name="deleteMessageAndClearReferences_removesTargetAndClearsMatchingReferences" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.002"/>
+  <testcase name="applyTransferUpdates_returnsSameListWhenNothingMatches" classname="com.example.myapplication.conversation.ConversationMessageTransformsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

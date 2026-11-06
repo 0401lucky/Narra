@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.704Z" hostname="LUCKY" time="0.006">
+  <properties/>
+  <testcase name="formatGapDescription_exactHoursNoDecimal" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.002"/>
+  <testcase name="buildTimeGapNarration_belowThresholdReturnsNull" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <testcase name="buildTimeGapNarration_atThresholdReturnsNarration" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.001"/>
+  <testcase name="buildTimeGapNarration_longGapShowsDaysAndHours" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.002"/>
+  <testcase name="buildTimeGapNarration_oneHourShowsHoursAndMinutes" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <testcase name="buildTimeGapNarration_reverseTimestampsReturnNull" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <testcase name="buildTimeGapNarration_invalidTimestampsReturnNull" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <testcase name="formatGapDescription_exactDayNoDaysHoursPart" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <testcase name="buildTimeGapNarration_mediumGapShowsDecimalHours" classname="com.example.myapplication.roleplay.TimeGapNarrationSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

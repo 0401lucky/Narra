@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.603Z" hostname="LUCKY" time="0.003">
+  <properties/>
+  <testcase name="parseParagraphs_ignoresProtocolArtifactsAndControlTokens" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.001"/>
+  <testcase name="stripMarkupForDisplay_removesDanglingTagTail" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_preservesCharacterSpeechAndThoughtSpans" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="stripMarkupForDisplay_removesSupportedHtmlParagraphTags" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.001"/>
+  <testcase name="stripMarkupForDisplay_removesInternalTags" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_ignoresBlankParagraphs" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_whenNoTags_returnsNarrationParagraph" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_doesNotBreakCharacterSpeechOrThoughtTags" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_rendersSupportedHtmlParagraphStyle" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="splitDisplayParagraphs_smartSplitsPlainLongText" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.0"/>
+  <testcase name="parseParagraphs_smartSplitsSingleLongNarrationBlock" classname="com.example.myapplication.roleplay.RoleplayLongformMarkupParserTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

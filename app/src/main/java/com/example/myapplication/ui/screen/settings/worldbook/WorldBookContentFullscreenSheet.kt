@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -26,10 +25,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 
@@ -41,7 +45,8 @@ internal fun WorldBookContentFullscreenSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val outlineColors = rememberSettingsOutlineColors()
+    val outlineColors =
+        rememberSettingsOutlineColors().copy(focusedLabelColor = MaterialTheme.colorScheme.onSurface)
     var draft by rememberSaveable { mutableStateOf(initialContent) }
 
     ModalBottomSheet(
@@ -49,22 +54,29 @@ internal fun WorldBookContentFullscreenSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = NarraShapes.large,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
                 .navigationBarsPadding()
-                .padding(PaddingValues(horizontal = 20.dp, vertical = 12.dp)),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(PaddingValues(horizontal = NarraUi.space16, vertical = NarraUi.space12)),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "编辑正文",
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics { heading() },
                     style = MaterialTheme.typography.titleMedium,
                 )
-                NarraIconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
+                NarraIconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(NarraMinimumTouchTarget)
+                ) {
                     Icon(Lucide.X, contentDescription = "取消正文编辑")
                 }
             }
@@ -74,8 +86,9 @@ internal fun WorldBookContentFullscreenSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("worldbook_fullscreen_content")
+                    .semantics { contentDescription = "正文" }
                     .weight(1f),
-                shape = RoundedCornerShape(8.dp),
+                shape = NarraShapes.medium,
                 colors = outlineColors,
             )
             AnimatedSettingButton(
@@ -86,6 +99,11 @@ internal fun WorldBookContentFullscreenSheet(
                 },
                 enabled = true,
                 isPrimary = true,
+                shape = NarraShapes.medium,
+                contentPadding = PaddingValues(
+                    horizontal = NarraUi.space16,
+                    vertical = NarraUi.space12
+                ),
             )
         }
     }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:25:38.052Z" hostname="LUCKY" time="5.315">
+  <properties/>
+  <testcase name="e06_transfer_matcha_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.343"/>
+  <testcase name="e06_transfer_ocean_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.25"/>
+  <testcase name="e06_transfer_preview_notice_narrow_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.438"/>
+  <testcase name="e06_transfer_ocean_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.246"/>
+  <testcase name="e06_transfer_source_dialog_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.412"/>
+  <testcase name="e06_transfer_help_dialog_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.383"/>
+  <testcase name="e06_transfer_matcha_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.246"/>
+  <testcase name="e06_transfer_first_narrow_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.379"/>
+  <testcase name="e06_transfer_preview_dynamic_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.254"/>
+  <testcase name="e06_transfer_last_narrow_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.384"/>
+  <testcase name="e06_transfer_source_dialog_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.396"/>
+  <testcase name="e06_transfer_preview_dynamic_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.316"/>
+  <testcase name="e06_transfer_preview_actions_narrow_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.418"/>
+  <testcase name="e06_transfer_vanilla_light" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.237"/>
+  <testcase name="e06_transfer_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.37"/>
+  <testcase name="e06_transfer_vanilla_dark" classname="com.example.myapplication.ui.screenshot.ContextTransferScreenshotE06Test" time="0.229"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,797 @@
+{
+  "specializedUniqueTests": 130,
+  "specializedLatestFailures": 0,
+  "specializedLatestSkipped": 0,
+  "specializedRuns": [
+    "tests-05 (114 other tests passed)",
+    "tests-06 (all 16 accessibility/shared helper users passed)"
+  ],
+  "domainContracts": {
+    "tests": 106,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "regexLiteralDetector_accepts",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "regexLiteralDetector_rejects",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "split_basicCommaDelimitedList",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "split_handlesNewlineSeparator",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "split_preservesRegexLiteralContainingComma",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "split_regexWithEscapedSlashNotCut",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.component.worldbook.KeywordChipInputTest",
+      "test": "split_trimsAndDedupes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "allFiveExports_keepFilenamesAndSections_andOnlyWriteAfterResult",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "allFiveImports_keepSectionAndSourceContracts_andCloseDialogBeforeResult",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "busy_disablesAllTransferAndPreviewActions_withoutBlockingReturnOrChangingPreview",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "preview_showsPositiveCountsAllNoticesAndOnlyFirstFiveConflicts_thenCancelOnlyDismisses",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "readOnlyOverview_keepsAllZeroCountsWithoutClickableAncestors",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "readPermissionFailure_isRedacted_andDoesNotPreviewOrConsumeVmMessage",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "sixHelpEntrances_andSourceCancel_areIndependent48dpActionsAtTwoHundredPercent",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "threePhotoSources_keepImageOnlyAndPendingSection_andNullLeavesExistingPreview",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "vmNotice_isShownAndConsumedOnce_withoutFileOrPreviewSideEffects",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBehaviorTest",
+      "test": "writePermissionFailure_isRedacted_withoutImportOrVmMessageSideEffects",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferBusyTest",
+      "test": "pendingMerge_disablesEveryUiWriteAction_andRepeatedTouchesDoNotStartAnotherTransaction",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest",
+      "test": "documentResult_readsOnlyMemoryUri_stripsBom_andKeepsSection",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest",
+      "test": "exportResult_writesOnlyRegisteredMemoryStream_andClosesIt",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest",
+      "test": "nullResults_fromThreeRealLaunchers_haveNoIoOrCallbacks",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest",
+      "test": "photoResult_readsConstructedPngFromMemory_onlyAfterResult",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferCaptureProbeTest",
+      "test": "sourceDialog_isRealAndCancelDoesNotLaunchChooser",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferColorsTest",
+      "test": "busyButtons_keepReadableRenderedTextAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferColorsTest",
+      "test": "overviewAndAllResourceGroups_useReadableTextOnActualSurfacesAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferColorsTest",
+      "test": "previewCountsNoticesAndConflicts_useTheirRealReadingSurfacesAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferColorsTest",
+      "test": "sourceAndHelpDialogs_keepReadableBodyAndActionsAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest",
+      "test": "avatarFailure_isCaughtBeforeMerge_andRetryPreservesOriginalImagePayload",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest",
+      "test": "invalidNextPreview_clearsPreviousPendingWithoutWriting",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest",
+      "test": "mergeFailure_retainsPreviewAndPending_forRetryAndGatedSuccess",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.ContextTransferPersistenceTest",
+      "test": "previewAndCancel_neverWrite_andCancelledPendingImportCannotBeConfirmed",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06LibraryEntryTest",
+      "test": "phoneProfile_transferEntryDispatchesOnlyTransferNavigation",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06LibraryEntryTest",
+      "test": "phoneProfile_worldBookEntryDispatchesOnlyWorldBookNavigation",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "allHelpWrappers_forwardActualWindowShapeActionColorAndCloseSize",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "hintCardAndStatusPill_forwardExplicitShapeAndPadding",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "introAndSectionHeader_keepOldLimitsAndForwardExplicitLayout",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "outlinedButton_forwardsShapeAndContentPadding",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "outlinedButton_keepsLegacyDisabledAlphaAndForwardsOptIn",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "primaryButton_forwardsShapeAndContentPadding",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "primaryButton_keepsLegacyDisabledAlphaAndForwardsOptIn",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.P06SharedComponentsTest",
+      "test": "topBarAction_keepsLegacyAlphaAndForwardsExplicitDisabledColors",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.P06PopupPixelGuardTest",
+      "test": "pixelGuard_rejectsActivityPixelsAndCapturesIndependentPopupOwner",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest",
+      "test": "deleteEntry_failureKeepsStoredDataAndReturnsFixedMessage",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest",
+      "test": "deleteEntry_waitsForWriteAndDeletesOnlyTheRequestedId",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest",
+      "test": "saveEntry_failureRestoresBusyWithoutChangingStoredEntry",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest",
+      "test": "saveEntry_keepsBusyUntilWriteCompletesAndPreservesPayload",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "detail_longTitleAndBothManagementActionsCanBeReadAndReached",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "editor_allElevenHelpEntrypointsOpenCorrectWindowsWithoutEditingState",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "editor_bothPopupLastChoicesHaveNativePixelsAndCompleteTouchBounds",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "editor_longBodyInternalTailAndFixedActionsFitAt200Percent",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "editor_longKeywordHasFullTextAndRemovesExactlyOneToken",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "editor_switchNamesAndHelpHaveIndependent48dpTouchTargets",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "list_helpIsIndependentAndCloseIsReachableAt200Percent",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookAccessibilityTest",
+      "test": "list_narrowHeaderFiltersAndLastEntryRemainReachable",
+      "status": "passed",
+      "run": "tests-06"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest",
+      "test": "bodySheet_lastLineIsInsideRealTextViewport",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest",
+      "test": "bookPopup_isIndependentAndLastChoiceUsesRealScroll",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest",
+      "test": "conversationPopup_usesFixedRelativeTimeAndRealLastId",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest",
+      "test": "ordinaryPage_usesFixtureAndShadowClock",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookCaptureProbeTest",
+      "test": "realDialog_isIndependentAndMissingWindowFails",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "bookPopup_namesUseNativePopupPixelsAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "conversationPopup_titleAndRelativeTimeUseActualPopupSurface",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "detail_busySaveAndDeleteHaveReadableActualPixels",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "editor_bodySheetTextAndSaveUseTheRealSheetSurfaceAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "editor_disabledSecondaryKeywordRemainsReadableWithoutBecomingEditable",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "editor_requiredMessageAndDisabledSaveKeepReadablePixels",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "editor_selectedModeRegexAndFocusedLabelUseTheirActualContainers",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "editor_selectedRoleAndPreviewTextStayReadableAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "helpDialog_readsItsOwnViewPixelsAcrossEightSchemes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "list_selectedFilterAndReadonlyStoppedStatusRemainReadable",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookColorsTest",
+      "test": "list_titlesStatusPillsAndFocusedSearchUseReadableRealSurfaces",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest",
+      "test": "buildWorldBookBooks_groupsByBookNameAndPreservesEntryOrder",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest",
+      "test": "buildWorldBookBooks_groupsEntryWithBlankSourceBookNameByBookId",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest",
+      "test": "buildWorldBookBooks_skipsEntryWithBothBookIdAndNameBlank",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "activeFilterCount_countsOnlyNonDefaults",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "bookSpineColor_differsBetweenDistinctBookIds",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "bookSpineColor_handlesBlankIdWithoutCrash",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "bookSpineColor_isStableForSameBookId",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_bookIdFilterMatchesResolvedBookId",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_combinesAllFiltersWithAndLogic",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_returnsAllWhenNoFilters",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_scopeGlobalOnly",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_searchMatchesTitleContentOrKeywords",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_statusEnabledAndAlwaysActive",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "filterEntries_statusHasRegexScansAllKeywordLists",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_deduplicatesAndTrims",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_fallsThroughToAliasesThenSecondary",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_keepsRegexLiteralIntact",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_picksFromKeywordsFirst",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_respectsLimit",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "firstRealKeywords_returnsEmptyWhenNothingAvailable",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_days",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_emptyForZeroOrNegative",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_fallsBackToDateBeyondSevenDays",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_hours",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_justNow_forFutureClockSkew",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_justNow_underOneMinute",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest",
+      "test": "formatRelativeTime_minutes",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "detail_deleteCancelDoesNotWriteAndConfirmDoesNotPrematurelyNavigate",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "detail_preservesRenameOnlyMessageFilter",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "detail_renameChecksTrimmedNameBusyStateAndImeUsesSameCallback",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_backDoesNotSaveAndPreviewDoesNotPersist",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_blankRequiredFieldsAndMissingScopeKeepSaveDisabled",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_bodyCancelAndConfirmOnlyUpdateSecondLevelDraft",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_deleteUsesOriginalIdentityAndCancelDoesNotNavigate",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_invalidNumbersFallBackWithoutIntroducingNewSaveGates",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_keywordCommitAndRemovalKeepUnsubmittedDraftOutOfSave",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_negativeProbabilityClampsToZero",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_saveRetainsIdentityExtrasAndUneditedFieldsWithOriginalConversions",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "editor_secondarySwitchDisablesInputAndPreservesExistingKeywords",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_filterEmptyClearRestoresResultsWithoutWriting",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_globalEmptyKeepsTheAddEntryAction",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_preservesDeleteOnlyMessageFilter",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_realActionsKeepBookAndEntryIdsAndDoNotToggleData",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_searchEmptyClearOnlyClearsQuery",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest",
+      "test": "list_threeFiltersAreAndedAndClearingThemKeepsSearch",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_brandPalette_requiresExactPathDeclarationValueAndMultiplicity",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_explicitOverloads_scanEitherBodyAndRejectMissingExtraOrStaleCount",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_missingDuplicateDeclarationsAndMissingOrNewFiles_fail",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_preciseGeometryException_doesNotApproveOtherLayoutInSameDeclaration",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_relocatedDefaultsAndNewHelpers_cannotEscapeRegisteredScope",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "audit_removedOrDuplicateExceptions_failInsteadOfSilentlyExpandingWhitelist",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "migratedSources_haveNoUnapprovedDefaultsOrStaleExceptions",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "providerSources_eachRejectsNewLiteralWithoutFileLevelExemption",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "scan_commentsEscapedStringsRawStringsAndCharacters_areIgnored",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "scan_fixedRgbDecimalAndNamedColors_failWhileUserArgbAndChannelsAreAllowed",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "scan_literalDefaultShapesColorsAndLayoutExpressions_areReported",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "scan_multilineAndQualifiedCallsAndArithmetic_areReported",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "scan_tokensUserGeometryIconBorderWidthAndSystemInsets_areAllowed",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "sourceRegistration_componentAndThemeHelpersRequireInventory",
+      "status": "passed",
+      "run": "tests-05"
+    },
+    {
+      "class": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "worldBookAndTransferScopes_rejectNewDefaultsAndSharedHelperBodyChanges",
+      "status": "passed",
+      "run": "tests-05"
+    }
+  ]
+}

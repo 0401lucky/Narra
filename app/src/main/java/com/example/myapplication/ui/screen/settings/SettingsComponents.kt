@@ -5,6 +5,7 @@ import com.example.myapplication.ui.component.NarraFilledTonalButton
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.narraButtonColors
+import com.example.myapplication.ui.component.narraFilledTonalButtonColors
 import com.example.myapplication.ui.component.narraOutlinedButtonColors
 
 import androidx.compose.foundation.BorderStroke
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -50,6 +52,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.component.ModelIcon
 import com.composables.icons.lucide.Lucide
@@ -129,6 +134,8 @@ fun SettingsTopBar(
     horizontalPadding: Dp = SettingsScreenPadding,
     titleMaxLines: Int = 1,
     titleIsHeading: Boolean = false,
+    actionColors: ButtonColors = narraFilledTonalButtonColors(),
+    actionDisabledAlpha: Float = 0.45f,
 ) {
     val palette = rememberSettingsPalette()
 
@@ -140,7 +147,12 @@ fun SettingsTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = NarraUi.space8, end = horizontalPadding, top = NarraUi.space8, bottom = NarraUi.space4),
+                .padding(
+                    start = NarraUi.space8,
+                    end = horizontalPadding,
+                    top = NarraUi.space8,
+                    bottom = NarraUi.space4
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NarraIconButton(onClick = onNavigateBack) {
@@ -182,6 +194,8 @@ fun SettingsTopBar(
                     onClick = onAction,
                     enabled = actionEnabled,
                     shape = NarraShapes.medium,
+                    colors = actionColors,
+                    disabledAlpha = actionDisabledAlpha,
                 ) {
                     Text(
                         text = actionLabel,
@@ -198,26 +212,39 @@ fun SettingsTopBar(
 fun SettingsPageIntro(
     title: String,
     summary: String = "",
+    contentPadding: PaddingValues = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+    titleMaxLines: Int = 2,
+    titleIsHeading: Boolean = false,
+    helpDialogShape: Shape = RoundedCornerShape(8.dp),
+    helpActionContentColor: Color = MaterialTheme.colorScheme.primary,
+    helpActionMinSize: Dp = Dp.Unspecified,
 ) {
     val palette = rememberSettingsPalette()
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(contentPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f)
+                .then(if (titleIsHeading) Modifier.semantics { heading() } else Modifier),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = palette.title,
-            maxLines = 2,
+            maxLines = titleMaxLines,
             overflow = TextOverflow.Ellipsis,
         )
         if (summary.isNotBlank()) {
-            SettingsHelpButton(title = title, description = summary)
+            SettingsHelpButton(
+                title = title,
+                description = summary,
+                dialogShape = helpDialogShape,
+                actionContentColor = helpActionContentColor,
+                actionMinSize = helpActionMinSize,
+            )
         }
     }
 }
@@ -227,12 +254,18 @@ fun SettingsHelpButton(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
+    dialogShape: Shape = RoundedCornerShape(8.dp),
+    actionContentColor: Color = MaterialTheme.colorScheme.primary,
+    actionMinSize: Dp = Dp.Unspecified,
 ) {
     if (description.isBlank()) return
-    var showDescription by androidx.compose.runtime.saveable.rememberSaveable(title, description) { mutableStateOf(false) }
+    var showDescription by androidx.compose.runtime.saveable.rememberSaveable(
+        title,
+        description
+    ) { mutableStateOf(false) }
     NarraIconButton(
         onClick = { showDescription = true },
-        modifier = modifier.size(48.dp),
+        modifier = modifier.size(NarraMinimumTouchTarget),
     ) {
         Icon(
             imageVector = Lucide.Info,
@@ -242,7 +275,14 @@ fun SettingsHelpButton(
         )
     }
     if (showDescription) {
-        SettingsDescriptionDialog(title, description) { showDescription = false }
+        SettingsDescriptionDialog(
+            title = title,
+            description = description,
+            shape = dialogShape,
+            actionContentColor = actionContentColor,
+            actionMinSize = actionMinSize,
+            onDismiss = { showDescription = false },
+        )
     }
 }
 
@@ -250,6 +290,9 @@ fun SettingsHelpButton(
 private fun SettingsDescriptionDialog(
     title: String,
     description: String,
+    shape: Shape,
+    actionContentColor: Color,
+    actionMinSize: Dp,
     onDismiss: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
@@ -266,11 +309,17 @@ private fun SettingsDescriptionDialog(
                 lineHeight = 20.sp,
             )
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("知道了") } },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.sizeIn(minWidth = actionMinSize, minHeight = actionMinSize),
+                colors = ButtonDefaults.textButtonColors(contentColor = actionContentColor),
+            ) { Text("知道了") }
+        },
         containerColor = palette.surface,
         titleContentColor = palette.title,
         textContentColor = palette.body,
-        shape = RoundedCornerShape(8.dp),
+        shape = shape,
     )
 }
 
@@ -278,27 +327,40 @@ private fun SettingsDescriptionDialog(
 fun SettingsSectionHeader(
     title: String,
     description: String,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+    horizontalSpacing: Dp = 6.dp,
+    titleMaxLines: Int = 2,
+    titleIsHeading: Boolean = false,
+    titleColor: Color = MaterialTheme.colorScheme.primary,
+    helpDialogShape: Shape = RoundedCornerShape(8.dp),
+    helpActionContentColor: Color = MaterialTheme.colorScheme.primary,
+    helpActionMinSize: Dp = Dp.Unspecified,
 ) {
-    val palette = rememberSettingsPalette()
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(contentPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
     ) {
         Text(
             text = title,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f)
+                .then(if (titleIsHeading) Modifier.semantics { heading() } else Modifier),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = palette.accent,
-            maxLines = 2,
+            color = titleColor,
+            maxLines = titleMaxLines,
             overflow = TextOverflow.Ellipsis,
         )
         if (description.isNotBlank()) {
-            SettingsHelpButton(title, description)
+            SettingsHelpButton(
+                title = title,
+                description = description,
+                dialogShape = helpDialogShape,
+                actionContentColor = helpActionContentColor,
+                actionMinSize = helpActionMinSize,
+            )
         }
     }
 }
@@ -473,16 +535,18 @@ fun SettingsStatusPill(
     text: String,
     containerColor: Color,
     contentColor: Color,
+    shape: Shape = RoundedCornerShape(999.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
 ) {
     Surface(
-        shape = RoundedCornerShape(999.dp),
+        shape = shape,
         color = containerColor,
         contentColor = contentColor,
         border = BorderStroke(1.dp, containerColor.copy(alpha = 0.5f)),
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(contentPadding),
             style = MaterialTheme.typography.labelMedium,
             color = contentColor,
         )
@@ -495,12 +559,14 @@ fun SettingsHintCard(
     body: String,
     containerColor: Color,
     contentColor: Color,
+    shape: Shape = RoundedCornerShape(8.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
 ) {
     val palette = rememberSettingsPalette()
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = shape,
         color = palette.surface,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.5f)),
         shadowElevation = 0.dp,
@@ -517,12 +583,12 @@ fun SettingsHintCard(
                     .background(containerColor.copy(alpha = 0.88f)),
             )
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(contentPadding),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     Box(
                         modifier = Modifier
@@ -643,12 +709,11 @@ fun AnimatedSettingButton(
     enabled: Boolean,
     isPrimary: Boolean,
     leadingIcon: @Composable (() -> Unit)? = null,
+    shape: Shape = RoundedCornerShape(8.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+    colors: ButtonColors = if (isPrimary) narraButtonColors() else narraOutlinedButtonColors(),
+    disabledAlpha: Float = 0.45f,
 ) {
-    val shape = RoundedCornerShape(8.dp)
-    val contentPadding = androidx.compose.foundation.layout.PaddingValues(
-        horizontal = 20.dp,
-        vertical = 14.dp,
-    )
     if (isPrimary) {
         NarraButton(
             onClick = onClick,
@@ -657,12 +722,13 @@ fun AnimatedSettingButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp),
-            colors = narraButtonColors(),
+            colors = colors,
             contentPadding = contentPadding,
+            disabledAlpha = disabledAlpha,
         ) {
             if (leadingIcon != null) {
                 leadingIcon()
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(NarraUi.space8))
             }
             Text(
                 text = text,
@@ -678,12 +744,13 @@ fun AnimatedSettingButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp),
-            colors = narraOutlinedButtonColors(),
+            colors = colors,
             contentPadding = contentPadding,
+            disabledAlpha = disabledAlpha,
         ) {
             if (leadingIcon != null) {
                 leadingIcon()
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(NarraUi.space8))
             }
             Text(
                 text = text,

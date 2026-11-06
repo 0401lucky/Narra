@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:58.511Z" hostname="LUCKY" time="0.637">
+  <properties/>
+  <testcase name="optionalActionColor_keepsDefaultPrimary_andDestructiveConfirmationKeepsErrorPriority" classname="com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest" time="0.301"/>
+  <testcase name="optionalShape_changesOnlyCorners_oldDefaultAndCancelContractRemainIntact" classname="com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest" time="0.331"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

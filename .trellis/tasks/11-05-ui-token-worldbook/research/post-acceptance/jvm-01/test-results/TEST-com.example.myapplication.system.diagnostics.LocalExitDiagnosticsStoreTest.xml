@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:23:34.784Z" hostname="LUCKY" time="0.082">
+  <properties/>
+  <testcase name="constructor_rejectsByteLimitSmallerThanEmptyDocument" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.002"/>
+  <testcase name="merge_duplicateEventKeepsFirstObservationMetadata" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.007"/>
+  <testcase name="readEvents_discardsOneMalformedEntryAndKeepsValidEntries" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.009"/>
+  <testcase name="readEvents_validFileOverByteLimitIsTrimmedAndRewritten" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.009"/>
+  <testcase name="merge_evictsOldestUntilSerializedFileFitsByteLimit" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.007"/>
+  <testcase name="readEvents_validFileOverRecordLimitIsDeduplicatedTrimmedAndRewritten" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.01"/>
+  <testcase name="merge_atomicWriteFailurePreservesPreviousFile" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.009"/>
+  <testcase name="readEvents_wholeFileCorruptionIsQuarantinedAndReturnsEmpty" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.008"/>
+  <testcase name="merge_deduplicatesAndEvictsOldestByRecordLimit" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.007"/>
+  <testcase name="readEvents_recoveryRewriteFailureReturnsTrimmedEventsAndKeepsOriginalFile" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.007"/>
+  <testcase name="merge_sanitizesIdentifiersAndVersionBeforeWritingNoBackupFile" classname="com.example.myapplication.system.diagnostics.LocalExitDiagnosticsStoreTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

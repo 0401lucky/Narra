@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:17:54.467Z" hostname="LUCKY" time="0.024">
+  <properties/>
+  <testcase name="decodeAsBundle_differentUidProducesDifferentStableId" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.002"/>
+  <testcase name="decodeAsBundle_mapsProbabilityToDedicatedField" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.0"/>
+  <testcase name="decodeAsBundle_leavesExtrasEmptyWhenAllFieldsRecognized" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.0"/>
+  <testcase name="decodeAsBundle_limitsEntriesFieldsAndOversizedExtrasSafely" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.02"/>
+  <testcase name="decodeAsBundle_missingUidFallsBackToHashAndStaysDeterministic" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.001"/>
+  <testcase name="decodeAsBundle_sameUidProducesSameStableIdAcrossMinorEdits" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.0"/>
+  <testcase name="decodeAsBundle_missingProbabilityDefaultsTo100" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.0"/>
+  <testcase name="decodeAsBundle_capturesUnknownFieldsIntoExtrasJson" classname="com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

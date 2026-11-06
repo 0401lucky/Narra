@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -22,11 +22,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 /**
  * 判断一段文本是否像合法的 `/pattern/flags` 形式。
@@ -128,12 +132,17 @@ fun KeywordChipInput(
     enabled: Boolean = true,
 ) {
     val palette = rememberSettingsPalette()
-    val outlineColors = rememberSettingsOutlineColors()
+    val outlineColors = rememberSettingsOutlineColors().copy(
+        focusedLabelColor = palette.title,
+        disabledTextColor = palette.body,
+        disabledPlaceholderColor = palette.body,
+        disabledContainerColor = palette.surfaceTint,
+    )
     var draft by rememberSaveable(label) { mutableStateOf("") }
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         Text(
             text = label,
@@ -153,11 +162,11 @@ fun KeywordChipInput(
                     draft = next
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             singleLine = true,
             enabled = enabled,
             placeholder = { Text(placeholder) },
-            shape = RoundedCornerShape(16.dp),
+            shape = NarraShapes.medium,
             colors = outlineColors,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
@@ -172,13 +181,18 @@ fun KeywordChipInput(
         )
         if (values.isNotEmpty()) {
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 values.forEach { token ->
                     val isRegex = looksLikeWorldBookRegexLiteral(token)
                     AssistChip(
+                        modifier = Modifier.sizeIn(
+                            minWidth = NarraMinimumTouchTarget,
+                            minHeight = NarraMinimumTouchTarget
+                        ),
+                        shape = NarraShapes.small,
                         onClick = { onValuesChange(values.filterNot { it == token }) },
                         label = {
                             Text(
@@ -194,7 +208,11 @@ fun KeywordChipInput(
                         },
                         colors = AssistChipDefaults.assistChipColors(
                             containerColor = if (isRegex) palette.accentSoft else palette.subtleChip,
-                            labelColor = if (isRegex) palette.accent else palette.subtleChipContent,
+                            labelColor = if (isRegex) MaterialTheme.colorScheme.onPrimaryContainer else palette.subtleChipContent,
+                            trailingIconContentColor = if (isRegex) MaterialTheme.colorScheme.onPrimaryContainer else palette.subtleChipContent,
+                            disabledContainerColor = if (isRegex) palette.accentSoft else palette.subtleChip,
+                            disabledLabelColor = if (isRegex) MaterialTheme.colorScheme.onPrimaryContainer else palette.subtleChipContent,
+                            disabledTrailingIconContentColor = if (isRegex) MaterialTheme.colorScheme.onPrimaryContainer else palette.subtleChipContent,
                         ),
                         enabled = enabled,
                     )

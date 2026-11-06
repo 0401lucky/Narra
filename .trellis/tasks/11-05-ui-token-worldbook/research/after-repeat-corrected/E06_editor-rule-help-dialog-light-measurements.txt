@@ -1,0 +1,16 @@
+clockStartMillis=1791950400000
+windowBodyScroll=0.0/0.0
+windowBodyViewport=Rect.fromLTRB(48.0, 183.0, 592.0, 710.0)
+isolation=Application; local Screen callbacks; no AppGraph/repository/API/file IO
+知道了=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)
+知道了Unclipped=Rect.fromLTRB(388.0, 758.0, 592.0, 867.0)
+知道了Viewport=Rect.fromLTRB(0.0, 0.0, 640.0, 915.0)
+知道了FullyVisible=true
+知道了Touch48dp=true
+captureClockMillis=1791950400555
+locale=zh-CN
+timeZone=Asia/Shanghai
+qualifiers=zh-rCN-ldltr-sw320dp-w320dp-h640dp-normal-long-notround-nowidecg-lowdr-port-notnight-xhdpi-finger-keyssoft-nokeys-navhidden-nonav-1280x640
+density=2.0
+fontScale=2.0
+actions=help:rules -> scroll-end:windowBody

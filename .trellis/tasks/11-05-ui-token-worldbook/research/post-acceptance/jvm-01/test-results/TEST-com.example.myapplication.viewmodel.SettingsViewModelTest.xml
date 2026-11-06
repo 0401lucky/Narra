@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsViewModelTest" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:38.603Z" hostname="LUCKY" time="0.107">
+  <properties/>
+  <testcase name="saveSettings_disabledOnlineBackgroundGlass_persistsDraftAndCallsOnSaved" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.011"/>
+  <testcase name="saveSettings_backgroundGlassDraft_failureKeepsDraftAndDoesNotExitSettings" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="updateProviderModelAbilities_updatesDraftModelInfo" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSelectedModel_supportsNewlyAddedDraftProviderBeforeFlowSync" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.006"/>
+  <testcase name="addProviderFromTemplate_selectsNewProviderAndKeepsExistingDrafts" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="saveSettings_persistsScreenTranslationPreferences" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.006"/>
+  <testcase name="saveSettings_persistsOnlineRoleplayNarrationVisibility" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.005"/>
+  <testcase name="saveSelectedProvider_persistsTargetProviderAsChatActiveProvider" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="saveSettings_persistsRoleplayAiHelperVisibility" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSelectedModelForProvider_updatesModelAndSwitchesActiveProvider" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="initialization_usesSingleSettingsSubscriptionAndSyncsThemePreview" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="saveSelectedProvider_rejectsDisabledProvider" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSettings_persistsDisplayPreferences" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="saveSettings_cleansReplacedVoiceCloneSampleOnlyAfterPersistenceSucceeds" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.005"/>
+  <testcase name="updateProviderApiKey_clearsExistingConnectionHealthResult" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.006"/>
+  <testcase name="updateProviderFunctionModel_doesNotSwitchActiveChatProvider" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.005"/>
+  <testcase name="addAssistant_whenPersistenceFails_setsErrorMessage" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.005"/>
+  <testcase name="removeAssistant_ignoresBuiltinAssistant" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveDefaultPresetId_migratesLegacyDefaultAssistantsToFollowGlobal" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSettings_persistsRoleplayImmersivePreferences" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="removeAssistant_deletesCustomAssistantAndFallsBackToDefaultSelection" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSettings_afterAddProviderFromTemplate_persistsExistingAndNewProviders" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.004"/>
+  <testcase name="initializesDraftProvidersFromPersistedSettings" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.002"/>
+  <testcase name="saveDefaultPresetId_preservesExplicitNarraPresetAfterGlobalWasCustomized" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.002"/>
+  <testcase name="saveSelectedModelForProvider_supportsNewlyAddedDraftProviderBeforeFlowSync" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.003"/>
+  <testcase name="saveSelectedModelForProvider_thenSaveSettingsImmediately_keepsLatestModel" classname="com.example.myapplication.viewmodel.SettingsViewModelTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -15,14 +15,19 @@ class UiTokenSourceGuardTest {
         val sources = UiTokenSourceInventory.scopes.mapNotNull { scope ->
             File(root, scope.path).takeIf { it.isFile }?.let { scope.path to it.readText() }
         }.toMap()
-        val issues = UiTokenSourceGuard.audit(sources, UiTokenSourceInventory.scopes, UiTokenSourceInventory.exceptions)
+        val issues = UiTokenSourceGuard.audit(
+            sources,
+            UiTokenSourceInventory.scopes,
+            UiTokenSourceInventory.exceptions
+        )
         assertTrue(issues.joinToString("\n"), issues.isEmpty())
 
         // 同一试点拆出新文件后必须先登记，不能通过移动代码离开扫描范围。
         val paths = root.walkTopDown().filter { it.isFile && it.extension == "kt" }
             .map { it.relativeTo(root).invariantSeparatorsPath }
             .toSet()
-        val unregistered = UiTokenSourceGuard.unregisteredPilotFiles(paths, UiTokenSourceInventory.scopes)
+        val unregistered =
+            UiTokenSourceGuard.unregisteredPilotFiles(paths, UiTokenSourceInventory.scopes)
         assertTrue("新增试点文件未登记：$unregistered", unregistered.isEmpty())
     }
 
@@ -95,7 +100,10 @@ class UiTokenSourceGuardTest {
             UiTokenSourceGuard.Scope("theme/RoleplaySkinPalette.kt"),
             UiTokenSourceGuard.Scope("component/roleplay/RoleplayDialogueBubbles.kt"),
         )
-        val helpers = setOf("theme/RoleplaySkinPaletteHelpers.kt", "component/roleplay/RoleplayDialogueBubblesColors.kt")
+        val helpers = setOf(
+            "theme/RoleplaySkinPaletteHelpers.kt",
+            "component/roleplay/RoleplayDialogueBubblesColors.kt"
+        )
         val paths = helpers + scopes.map { it.path } + "screen/Unrelated.kt"
         assertEquals(helpers, UiTokenSourceGuard.unregisteredPilotFiles(paths, scopes))
     }
@@ -143,20 +151,46 @@ class UiTokenSourceGuardTest {
     @Test
     fun audit_brandPalette_requiresExactPathDeclarationValueAndMultiplicity() {
         val source = "private fun brandPalette() = Color(0xFF07C160)"
-        val exception = exception("brandPalette", UiTokenSourceGuard.Rule.COLOR, "Color(0xFF07C160)")
+        val exception =
+            exception("brandPalette", UiTokenSourceGuard.Rule.COLOR, "Color(0xFF07C160)")
         assertTrue(audit(source, listOf(exception)).isEmpty())
-        assertTrue(audit(source.replace("07C160", "07C161"), listOf(exception)).any { "新增硬编码" in it })
-        assertTrue(audit(source.replace("brandPalette", "newPalette"), listOf(exception)).any { "例外未精确消费" in it })
-        assertTrue(audit(source, listOf(exception.copy(path = "Other.kt"))).any { "新增硬编码" in it })
-        assertTrue(audit("private fun brandPalette() = listOf(Color(0xFF07C160), Color(0xFF07C160))", listOf(exception))
-            .any { "实际 2" in it })
+        assertTrue(
+            audit(
+                source.replace("07C160", "07C161"),
+                listOf(exception)
+            ).any { "新增硬编码" in it })
+        assertTrue(
+            audit(
+                source.replace("brandPalette", "newPalette"),
+                listOf(exception)
+            ).any { "例外未精确消费" in it })
+        assertTrue(
+            audit(
+                source,
+                listOf(exception.copy(path = "Other.kt"))
+            ).any { "新增硬编码" in it })
+        assertTrue(
+            audit(
+                "private fun brandPalette() = listOf(Color(0xFF07C160), Color(0xFF07C160))",
+                listOf(exception)
+            )
+                .any { "实际 2" in it })
     }
 
     @Test
     fun audit_removedOrDuplicateExceptions_failInsteadOfSilentlyExpandingWhitelist() {
-        val exception = exception("brandPalette", UiTokenSourceGuard.Rule.COLOR, "Color(0xFF07C160)")
-        assertTrue(audit("private fun brandPalette() = scheme.primary", listOf(exception)).any { "实际 0" in it })
-        assertTrue(audit("private fun brandPalette() = Color(0xFF07C160)", listOf(exception, exception)).any { "重复例外" in it })
+        val exception =
+            exception("brandPalette", UiTokenSourceGuard.Rule.COLOR, "Color(0xFF07C160)")
+        assertTrue(
+            audit(
+                "private fun brandPalette() = scheme.primary",
+                listOf(exception)
+            ).any { "实际 0" in it })
+        assertTrue(
+            audit(
+                "private fun brandPalette() = Color(0xFF07C160)",
+                listOf(exception, exception)
+            ).any { "重复例外" in it })
     }
 
     @Test
@@ -182,17 +216,24 @@ class UiTokenSourceGuardTest {
     fun audit_missingDuplicateDeclarationsAndMissingOrNewFiles_fail() {
         val scope = UiTokenSourceGuard.Scope(Path, requiredDeclarations = setOf("Screen"))
         assertTrue(UiTokenSourceGuard.audit(emptyMap(), listOf(scope)).any { "缺少扫描文件" in it })
-        assertTrue(UiTokenSourceGuard.audit(mapOf("New.kt" to "fun Screen() = Unit"), listOf(scope))
-            .any { "未登记扫描文件" in it })
-        assertTrue(UiTokenSourceGuard.audit(mapOf(Path to "fun Other() = Unit"), listOf(scope))
-            .any { "声明必须存在且唯一" in it })
-        assertTrue(UiTokenSourceGuard.audit(mapOf(Path to "fun Screen() = Unit\nfun Screen(x: Int) = Unit"), listOf(scope))
-            .any { "声明必须存在且唯一" in it })
+        assertTrue(
+            UiTokenSourceGuard.audit(mapOf("New.kt" to "fun Screen() = Unit"), listOf(scope))
+                .any { "未登记扫描文件" in it })
+        assertTrue(
+            UiTokenSourceGuard.audit(mapOf(Path to "fun Other() = Unit"), listOf(scope))
+                .any { "声明必须存在且唯一" in it })
+        assertTrue(
+            UiTokenSourceGuard.audit(
+                mapOf(Path to "fun Screen() = Unit\nfun Screen(x: Int) = Unit"),
+                listOf(scope)
+            )
+                .any { "声明必须存在且唯一" in it })
     }
 
     @Test
     fun audit_preciseGeometryException_doesNotApproveOtherLayoutInSameDeclaration() {
-        val exception = exception("Screen", UiTokenSourceGuard.Rule.SPACING, "Spacer(Modifier.width(1.dp))")
+        val exception =
+            exception("Screen", UiTokenSourceGuard.Rule.SPACING, "Spacer(Modifier.width(1.dp))")
         val source = "fun Screen() { Spacer(Modifier.width(1.dp)); Modifier.padding(12.dp) }"
         val issues = audit(source, listOf(exception))
         assertEquals(1, issues.size)
@@ -206,8 +247,10 @@ class UiTokenSourceGuardTest {
             scannedDeclarations = setOf("SettingsGroup"),
             expectedDeclarationCounts = mapOf("SettingsGroup" to 2),
         )
+
         fun check(source: String, checkedScope: UiTokenSourceGuard.Scope = scope) =
             UiTokenSourceGuard.audit(mapOf(Path to source), listOf(checkedScope))
+
         val first = "fun SettingsGroup() { Modifier.padding(NarraUi.space8) }"
         val second = "fun SettingsGroup(title: String) { Modifier.padding(NarraUi.space16) }"
         assertTrue(check("$first\n$second").isEmpty())
@@ -217,54 +260,147 @@ class UiTokenSourceGuardTest {
         ).forEach { source ->
             val issues = check(source)
             assertEquals(1, issues.size)
-            assertTrue(issues.single().contains("新增硬编码") && issues.single().contains("SettingsGroup"))
+            assertTrue(
+                issues.single().contains("新增硬编码") && issues.single().contains("SettingsGroup")
+            )
         }
         assertTrue(check(first).any { "数量必须为 2" in it })
         assertTrue(check("$first\n$second\nfun SettingsGroup(x: Int) = Unit").any { "数量必须为 2" in it })
-        assertTrue(check("$first\n$second", scope.copy(expectedDeclarationCounts = emptyMap()))
-            .any { "必须存在且唯一" in it })
-        assertTrue(check("$first\n$second", scope.copy(expectedDeclarationCounts = mapOf("RemovedGroup" to 2)))
-            .any { "无效的声明数量登记" in it && "RemovedGroup" in it })
+        assertTrue(
+            check("$first\n$second", scope.copy(expectedDeclarationCounts = emptyMap()))
+                .any { "必须存在且唯一" in it })
+        assertTrue(
+            check(
+                "$first\n$second",
+                scope.copy(expectedDeclarationCounts = mapOf("RemovedGroup" to 2))
+            )
+                .any { "无效的声明数量登记" in it && "RemovedGroup" in it })
     }
 
     private fun scan(source: String) = UiTokenSourceGuard.scan(Path, source)
 
     @Test
     fun providerSources_eachRejectsNewLiteralWithoutFileLevelExemption() {
-        val root = listOf(File("src/main/java/com/example/myapplication/ui"),
-            File("app/src/main/java/com/example/myapplication/ui")).first { it.isDirectory }
-        val sources = UiTokenSourceInventory.scopes.associate { it.path to File(root, it.path).readText() }
+        val root = listOf(
+            File("src/main/java/com/example/myapplication/ui"),
+            File("app/src/main/java/com/example/myapplication/ui")
+        ).first { it.isDirectory }
+        val sources =
+            UiTokenSourceInventory.scopes.associate { it.path to File(root, it.path).readText() }
         val providerScopes = UiTokenSourceInventory.scopes.filter {
             it.path.startsWith("screen/settings/Provider") || it.path == "component/NarraAlertDialog.kt"
         }
         assertEquals(8, providerScopes.size)
         providerScopes.forEach { scope ->
             val changed = sources + (scope.path to (sources.getValue(scope.path) +
-                "\nprivate fun UnapprovedDefault() { Modifier.padding(7.dp) }"))
-            val issues = UiTokenSourceGuard.audit(changed, UiTokenSourceInventory.scopes, UiTokenSourceInventory.exceptions)
+                    "\nprivate fun UnapprovedDefault() { Modifier.padding(7.dp) }"))
+            val issues = UiTokenSourceGuard.audit(
+                changed,
+                UiTokenSourceInventory.scopes,
+                UiTokenSourceInventory.exceptions
+            )
             assertTrue("新增硬编码不得绕过 ${scope.path}", issues.any {
                 scope.path in it && "UnapprovedDefault" in it && "新增硬编码" in it
             })
         }
         val path = "screen/settings/ProviderSettingsScreen.kt"
-        listOf("ProviderSearchBar", "ProviderBrandIcon", "ProviderStatusPill").forEach { declaration ->
+        listOf(
+            "ProviderSearchBar",
+            "ProviderBrandIcon",
+            "ProviderStatusPill"
+        ).forEach { declaration ->
             val source = sources.getValue(path)
             val start = source.indexOf("fun $declaration(")
             assertTrue("精确声明必须存在：$declaration", start >= 0)
             val body = source.indexOf('{', start)
-            val changed = source.substring(0, body + 1) + "\n    val unapproved = RoundedCornerShape(7.dp)\n" + source.substring(body + 1)
-            val issues = UiTokenSourceGuard.audit(sources + (path to changed), UiTokenSourceInventory.scopes, UiTokenSourceInventory.exceptions)
+            val changed = source.substring(
+                0,
+                body + 1
+            ) + "\n    val unapproved = RoundedCornerShape(7.dp)\n" + source.substring(body + 1)
+            val issues = UiTokenSourceGuard.audit(
+                sources + (path to changed),
+                UiTokenSourceInventory.scopes,
+                UiTokenSourceInventory.exceptions
+            )
             assertTrue("helper 内新增默认不能逃过扫描：$declaration", issues.any {
                 path in it && declaration in it && "新增硬编码" in it
             })
         }
     }
 
-    private fun audit(source: String, exceptions: List<UiTokenSourceGuard.Exception> = emptyList()) =
-        UiTokenSourceGuard.audit(mapOf(Path to source), listOf(UiTokenSourceGuard.Scope(Path)), exceptions)
+    @Test
+    fun worldBookAndTransferScopes_rejectNewDefaultsAndSharedHelperBodyChanges() {
+        val root = listOf(
+            File("src/main/java/com/example/myapplication/ui"),
+            File("app/src/main/java/com/example/myapplication/ui")
+        ).first { it.isDirectory }
+        val sources =
+            UiTokenSourceInventory.scopes.associate { it.path to File(root, it.path).readText() }
+        val scopes = UiTokenSourceInventory.scopes.filter {
+            it.path.startsWith("screen/settings/worldbook/") || it.path == "component/worldbook/KeywordChipInput.kt" ||
+                    it.path == "screen/settings/ContextTransferScreen.kt"
+        }
+        assertEquals(7, scopes.size)
+        scopes.forEach { scope ->
+            assertEquals("新增局部声明也必须扫描", null, scope.scannedDeclarations)
+            val changed = sources + (scope.path to (sources.getValue(scope.path) +
+                    "\nprivate fun UnapprovedP06Default() { Modifier.padding(7.dp) }"))
+            val issues = UiTokenSourceGuard.audit(
+                changed,
+                UiTokenSourceInventory.scopes,
+                UiTokenSourceInventory.exceptions
+            )
+            assertTrue("P06文件不得整体豁免：${scope.path}", issues.any {
+                scope.path in it && "UnapprovedP06Default" in it && "新增硬编码" in it
+            })
+        }
+        val path = "screen/settings/SettingsComponents.kt"
+        listOf(
+            "SettingsPageIntro",
+            "SettingsHelpButton",
+            "SettingsDescriptionDialog",
+            "SettingsSectionHeader",
+            "SettingsStatusPill",
+            "SettingsHintCard",
+            "AnimatedSettingButton"
+        ).forEach { declaration ->
+            val source = sources.getValue(path)
+            val start = source.indexOf("fun $declaration(")
+            assertTrue(start >= 0)
+            val body = source.indexOf('{', start)
+            val changed = source.substring(
+                0,
+                body + 1
+            ) + "\n    val unapproved = RoundedCornerShape(7.dp)\n" + source.substring(body + 1)
+            val issues = UiTokenSourceGuard.audit(
+                sources + (path to changed),
+                UiTokenSourceInventory.scopes,
+                UiTokenSourceInventory.exceptions
+            )
+            assertTrue("旧默认例外不得放行函数体内新硬编码：$declaration", issues.any {
+                path in it && declaration in it && "新增硬编码" in it
+            })
+        }
+    }
+
+    private fun audit(
+        source: String,
+        exceptions: List<UiTokenSourceGuard.Exception> = emptyList()
+    ) =
+        UiTokenSourceGuard.audit(
+            mapOf(Path to source),
+            listOf(UiTokenSourceGuard.Scope(Path)),
+            exceptions
+        )
 
     private fun exception(declaration: String, rule: UiTokenSourceGuard.Rule, expression: String) =
-        UiTokenSourceGuard.Exception(Path, declaration, rule, expression, "受测的精确品牌色 / 几何例外")
+        UiTokenSourceGuard.Exception(
+            Path,
+            declaration,
+            rule,
+            expression,
+            "受测的精确品牌色 / 几何例外"
+        )
 
     private companion object {
         const val Path = "Pilot.kt"

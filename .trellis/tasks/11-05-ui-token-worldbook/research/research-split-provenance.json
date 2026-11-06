@@ -1,0 +1,29 @@
+[
+  {
+    "original": "entry-list-detail.md",
+    "original_sha256": "8ac6c582cd47b6fa45eb8fa23f91c0218afd26f0abe776cd2ee6a1d6da55d46b",
+    "split_marker": "### 7. 现有测试与缺口",
+    "continued_in": "entry-list-detail-validation.md",
+    "main_bytes": 18999,
+    "continuation_bytes": 23011,
+    "original_content_partition_verified": true
+  },
+  {
+    "original": "editor-contracts-tests.md",
+    "original_sha256": "30fa83a04c919b869b742059c3be12cdafce5d557cf5d3e4c8d5799ef0327f56",
+    "split_marker": "### 8. 现有测试能证明什么、不能证明什么",
+    "continued_in": "editor-validation.md",
+    "main_bytes": 27597,
+    "continuation_bytes": 17067,
+    "original_content_partition_verified": true
+  },
+  {
+    "original": "context-transfer.md",
+    "original_sha256": "647f0ced7ae36c2d3d364b3a8fd5a6d78764b17a3ec6813f567de2284cac982b",
+    "split_marker": "### 8. 可行的测试隔离与耦合处理",
+    "continued_in": "context-transfer-validation.md",
+    "main_bytes": 17853,
+    "continuation_bytes": 15663,
+    "original_content_partition_verified": true
+  }
+]

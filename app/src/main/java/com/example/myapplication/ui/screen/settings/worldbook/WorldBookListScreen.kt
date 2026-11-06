@@ -15,15 +15,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -45,6 +46,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,12 +58,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.ui.component.TopAppSnackbarHost
+import com.example.myapplication.ui.component.narraOutlinedButtonColors
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
 import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.SettingsPalette
-import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
@@ -108,15 +117,16 @@ fun WorldBookListScreen(
     var bookIdFilter by rememberSaveable { mutableStateOf("") }
     var showFilters by rememberSaveable { mutableStateOf(false) }
 
-    val postFilterEntries = remember(entries, searchQuery, scopeFilter, statusFilter, bookIdFilter) {
-        filterEntries(
-            entries = entries,
-            search = searchQuery,
-            scope = scopeFilter,
-            status = statusFilter,
-            bookIdFilter = bookIdFilter,
-        )
-    }
+    val postFilterEntries =
+        remember(entries, searchQuery, scopeFilter, statusFilter, bookIdFilter) {
+            filterEntries(
+                entries = entries,
+                search = searchQuery,
+                scope = scopeFilter,
+                status = statusFilter,
+                bookIdFilter = bookIdFilter,
+            )
+        }
     val filteredBooks = remember(postFilterEntries) { buildWorldBookBooks(postFilterEntries) }
     val filteredStandaloneEntries = remember(postFilterEntries) {
         postFilterEntries
@@ -142,6 +152,9 @@ fun WorldBookListScreen(
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = onAddEntry,
+                horizontalPadding = NarraUi.space16,
+                titleMaxLines = Int.MAX_VALUE,
+                titleIsHeading = true,
             )
         },
         snackbarHost = { TopAppSnackbarHost(hostState = snackbarHostState) },
@@ -153,12 +166,12 @@ fun WorldBookListScreen(
                 .testTag("worldbook_list")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 36.dp,
+                start = NarraUi.space16,
+                top = NarraUi.space4,
+                end = NarraUi.space16,
+                bottom = NarraUi.space32,
             ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item(key = "importButton") {
                 AnimatedSettingButton(
@@ -166,6 +179,15 @@ fun WorldBookListScreen(
                     onClick = onOpenImport,
                     enabled = true,
                     isPrimary = false,
+                    shape = NarraShapes.medium,
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space16,
+                        vertical = NarraUi.space12
+                    ),
+                    colors = narraOutlinedButtonColors().copy(
+                        contentColor = palette.title,
+                        disabledContentColor = palette.title
+                    ),
                     leadingIcon = {
                         Icon(Lucide.Upload, contentDescription = null)
                     },
@@ -177,15 +199,15 @@ fun WorldBookListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(palette.background)
-                        .padding(vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                        .padding(vertical = NarraUi.space4),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        shape = RoundedCornerShape(8.dp),
+                        shape = NarraShapes.medium,
                         label = { Text("搜索世界书") },
                         placeholder = { Text("书名、内容或关键词") },
                         leadingIcon = {
@@ -193,7 +215,10 @@ fun WorldBookListScreen(
                         },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.size(NarraMinimumTouchTarget)
+                                ) {
                                     Icon(
                                         imageVector = Lucide.X,
                                         contentDescription = "清空搜索",
@@ -201,7 +226,7 @@ fun WorldBookListScreen(
                                 }
                             }
                         },
-                        colors = rememberSettingsOutlineColors(),
+                        colors = rememberSettingsOutlineColors().copy(focusedLabelColor = palette.title),
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -215,45 +240,72 @@ fun WorldBookListScreen(
                         )
                         TextButton(
                             onClick = { showFilters = !showFilters },
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.sizeIn(
+                                minWidth = NarraMinimumTouchTarget,
+                                minHeight = NarraMinimumTouchTarget
+                            )
+                                .semantics {
+                                    stateDescription = if (showFilters) "已展开" else "已收起"
+                                },
+                            colors = ButtonDefaults.textButtonColors(contentColor = palette.title),
                         ) {
-                            Icon(Lucide.SlidersHorizontal, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(
+                                Lucide.SlidersHorizontal,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
                             val count = activeFilterCount(scopeFilter, statusFilter, bookIdFilter)
-                            Text(if (count > 0) "筛选 ($count)" else "筛选", modifier = Modifier.padding(start = 8.dp))
+                            Text(
+                                if (count > 0) "筛选 ($count)" else "筛选",
+                                modifier = Modifier.padding(start = NarraUi.space8)
+                            )
                         }
-                        SettingsHelpButton("世界书", "搜索包含书名、条目标题、正文与关键词。作用域、状态和所属世界书筛选同时生效。")
+                        SettingsHelpButton(
+                            "世界书",
+                            "搜索包含书名、条目标题、正文与关键词。作用域、状态和所属世界书筛选同时生效。",
+                            dialogShape = NarraShapes.large,
+                            actionContentColor = palette.title,
+                            actionMinSize = NarraMinimumTouchTarget,
+                        )
                     }
                 }
             }
             if (showFilters) {
                 item(key = "filters") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WorldBookFilterChipRow(
-                        label = "作用域",
-                        options = WorldBookListScopeFilter.values()
-                            .map { it.label to (it == scopeFilter) },
-                        onSelect = { scopeFilter = WorldBookListScopeFilter.values()[it] },
-                    )
-                    WorldBookFilterChipRow(
-                        label = "状态",
-                        options = WorldBookListStatusFilter.values()
-                            .map { it.label to (it == statusFilter) },
-                        onSelect = { statusFilter = WorldBookListStatusFilter.values()[it] },
-                    )
-                    if (allBookOptions.size > 1) {
+                    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                         WorldBookFilterChipRow(
-                            label = "书",
-                            options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
-                            onSelect = { bookIdFilter = allBookOptions[it].first },
+                            label = "作用域",
+                            options = WorldBookListScopeFilter.values()
+                                .map { it.label to (it == scopeFilter) },
+                            onSelect = { scopeFilter = WorldBookListScopeFilter.values()[it] },
                         )
-                    }
-                    if (activeFilterCount(scopeFilter, statusFilter, bookIdFilter) > 0) {
-                        TextButton(onClick = {
-                            scopeFilter = WorldBookListScopeFilter.ALL
-                            statusFilter = WorldBookListStatusFilter.ALL
-                            bookIdFilter = ""
-                        }, modifier = Modifier.heightIn(min = 48.dp)) { Text("清除筛选") }
-                    }
+                        WorldBookFilterChipRow(
+                            label = "状态",
+                            options = WorldBookListStatusFilter.values()
+                                .map { it.label to (it == statusFilter) },
+                            onSelect = { statusFilter = WorldBookListStatusFilter.values()[it] },
+                        )
+                        if (allBookOptions.size > 1) {
+                            WorldBookFilterChipRow(
+                                label = "书",
+                                options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
+                                onSelect = { bookIdFilter = allBookOptions[it].first },
+                            )
+                        }
+                        if (activeFilterCount(scopeFilter, statusFilter, bookIdFilter) > 0) {
+                            TextButton(
+                                onClick = {
+                                    scopeFilter = WorldBookListScopeFilter.ALL
+                                    statusFilter = WorldBookListStatusFilter.ALL
+                                    bookIdFilter = ""
+                                },
+                                modifier = Modifier.sizeIn(
+                                    minWidth = NarraMinimumTouchTarget,
+                                    minHeight = NarraMinimumTouchTarget
+                                ),
+                                colors = ButtonDefaults.textButtonColors(contentColor = palette.title),
+                            ) { Text("清除筛选") }
+                        }
                     }
                 }
             }
@@ -264,13 +316,17 @@ fun WorldBookListScreen(
                     searchQuery.isNotBlank() -> WorldBookEmptyVariant.SEARCH_EMPTY
                     activeFilterCount(scopeFilter, statusFilter, bookIdFilter) > 0 ->
                         WorldBookEmptyVariant.FILTERED_EMPTY
+
                     else -> WorldBookEmptyVariant.GLOBAL_EMPTY
                 }
                 item(key = "emptyState") {
                     WorldBookListEmptyState(
                         variant = variant,
                         onClear = when (variant) {
-                            WorldBookEmptyVariant.SEARCH_EMPTY -> { { searchQuery = "" } }
+                            WorldBookEmptyVariant.SEARCH_EMPTY -> {
+                                { searchQuery = "" }
+                            }
+
                             WorldBookEmptyVariant.FILTERED_EMPTY -> {
                                 {
                                     scopeFilter = WorldBookListScopeFilter.ALL
@@ -278,7 +334,10 @@ fun WorldBookListScreen(
                                     bookIdFilter = ""
                                 }
                             }
-                            WorldBookEmptyVariant.GLOBAL_EMPTY -> { {} }
+
+                            WorldBookEmptyVariant.GLOBAL_EMPTY -> {
+                                {}
+                            }
                         },
                     )
                 }
@@ -289,11 +348,19 @@ fun WorldBookListScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(palette.background)
-                                .padding(vertical = 2.dp),
+                                .padding(vertical = NarraUi.space4),
                         ) {
                             SettingsSectionHeader(
                                 title = "导入的世界书",
                                 description = "",
+                                contentPadding = PaddingValues(
+                                    horizontal = NarraUi.space4,
+                                    vertical = NarraUi.space4
+                                ),
+                                horizontalSpacing = NarraUi.space8,
+                                titleMaxLines = Int.MAX_VALUE,
+                                titleIsHeading = true,
+                                titleColor = palette.title,
                             )
                         }
                     }
@@ -311,11 +378,19 @@ fun WorldBookListScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(palette.background)
-                                .padding(vertical = 2.dp),
+                                .padding(vertical = NarraUi.space4),
                         ) {
                             SettingsSectionHeader(
                                 title = "独立条目",
                                 description = "",
+                                contentPadding = PaddingValues(
+                                    horizontal = NarraUi.space4,
+                                    vertical = NarraUi.space4
+                                ),
+                                horizontalSpacing = NarraUi.space8,
+                                titleMaxLines = Int.MAX_VALUE,
+                                titleIsHeading = true,
+                                titleColor = palette.title,
                             )
                         }
                     }
@@ -342,22 +417,34 @@ private fun WorldBookFilterChipRow(
     onSelect: (Int) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val windowWidth =
+        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = palette.body,
         )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
             itemsIndexed(options) { index, (optionLabel, selected) ->
                 FilterChip(
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier
+                        .widthIn(
+                            max = (windowWidth - NarraUi.space32).coerceAtLeast(
+                                NarraMinimumTouchTarget
+                            )
+                        )
+                        .sizeIn(
+                            minWidth = NarraMinimumTouchTarget,
+                            minHeight = NarraMinimumTouchTarget
+                        ),
+                    shape = NarraShapes.small,
                     selected = selected,
                     onClick = { onSelect(index) },
                     label = { Text(optionLabel) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = palette.accentSoft,
-                        selectedLabelColor = palette.accent,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ),
                 )
             }
@@ -390,9 +477,9 @@ internal fun WorldBookBookCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+            .clip(NarraShapes.medium)
+            .clickable(role = Role.Button, onClick = onClick),
+        shape = NarraShapes.medium,
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
         shadowElevation = 0.dp,
@@ -406,20 +493,26 @@ internal fun WorldBookBookCard(
                 imageVector = Lucide.BookOpen,
                 contentDescription = null,
                 tint = palette.accent,
-                modifier = Modifier.padding(start = 16.dp, top = 18.dp).size(24.dp),
+                modifier = Modifier.padding(start = NarraUi.space16, top = NarraUi.space16)
+                    .size(24.dp),
             )
             Column(
                 modifier = Modifier
-                    .padding(start = 12.dp, end = 18.dp, top = 16.dp, bottom = 14.dp)
+                    .padding(
+                        start = NarraUi.space12,
+                        end = NarraUi.space16,
+                        top = NarraUi.space16,
+                        bottom = NarraUi.space16
+                    )
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 Text(
                     text = book.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = palette.title,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
+                    maxLines = Int.MAX_VALUE,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (book.previewText.isNotBlank()) {
@@ -432,25 +525,43 @@ internal fun WorldBookBookCard(
                     )
                 }
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
-                    Text("${book.entryCount} 条条目", style = MaterialTheme.typography.labelMedium, color = palette.body)
+                    Text(
+                        "${book.entryCount} 条条目",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.body
+                    )
                     if (enabledCount != book.entryCount) {
                         SettingsStatusPill(
                             text = "启用 $enabledCount",
                             containerColor = palette.accentSoft,
-                            contentColor = palette.accent,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            shape = NarraShapes.pill,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space12,
+                                vertical = NarraUi.space4
+                            ),
                         )
                     }
                     if (relative.isNotEmpty()) {
-                        Text(relative, style = MaterialTheme.typography.labelMedium, color = palette.body)
+                        Text(
+                            relative,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = palette.body
+                        )
                     }
                     if (hasRegex) {
                         SettingsStatusPill(
                             text = "含正则",
                             containerColor = palette.accentSoft,
-                            contentColor = palette.accent,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            shape = NarraShapes.pill,
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space12,
+                                vertical = NarraUi.space4
+                            ),
                         )
                     }
                 }
@@ -469,23 +580,23 @@ internal fun WorldBookEntryCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+            .clip(NarraShapes.medium)
+            .clickable(role = Role.Button, onClick = onClick),
+        shape = NarraShapes.medium,
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text(
                 text = entry.title.ifBlank { "未命名条目" },
                 style = MaterialTheme.typography.titleMedium,
                 color = palette.title,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
+                maxLines = Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -519,13 +630,15 @@ private fun EntryChipRow(
         ?.joinToString(separator = " · ")
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
     ) {
         SettingsStatusPill(
             text = entry.scopeType.label,
             containerColor = palette.subtleChip,
             contentColor = palette.subtleChipContent,
+            shape = NarraShapes.pill,
+            contentPadding = PaddingValues(horizontal = NarraUi.space12, vertical = NarraUi.space4),
         )
         if (preview != null) {
             Text(
@@ -541,16 +654,33 @@ private fun EntryChipRow(
                 text = "已停用",
                 containerColor = palette.surfaceTint,
                 contentColor = palette.body,
+                shape = NarraShapes.pill,
+                contentPadding = PaddingValues(
+                    horizontal = NarraUi.space12,
+                    vertical = NarraUi.space4
+                ),
             )
+
             entry.alwaysActive -> SettingsStatusPill(
                 text = "常驻注入",
                 containerColor = palette.accentSoft,
-                contentColor = palette.accent,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = NarraShapes.pill,
+                contentPadding = PaddingValues(
+                    horizontal = NarraUi.space12,
+                    vertical = NarraUi.space4
+                ),
             )
+
             entryHasRegexKeyword(entry) -> SettingsStatusPill(
                 text = "含正则",
                 containerColor = palette.surfaceTint,
                 contentColor = palette.body,
+                shape = NarraShapes.pill,
+                contentPadding = PaddingValues(
+                    horizontal = NarraUi.space12,
+                    vertical = NarraUi.space4
+                ),
             )
         }
     }
@@ -630,12 +760,14 @@ private fun WorldBookListEmptyState(
             body = "",
             actionLabel = null,
         )
+
         WorldBookEmptyVariant.FILTERED_EMPTY -> EmptyStateSpec(
             icon = Lucide.SlidersHorizontal,
             title = "当前筛选下没有条目",
             body = "",
             actionLabel = "清筛选",
         )
+
         WorldBookEmptyVariant.SEARCH_EMPTY -> EmptyStateSpec(
             icon = Lucide.Search,
             title = "没有匹配结果",
@@ -646,9 +778,9 @@ private fun WorldBookListEmptyState(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 48.dp),
+            .padding(vertical = NarraUi.space32),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
     ) {
         Icon(
             imageVector = spec.icon,
@@ -668,8 +800,14 @@ private fun WorldBookListEmptyState(
             textAlign = TextAlign.Center,
         )
         if (spec.actionLabel != null) {
-            TextButton(onClick = onClear) {
-                Text(text = spec.actionLabel, color = palette.accent)
+            TextButton(
+                onClick = onClear,
+                modifier = Modifier.sizeIn(
+                    minWidth = NarraMinimumTouchTarget,
+                    minHeight = NarraMinimumTouchTarget
+                )
+            ) {
+                Text(text = spec.actionLabel, color = palette.title)
             }
         }
     }

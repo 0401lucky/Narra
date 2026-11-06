@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:38.550Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="syncStoredSettings_overwritesDraftWhenNoLocalChanges" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.002"/>
+  <testcase name="addProviderFromTemplate_appendsProviderAndClosesDialog" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.001"/>
+  <testcase name="addProviderFromTemplate_preservesSavedProvidersWhenDraftListStillEmpty" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.0"/>
+  <testcase name="syncStoredSettings_hydratesProvidersEvenWhenOtherDraftChangesExist" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.0"/>
+  <testcase name="ensureProviderDrafts_injectsDefaultProviderWhenDraftsAreEmpty" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.0"/>
+  <testcase name="syncStoredSettings_preservesTemplateDialogWhileRefreshingStoredSettings" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.0"/>
+  <testcase name="updateScreenTranslationSettings_updatesDraftAndClearsMessage" classname="com.example.myapplication.viewmodel.SettingsDraftStateSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

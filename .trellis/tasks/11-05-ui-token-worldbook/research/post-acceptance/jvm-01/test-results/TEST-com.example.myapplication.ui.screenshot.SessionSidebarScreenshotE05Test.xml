@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:01.702Z" hostname="LUCKY" time="5.326">
+  <properties/>
+  <testcase name="e05_main_ocean_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.163"/>
+  <testcase name="e05_main_vanilla_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.155"/>
+  <testcase name="e05_group_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.509"/>
+  <testcase name="e05_main_matcha_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.111"/>
+  <testcase name="e05_main_ocean_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.115"/>
+  <testcase name="e05_main_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.486"/>
+  <testcase name="e05_model_sheet_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.41"/>
+  <testcase name="e05_main_vanilla_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.124"/>
+  <testcase name="e05_main_dynamic_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.108"/>
+  <testcase name="e05_main_matcha_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.098"/>
+  <testcase name="e05_help_dialog_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.397"/>
+  <testcase name="e05_main_narrow_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.478"/>
+  <testcase name="e05_theme_narrow_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.442"/>
+  <testcase name="e05_reset_dialog_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.403"/>
+  <testcase name="e05_theme_narrow_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.404"/>
+  <testcase name="e05_preset_sheet_light" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.394"/>
+  <testcase name="e05_main_dynamic_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.124"/>
+  <testcase name="e05_mask_sheet_dark" classname="com.example.myapplication.ui.screenshot.SessionSidebarScreenshotE05Test" time="0.387"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

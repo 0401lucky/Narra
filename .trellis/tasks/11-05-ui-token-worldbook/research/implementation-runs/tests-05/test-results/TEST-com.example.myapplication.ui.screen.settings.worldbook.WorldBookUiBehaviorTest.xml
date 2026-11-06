@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:38:38.842Z" hostname="LUCKY" time="5.112">
+  <properties/>
+  <testcase name="editor_negativeProbabilityClampsToZero" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.277"/>
+  <testcase name="editor_bodyCancelAndConfirmOnlyUpdateSecondLevelDraft" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.412"/>
+  <testcase name="editor_blankRequiredFieldsAndMissingScopeKeepSaveDisabled" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.429"/>
+  <testcase name="list_threeFiltersAreAndedAndClearingThemKeepsSearch" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.325"/>
+  <testcase name="list_filterEmptyClearRestoresResultsWithoutWriting" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.273"/>
+  <testcase name="list_realActionsKeepBookAndEntryIdsAndDoNotToggleData" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.253"/>
+  <testcase name="editor_secondarySwitchDisablesInputAndPreservesExistingKeywords" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.246"/>
+  <testcase name="list_globalEmptyKeepsTheAddEntryAction" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.205"/>
+  <testcase name="editor_backDoesNotSaveAndPreviewDoesNotPersist" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.309"/>
+  <testcase name="editor_saveRetainsIdentityExtrasAndUneditedFieldsWithOriginalConversions" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.378"/>
+  <testcase name="editor_keywordCommitAndRemovalKeepUnsubmittedDraftOutOfSave" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.296"/>
+  <testcase name="detail_renameChecksTrimmedNameBusyStateAndImeUsesSameCallback" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.258"/>
+  <testcase name="editor_invalidNumbersFallBackWithoutIntroducingNewSaveGates" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.281"/>
+  <testcase name="editor_deleteUsesOriginalIdentityAndCancelDoesNotNavigate" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.29"/>
+  <testcase name="detail_deleteCancelDoesNotWriteAndConfirmDoesNotPrematurelyNavigate" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.238"/>
+  <testcase name="list_searchEmptyClearOnlyClearsQuery" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.238"/>
+  <testcase name="detail_preservesRenameOnlyMessageFilter" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.195"/>
+  <testcase name="list_preservesDeleteOnlyMessageFilter" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookUiBehaviorTest" time="0.193"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

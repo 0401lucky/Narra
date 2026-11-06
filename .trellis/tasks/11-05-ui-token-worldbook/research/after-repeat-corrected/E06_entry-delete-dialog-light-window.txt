@@ -1,0 +1,41 @@
+title=删除世界书条目
+target=independent-dialog-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 748.0)
+Printing with useUnmergedTree = 'true'
+Node #2704 at (l=48.0, t=0.0, r=592.0, b=748.0)px
+ |-Node #2705 at (l=48.0, t=0.0, r=592.0, b=748.0)px
+   [IsDialog]
+    |-Node #2706 at (l=48.0, t=0.0, r=592.0, b=748.0)px
+       |-Node #2707 at (l=48.0, t=0.0, r=592.0, b=748.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #2709 at (l=96.0, t=48.0, r=544.0, b=575.0)px, Tag: 'narra_alert_dialog_content'
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@5737a6a6'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ScrollBy, ScrollByOffset]
+          |  |-Node #2710 at (l=96.0, t=48.0, r=544.0, b=241.0)px
+          |  | Text = '[删除世界书条目]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #2711 at (l=96.0, t=273.0, r=544.0, b=575.0)px
+          |    Text = '[将删除《白塔城的潮汐：旅人与守灯人的约定》，这个操作不可撤销。]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #2714 at (l=120.0, t=591.0, r=272.0, b=700.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #2716 at (l=144.0, t=607.0, r=248.0, b=684.0)px
+          |    Text = '[取消]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #2717 at (l=288.0, t=591.0, r=544.0, b=700.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #2719 at (l=312.0, t=607.0, r=520.0, b=684.0)px
+               Text = '[确认删除]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

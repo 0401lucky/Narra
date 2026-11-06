@@ -27,23 +27,25 @@ import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
  * Premium Button Modifier:
  * - Fluid spring-based bounce click effect
  * - Premium disabled state (smooth alpha fading instead of muddy greys)
+ * - 调用方显式使用可读禁用配色时，可以保留不透明文字；默认透明度不变。
  */
 @Composable
 fun Modifier.bounceClick(
     enabled: Boolean = true,
-    interactionSource: MutableInteractionSource
+    interactionSource: MutableInteractionSource,
+    disabledAlpha: Float = 0.45f,
 ): Modifier {
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.95f else 1f, 
+        targetValue = if (isPressed && enabled) 0.95f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.6f, 
+            dampingRatio = 0.6f,
             stiffness = Spring.StiffnessMedium
         ),
         label = "bounceClickScale"
     )
     val alpha by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.45f,
+        targetValue = if (enabled) 1f else disabledAlpha,
         animationSpec = tween(250),
         label = "disableAlpha"
     )
@@ -119,13 +121,14 @@ fun NarraButton(
     border: BorderStroke? = null,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    disabledAlpha: Float = 0.45f,
     content: @Composable RowScope.() -> Unit
 ) {
     Button(
         onClick = onClick,
         modifier = modifier
             .defaultMinSize(minHeight = NarraMinimumTouchTarget)
-            .bounceClick(enabled, interactionSource),
+            .bounceClick(enabled, interactionSource, disabledAlpha),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -152,13 +155,14 @@ fun NarraOutlinedButton(
     ),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    disabledAlpha: Float = 0.45f,
     content: @Composable RowScope.() -> Unit
 ) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
             .defaultMinSize(minHeight = NarraMinimumTouchTarget)
-            .bounceClick(enabled, interactionSource),
+            .bounceClick(enabled, interactionSource, disabledAlpha),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -212,13 +216,14 @@ fun NarraFilledTonalButton(
     border: BorderStroke? = null,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    disabledAlpha: Float = 0.45f,
     content: @Composable RowScope.() -> Unit
 ) {
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier
             .defaultMinSize(minHeight = NarraMinimumTouchTarget)
-            .bounceClick(enabled, interactionSource),
+            .bounceClick(enabled, interactionSource, disabledAlpha),
         enabled = enabled,
         shape = shape,
         colors = colors,

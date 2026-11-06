@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-06T01:26:47.046Z" hostname="LUCKY" time="0.062">
+  <properties/>
+  <testcase name="deleteEntry_failureKeepsStoredDataAndReturnsFixedMessage" classname="com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest" time="0.038"/>
+  <testcase name="saveEntry_keepsBusyUntilWriteCompletesAndPreservesPayload" classname="com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest" time="0.009"/>
+  <testcase name="saveEntry_failureRestoresBusyWithoutChangingStoredEntry" classname="com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest" time="0.007"/>
+  <testcase name="deleteEntry_waitsForWriteAndDeletesOnlyTheRequestedId" classname="com.example.myapplication.ui.screen.settings.worldbook.P06WorldBookPersistenceTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

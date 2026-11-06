@@ -1,0 +1,12 @@
+{
+  "currentReport": ".trellis/tasks/11-05-ui-token-worldbook/research/implementation-runs/build-01/lint-results-debug.xml",
+  "comparisonReport": ".trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/research/capture-stability-20261105/lint-final/lint-results-debug.xml",
+  "identity": "id + severity + message + normalized file locations; line/column changes from formatting excluded",
+  "severityCounts": {
+    "Warning": 55,
+    "Hint": 3
+  },
+  "introduced": [],
+  "removed": [],
+  "noNewIssues": true
+}

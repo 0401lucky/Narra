@@ -1,0 +1,100 @@
+title=编辑正文
+target=independent-dialog-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+Printing with useUnmergedTree = 'true'
+Node #8636 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ |-Node #8637 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   [IsDialog]
+    |-Node #8638 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+      IsTraversalGroup = 'true'
+       |-Node #8639 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+       | ContentDescription = '[关闭工作表]'
+       | TraversalIndex = '1.0'
+       | Actions = [OnClick]
+       | MergeDescendants = 'true'
+       |-Node #8640 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+         IsContainer = 'true'
+         PaneTitle = '底部动作条'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 0.0.dp), bottomStart = CornerSize(size = 0.0.dp))'
+         TraversalIndex = '0.0'
+          |-Node #8641 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+             |-Node #8644 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             | Actions = [OnLongClick]
+             | MergeDescendants = 'true'
+             |  |-Node #8646 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             |    Focused = 'false'
+             |    Actions = [Dismiss, OnClick, RequestFocus]
+             |    MergeDescendants = 'true'
+             |     |-Node #8647 at (l=288.0, t=44.0, r=352.0, b=52.0)px
+             |       ContentDescription = '[拖动手柄]'
+             |       IsContainer = 'true'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+             |-Node #8651 at (l=40.0, t=127.0, r=504.0, b=210.0)px
+             | Text = '[编辑正文]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #8652 at (l=504.0, t=120.0, r=600.0, b=216.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             | Actions = [OnClick, RequestFocus]
+             | MergeDescendants = 'true'
+             |  |-Node #8653 at (l=528.0, t=144.0, r=576.0, b=192.0)px
+             |    ContentDescription = '[取消正文编辑]'
+             |    Role = 'Image'
+             |-Node #8654 at (l=40.0, t=240.0, r=600.0, b=1099.0)px, Tag: 'worldbook_fullscreen_content'
+             | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+             | EditableText = '第 1 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 2 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 3 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 4 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 5 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 6 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 7 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 8 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 9 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 10 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 11 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 12 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 13 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 14 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 15 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 16 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+正文末尾：灯塔一直亮着。'
+             | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@4b2f9b6'
+             | Focused = 'false'
+             | ImeAction = 'Default'
+             | InputText = '第 1 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 2 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 3 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 4 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 5 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 6 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 7 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 8 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 9 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 10 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 11 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 12 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 13 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 14 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 15 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+第 16 段：旅人沿海岸寻找白塔城，守灯人记下潮汐与归船。
+正文末尾：灯塔一直亮着。'
+             | IsEditable = 'true'
+             | TextSelectionRange = 'TextRange(0, 0)'
+             | Actions = [GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, ScrollBy, ScrollByOffset, SetSelection, SetText]
+             | MergeDescendants = 'true'
+             |  |-Node #8658 at (l=40.0, t=240.0, r=600.0, b=1099.0)px
+             |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |-Node #8660 at (l=72.0, t=-4477.0, r=568.0, b=1067.0)px
+             |    Shape = 'RectangleShape'
+             |-Node #8662 at (l=40.0, t=1123.0, r=600.0, b=1256.0)px
+               Focused = 'false'
+               Role = 'Button'
+               Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+               Actions = [OnClick, RequestFocus]
+               MergeDescendants = 'true'
+                |-Node #8664 at (l=190.0, t=1151.0, r=450.0, b=1228.0)px
+                  Text = '[保存并返回]'
+                  Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

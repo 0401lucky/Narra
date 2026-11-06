@@ -1,0 +1,14 @@
+{
+  "createdAtUtc": "2026-11-06T01:11:25.084615+00:00",
+  "sourceCommit": "43ebda6dc40a5d21812cd594d10777ce3f2b166a",
+  "beforeManifestSha256": "215ae4f85d88cafe3e47c09e1a24f4883e006a0a05d342cb5fbc83e087877bae",
+  "reason": "P06 busy-button rendered contrast was 1.848:1 under the shared 0.45 disabled alpha. Add an explicit P06 opt-in while preserving the shared default.",
+  "provenance": "Supplemental original source from the same Git commit as before; the original 13-source capture manifest is preserved. This is Git-source provenance, not a newly captured before screenshot.",
+  "sources": {
+    "app/src/main/java/com/example/myapplication/ui/component/NarraButton.kt": {
+      "originalFile": "research/source-extensions/NarraButton.original.kt",
+      "originalSha256": "0ce7b7d69bf779d2a033e5a962746bb1e708fb845c58b8c4e3241e5a1acd827d",
+      "gitBlob": "da4921b04a99fe5aaa56614e29d425c1b28ea1ae"
+    }
+  }
+}

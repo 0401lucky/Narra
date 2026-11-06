@@ -1,0 +1,66 @@
+title=末次会话：暴雨后的灯塔与归途
+target=independent-popup-root
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 576.0, 814.0)
+Printing with useUnmergedTree = 'true'
+Node #6420 at (l=0.0, t=0.0, r=576.0, b=814.0)px
+ |-Node #6421 at (l=0.0, t=0.0, r=576.0, b=814.0)px
+   [IsPopup]
+    |-Node #6422 at (l=0.0, t=0.0, r=576.0, b=814.0)px
+      IsContainer = 'true'
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+       |-Node #6423 at (l=0.0, t=16.0, r=576.0, b=798.0)px
+         IsTraversalGroup = 'true'
+         Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@5737a6a6'
+         VerticalScrollAxisRange = 'ScrollAxisRange(value=458.0, maxValue=458.0, reverseScrolling=false)'
+         Actions = [ScrollBy, ScrollByOffset]
+          |-Node #6424 at (l=0.0, t=-442.0, r=576.0, b=-254.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #6427 at (l=24.0, t=-426.0, r=180.0, b=-349.0)px
+          |  | Text = '[新对话]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #6428 at (l=24.0, t=-341.0, r=222.0, b=-270.0)px
+          |    Text = '[10分钟前]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #6429 at (l=0.0, t=-254.0, r=576.0, b=9.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #6432 at (l=24.0, t=-238.0, r=552.0, b=-86.0)px
+          |  | Text = '[群岛会话 2：关于潮汐与归航]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #6433 at (l=24.0, t=-78.0, r=222.0, b=-7.0)px
+          |    Text = '[20分钟前]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #6434 at (l=0.0, t=9.0, r=576.0, b=272.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #6437 at (l=24.0, t=25.0, r=552.0, b=177.0)px
+          |  | Text = '[群岛会话 3：关于潮汐与归航]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #6438 at (l=24.0, t=185.0, r=222.0, b=256.0)px
+          |    Text = '[30分钟前]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #6439 at (l=0.0, t=272.0, r=576.0, b=535.0)px
+          | Focused = 'false'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #6442 at (l=24.0, t=288.0, r=552.0, b=440.0)px
+          |  | Text = '[群岛会话 4：关于潮汐与归航]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #6443 at (l=24.0, t=448.0, r=222.0, b=519.0)px
+          |    Text = '[40分钟前]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #6444 at (l=0.0, t=535.0, r=576.0, b=798.0)px
+            Focused = 'false'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #6447 at (l=24.0, t=551.0, r=552.0, b=703.0)px
+             | Text = '[末次会话：暴雨后的灯塔与归途]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #6448 at (l=24.0, t=711.0, r=222.0, b=782.0)px
+               Text = '[50分钟前]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

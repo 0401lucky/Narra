@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.MomentsViewModelTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:26:36.374Z" hostname="LUCKY" time="0.109">
+  <properties/>
+  <testcase name="updateCoverImage_savesMomentsCoverUri" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.04"/>
+  <testcase name="publishUserPost_failureKeepsCompletionMarkerEmptyAndRestoresPublishingState" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.011"/>
+  <testcase name="addCommentAndLike_usesScenarioBoundMaskSnapshot" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.014"/>
+  <testcase name="clearMoments_removesEveryMoment" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.006"/>
+  <testcase name="init_doesNotWarmUpAssistantPostUntilManualRefresh" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.013"/>
+  <testcase name="deleteComment_removesOnlyTargetCommentFromTimeline" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.007"/>
+  <testcase name="deletePosts_removesSelectedMomentsOnly" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.006"/>
+  <testcase name="publishUserPost_usesScenarioBoundMaskSnapshot" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.003"/>
+  <testcase name="publishUserPost_acceptsComposerImageLocationAndSelectedMask" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.006"/>
+  <testcase name="refreshWithRandomPost_withoutEnabledAssistantShowsHint" classname="com.example.myapplication.viewmodel.MomentsViewModelTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

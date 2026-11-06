@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-06T03:24:49.059Z" hostname="LUCKY" time="2.209">
+  <properties/>
+  <testcase name="protocolAndMode_largeFontOptions_changeOnlyTheirOwnFields" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.328"/>
+  <testcase name="tabsAndKeyVisibility_areKeyedByProviderId" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.319"/>
+  <testcase name="lastProviderCannotBeDeleted_otherProvidersKeepExplicitDeleteAndBackOrder" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.292"/>
+  <testcase name="saveWhileInFlight_isDisabledAndDoesNotRepeatCallback" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.289"/>
+  <testcase name="configuration_largeFontLabelsValuesAndCallbacks_preserveProviderIdentity" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.424"/>
+  <testcase name="longHeaderAndSaveArea_largeFont_remainAboveTabsWithFullTouchTargets" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.274"/>
+  <testcase name="veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.277"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面覆盖线下场景 / 建议 / 空态及会话阅读，P05 扩面覆盖会话设置侧栏及其实际弹层，P10扩面覆盖设置首页及三类外观Sheet，P11扩面覆盖提供商列表、Config / Models及其真实弹层。修改默认形状 / 间距、皮肤语义色、玻璃配色缓存或相关无障碍时阅读本文件。代码覆盖不等于视觉接纳或全 App 完成，实际扫描范围以测试 `UiTokenSourceInventory` 为准，验收状态以对应任务记录为准。
+v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面覆盖线下场景 / 建议 / 空态及会话阅读，P05 扩面覆盖会话设置侧栏及其实际弹层，P10扩面覆盖设置首页及三类外观Sheet，P11扩面覆盖提供商列表、Config / Models及其真实弹层，P06扩面覆盖世界书列表/详情/编辑、关键词与正文窗口及共享资料库整页。修改默认形状 / 间距、皮肤语义色、玻璃配色缓存或相关无障碍时阅读本文件。代码覆盖不等于视觉接纳或全 App 完成，实际扫描范围以测试 `UiTokenSourceInventory` 为准，验收状态以对应任务记录为准。
 
 ## 2. 所有者与签名
 
@@ -15,6 +15,8 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - `RoleplayReadingMode.kt`：`RoleplayReadingMode(messages, scenarioTitle, backgroundUri, lineHeightScale, highContrast, onDismiss)` 保持原入口；局部 `resolveReadingModeColors(backdropState)` 与实际阅读层配对，`roleplay_reading_header` 独立于 `roleplay_reading_list`。
 - `RoleplaySettingsScreen.kt` → `RoleplaySettingsContent.kt` → `RoleplaySettingsSidebarPanel.kt`：普通路由中的自适应右侧面板，保留 94% / 66%、最大 480dp 及系统 Insets；`ImmersiveTabRow.kt` 由本侧栏的模式 / 沉浸 / 行高选项消费。内部 Sheet / Dialog 属于独立窗口，不在主页面 `StageTag` 内。
 - `SettingsComponents.kt`：`SettingsTopBar`允许显式传`titleMaxLines`和`titleIsHeading=false`这一局部标题语义选项；`SettingsGroup`的两个重载都透传`shape`、`contentPadding`；`SettingsGroupDivider`允许显式padding；`SettingsListRow`允许显式shape、padding、横向/文字间距、标题/摘要行数。默认保持历史外观与语义，P10由`SettingsScreen.kt`的局部组合显式消费令牌。
+- 同文件的`SettingsPageIntro`、`SettingsSectionHeader`允许显式padding、标题行数/heading及帮助窗口参数；`SettingsHelpButton(dialogShape, actionContentColor, actionMinSize)`必须一直透传到实际`SettingsDescriptionDialog`。旧默认保留8dp窗口、primary动作文字与原Material触控布局；P06传`NarraShapes.large`、实际`onSurface`及48dp。`SettingsStatusPill`、`SettingsHintCard`和`AnimatedSettingButton`的shape/padding均为显式选项，分别保留原999dp/12×6dp、8dp/18×16dp和8dp/20×14dp默认。
+- `NarraButton.kt`中的`Modifier.bounceClick(..., disabledAlpha: Float = 0.45f)`由`NarraButton`、`NarraOutlinedButton`、`NarraFilledTonalButton`透传同名参数；`AnimatedSettingButton`主/次分支均透传，`SettingsTopBar`提供`actionColors`与`actionDisabledAlpha=0.45f`。P06局部选择1及可读禁用配色，其他消费者仍保持0.45和原颜色，点击禁用状态不变。
 - `ui/component/NarraAlertDialog.kt`：`NarraAlertDialog(..., shape: Shape = RoundedCornerShape(NarraUi.cardRadius), actionContentColor: Color = MaterialTheme.colorScheme.primary, content)`显式配置外壳形状和普通动作文字色；默认仍为历史8dp/primary，破坏性确认继续优先error，`NarraInfoDialog`及未传参数的调用方保持原样。P11局部传`NarraShapes.large`和实际`onSurface`，不改变共享滚动、操作区、动画、Insets与平台关闭语义。
 - `ProviderDetailScreen.kt`测量模型浮动操作区实际高度，转换为dp并加`NarraUi.space24`传给`ModelTabContent(..., bottomContentPadding: Dp)`；留白随大字体下操作区高度变化，不以任意固定间距替代功能避让。
 - `ProviderDetailChrome.kt`的超长标题限制在实际窗口高度40%内独立滚动，状态按provider ID隔离，返回动作位于标题滚动区域之外。窗口约束从`LocalWindowInfo.containerSize`像素按当前density换算。完整换行不能挤空Config / Models主视口；长标题压力验证需实际量到可用字段区域并滚到保存操作。
@@ -38,6 +40,9 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - Slider等非NarraButton控件仍须测量实际触控边界，不能仅凭Material控件类型推定已满足48dp；外层`heightIn`不一定扩大内部语义区。P10局部为`SliderDefaults.Thumb`显式设置最小48dp高度，使Slider实际测量及触控边界满足要求，并通过窄屏大字体下的真实touch bounds验证。
 - 提供商配置保留`pendingProviderDetailId`等待对应草稿真正出现后单次导航、按`providerId`键控Tab与按`provider.id`键控密钥显隐、`pendingFetchProviderId`归属。启用行持有唯一toggle回调，子Switch只绘制；模型选择、编辑、移除分别命中。显式保存失败保稿且不调用成功回调，导航返回仍在调用保存后立即pop；不把这两种行为混写。
 - Provider测试使用纯UiState/本地回调或显式Test API；`createTestAiServices`的默认API factory不等于网络隔离。列表自动健康检测的生产触发条件保持原样，测试通过固定最终健康状态或显式Fake隔离。能力取消仅关闭、恢复自动显式提交null、清空仅确认、最后一个提供商不可删、手工空ID不提交。
+- 世界书保留三维筛选AND、清筛选不清搜索、先筛条目再分书卡及原ID/排序。编辑保存和条目删除仍在调用回调后立即返回；返回不保存，完整`entry.copy`保留ID/bookId/createdAt/extras及原字段规范化。全屏正文只处理二级草稿，确认回写主草稿、取消不回写；整书删除仍等待实际entries为空再返回。列表只展示删除消息、详情只展示重命名消息，不把本批样式迁移变成新的错误恢复或保存事务。
+- 资料库的只读计数/预览行使用正常阅读色且`onClick=null`，不通过“禁用按钮”表达静态信息。五组资源的导入/导出根据实际字体、图标和内边距测量宽度后换行；来源窗口三个动作均保留原回调。null选择结果无IO，预览取消、原busy范围、头像/合并受捕获失败保预览和既有格式/16MiB/关流边界保持，不扩展为跨资源原子回滚或新的权限申请。
+- 禁用动作也需满足本批可读性契约时，应同时检查内容色和实际绘制层透明度。只替换`disabledContentColor`不足以修复上层`graphicsLayer.alpha=0.45`造成的低对比；P06通过显式alpha参数与配色解决，禁止为单批页面把所有共享按钮的旧默认改为不淡化。
 
 ## 4. 验证与错误矩阵
 
@@ -61,6 +66,9 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 | 截图要求展示列表末项 | 不能只对末项Text执行scrollTo并断言部分可见；应核对实际滚动值到max，将操作绑定实际末项的ID或卡片，核对`getUnclippedBoundsInRoot()`与`touchBoundsInRoot`都完整位于视口内且不被FAB/底栏遮挡，再捕获 |
 | 局部弹层选择新shape或动作色 | `NarraAlertDialog`仅由当前迁移调用显式传值；默认保留，真实默认/显式形状与颜色、破坏性error优先级及取消/确认回调受测，已有消费者截图不得意外变化 |
 | 固定动态深色保留偏暗primary | 焦点标签、文字按钮不能直接假定primary可读；以实际TextLayout前景和对应像素承载面测量，局部选择onSurface等内容角色，主要实底按钮仍按primary/onPrimary配对，不借机修改全局scheme |
+| 忙碌/禁用文字角色正确但实际像素低对比 | 同时核对Narra按钮的整体alpha；本批显式选可读禁用颜色及alpha=1，仍无点击回调，未传参消费者保留0.45 |
+| 短标题完整绘出但TextLayout报告宽溢出 | Paragraph可能保留可用宽度而Text按内容缩窄；按真实每行边界、无ellipsis/未超行及高度验收，像素舍入容差最多0.5px，必须保留真实省略内容会失败的负向测试 |
+| 预览标题可见但正文/计数在视口外 | 对齐真实来源行或notice容器；检查完整notice正文，正常字号再检查五类实际计数和首条冲突全部文本行，标题-only定位必须被负向测试拒绝 |
 
 ## 5. 正常、基线与异常样例
 
@@ -85,6 +93,8 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - P10的`SettingsHomeScreenshotE10Test`登记16项，其中6项为三类Sheet浅深的真实独立窗口。整页行为覆盖长摘要、200%字体/48dp、主壳设置与各入口回调、保存/会话/欢迎动作、保存中禁用及消息消费；共享组件需验证未传参数与显式新参数的区别。源码守卫对SettingsGroup显式登记2个重载，分别在任一重载注入硬编码都应失败，数量漂移或陈旧映射不得静默通过。
 - P11的`ProviderSettingsScreenshotE11Test`登记32项，12项捕获六类弹层的真实独立root；`ProviderSettingsRenderTest`记录滚动值/max、未裁切布局和真实touch bounds，并按具体末项卡定位。`ProviderColorsTest`读取八种生产解析scheme下的实际TextLayout与像素承载面，包含焦点标签、状态、选中卡和窗口动作；`ProviderSharedDialogCompatibilityTest`检验默认/显式形状与颜色、破坏性色优先级和取消回调。`ProviderPersistenceTest`用真实VM+Fake验证成功/失败；`ProviderNavigationTest`用真实路由证明保存尚未完成时已pop、随后失败仍保稿。人工接纳前新增图和计数守卫仍须缺图失败，不以这些宿主结果替代设备或远端CI。
 - E11的模型页签截图使用本测试类私有`selectModelsForCapture`调用真实Tab语义OnClick，避免按压水波进入基准；共用宿主与行为测试仍走真实触控。捕获策略变化须在原始提交隔离副本同步重取before，重复after确认32张逐字节稳定，保留原接纳记录并仅重审实际变化的图。
+- P06的`WorldBookUiBehaviorTest`、`WorldBookAccessibilityTest`、`WorldBookColorsTest`验证真实页面回调、完整身份/draft、12个世界书帮助入口、200%/48dp及八组实际scheme；`P06SharedComponentsTest`比较旧默认与显式参数，包含主/次按钮、TopBar及真实标题省略负向。`ContextTransferBehaviorTest`、`ContextTransferColorsTest`、`ContextTransferPersistenceTest`和`ContextTransferBusyTest`分别验证6个帮助、5组/3类launcher、内存URI、预览失败与真实VM忙碌状态接到页面后的禁用行为。
+- `WorldBookScreenshotE06Test`登记47项、`ContextTransferScreenshotE06Test`登记16项，共63项/18个独立窗口（含4个Popup）。`P06RenderTest`按普通页/Dialog/Popup真实owner分别捕获；Popup像素哨兵与虚拟时钟恢复规则见质量规范。新视觉接纳前保留原158张PNG与缺图/计数/零像素门禁，完整两轮after需逐张SHA一致；追加共享源码时保存同一before提交的原始Git来源，不能倒填或重写既有before清单。
 
 ## 7. 错误与正确处理
 
