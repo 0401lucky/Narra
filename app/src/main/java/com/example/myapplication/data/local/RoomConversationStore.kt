@@ -8,7 +8,9 @@ import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.local.chat.ConversationEntity
 import com.example.myapplication.data.local.chat.MessageEntity
 import com.example.myapplication.data.local.memory.MemoryDao
+import com.example.myapplication.data.local.memory.MemorySourceStorage
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.withCompanionSourceProof
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.Conversation
@@ -32,9 +34,13 @@ import kotlinx.coroutines.flow.map
 
 class RoomConversationStore(
     private val database: ChatDatabase,
+    nowProvider: () -> Long = System::currentTimeMillis,
 ) : ConversationStore {
     private val conversationDao: ConversationDao = database.conversationDao()
     private val memoryDao: MemoryDao = database.memoryDao()
+    private val memorySources = MemorySourceStorage(database, nowProvider)
+    private val companionSources =
+        com.example.myapplication.data.local.companion.CompanionSourceStorage(database)
     private val gson = AppJson.gson
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
@@ -80,11 +86,16 @@ class RoomConversationStore(
         conversationId: String,
         messages: List<ChatMessage>,
     ) {
-        conversationDao.replaceConversationSnapshot(
-            conversation = conversation.toEntity(),
-            conversationId = conversationId,
-            messages = messages.map { it.toEntity() },
-        )
+        database.withTransaction {
+            require(conversation.id == conversationId && messages.all { it.conversationId == conversationId }) { "会话快照归属不一致" }
+            val retainedIds = messages.map { it.id }.toSet()
+            conversationDao.listMessages(conversationId).filter { it.id !in retainedIds }.forEach {
+                memorySources.invalidateMessage(conversationId, it.id, deleted = true)
+                conversationDao.deleteMessage(conversationId, it.id)
+            }
+            conversationDao.upsertConversationEntity(conversation.toEntity())
+            memorySources.writeMessages(messages.map { it.toEntity() })
+        }
     }
 
     override suspend fun updateConversationMessages(
@@ -93,7 +104,8 @@ class RoomConversationStore(
         transform: (List<ChatMessage>) -> List<ChatMessage>,
     ): List<ChatMessage> {
         return database.withTransaction {
-            val existingMessages = conversationDao.listMessages(conversationId).map { it.toDomain() }
+            val existingMessages =
+                conversationDao.listMessages(conversationId).map { it.toDomain() }
             val updatedMessages = transform(existingMessages)
             if (updatedMessages == existingMessages) {
                 return@withTransaction existingMessages
@@ -103,10 +115,9 @@ class RoomConversationStore(
                 existingMessages = existingMessages,
                 nextMessages = updatedMessages,
             )
-            if (changedMessages.isNotEmpty()) {
-                conversationDao.insertMessages(changedMessages.map { it.toEntity() })
-            }
-            updatedMessages
+            val saved = memorySources.writeMessages(changedMessages.map { it.toEntity() })
+                .associateBy { it.id }
+            updatedMessages.map { saved[it.id]?.toDomain() ?: it }
         }
     }
 
@@ -116,7 +127,8 @@ class RoomConversationStore(
         messageId: String,
     ): MessageDeletionResult {
         return database.withTransaction {
-            val existingMessages = conversationDao.listMessages(conversationId).map { it.toDomain() }
+            val existingMessages =
+                conversationDao.listMessages(conversationId).map { it.toDomain() }
             when (
                 val deletionResult = ConversationMessageTransforms.deleteMessageAndClearReferences(
                     messages = existingMessages,
@@ -130,12 +142,19 @@ class RoomConversationStore(
                         nextMessages = deletionResult.updatedMessages,
                     )
                     if (changedMessages.isNotEmpty()) {
-                        conversationDao.insertMessages(changedMessages.map { it.toEntity() })
+                        memorySources.writeMessages(changedMessages.map { it.toEntity() })
                     }
+                    memorySources.invalidateMessage(conversationId, messageId, deleted = true)
                     check(conversationDao.deleteMessage(conversationId, messageId) == 1) {
                         "消息删除事务未命中目标"
                     }
-                    memoryDao.deleteMemoryEntriesBySourceMessageId(messageId)
+                    if ((database.memoryArchiveDao().getEngineState()?.activationVersion
+                            ?: 0) < com.example.myapplication.model.MEMORY_ENGINE_CURRENT &&
+                        (database.memoryArchiveDao().getEngineState()?.engineVersion
+                            ?: 1) < com.example.myapplication.model.MEMORY_ENGINE_CURRENT
+                    ) {
+                        memoryDao.deleteMemoryEntriesBySourceMessageId(messageId)
+                    }
                     memoryDao.deleteConversationSummary(conversationId)
                     memoryDao.deleteConversationSummarySegments(conversationId)
                     conversationDao.upsertConversationEntity(conversation.toEntity())
@@ -149,35 +168,51 @@ class RoomConversationStore(
         conversation: Conversation,
         messages: List<ChatMessage>,
     ) {
-        conversationDao.upsertConversationWithMessages(
-            conversation = conversation.toEntity(),
-            messages = messages.map { it.toEntity() },
-        )
+        database.withTransaction {
+            conversationDao.upsertConversationEntity(conversation.toEntity())
+            require(messages.all { it.conversationId == conversation.id }) { "消息会话归属不一致" }
+            memorySources.writeMessages(messages.map { it.toEntity() })
+        }
     }
 
     override suspend fun clearMessagesAndUpdateConversation(
         conversationId: String,
         conversation: Conversation,
     ) {
-        conversationDao.clearMessagesAndUpdateConversation(
-            conversationId = conversationId,
-            conversation = conversation.toEntity(),
-        )
+        database.withTransaction {
+            memorySources.clearConversation(conversationId, deletingConversation = false)
+            conversationDao.clearMessagesAndUpdateConversation(
+                conversationId,
+                conversation.toEntity()
+            )
+            memoryDao.deleteConversationSummary(conversationId)
+            memoryDao.deleteConversationSummarySegments(conversationId)
+        }
     }
 
     override suspend fun upsertMessages(messages: List<ChatMessage>) {
         if (messages.isEmpty()) {
             return
         }
-        conversationDao.insertMessages(messages.map { it.toEntity() })
+        database.withTransaction { memorySources.writeMessages(messages.map { it.toEntity() }) }
     }
 
     override suspend fun deleteConversation(conversationId: String) {
-        conversationDao.deleteConversation(conversationId)
+        database.withTransaction {
+            memorySources.clearConversation(conversationId, deletingConversation = true)
+            conversationDao.deleteConversation(conversationId)
+            memoryDao.deleteConversationSummary(conversationId)
+            memoryDao.deleteConversationSummarySegments(conversationId)
+        }
     }
 
     override suspend fun clearMessages(conversationId: String) {
-        conversationDao.clearMessages(conversationId)
+        database.withTransaction {
+            memorySources.clearConversation(conversationId, deletingConversation = false)
+            conversationDao.clearMessages(conversationId)
+            memoryDao.deleteConversationSummary(conversationId)
+            memoryDao.deleteConversationSummarySegments(conversationId)
+        }
     }
 
     private fun ConversationEntity.toDomain(): Conversation {
@@ -204,18 +239,20 @@ class RoomConversationStore(
         )
     }
 
-    private fun MessageEntity.toDomain(): ChatMessage {
+    internal suspend fun MessageEntity.toDomain(): ChatMessage {
         val reasoningSteps = normalizeChatReasoningSteps(
             runCatching {
-                gson.fromJson<List<ChatReasoningStep>>(reasoningStepsJson, reasoningStepListType).orEmpty()
+                gson.fromJson<List<ChatReasoningStep>>(reasoningStepsJson, reasoningStepListType)
+                    .orEmpty()
             }.logFailure("RoomConvStore") { "reasoningSteps fromJson failed" }
                 .getOrDefault(emptyList()).ifEmpty {
-                legacyReasoningStepsFromContent(
-                    reasoningContent = reasoningContent,
-                    createdAt = createdAt,
-                )
-            },
+                    legacyReasoningStepsFromContent(
+                        reasoningContent = reasoningContent,
+                        createdAt = createdAt,
+                    )
+                },
         )
+        val companionContext = companionSources.read(this)
         return ChatMessage(
             id = id,
             conversationId = conversationId,
@@ -227,7 +264,8 @@ class RoomConversationStore(
             reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
             reasoningSteps = reasoningSteps,
             attachments = runCatching {
-                gson.fromJson<List<MessageAttachment>>(attachmentsJson, attachmentListType).orEmpty()
+                gson.fromJson<List<MessageAttachment>>(attachmentsJson, attachmentListType)
+                    .orEmpty()
             }.logFailure("RoomConvStore") { "attachments fromJson failed" }
                 .getOrDefault(emptyList()),
             parts = normalizeChatMessageParts(
@@ -254,10 +292,17 @@ class RoomConversationStore(
             roleplayInteractionMode = RoleplayInteractionMode.fromStorageValueOrNull(
                 roleplayInteractionMode,
             ),
-        )
+            memoryRevision = memoryRevision,
+            memoryRecallRequestId = memoryRecallRequestId,
+            companionTurnId = companionTurnId,
+            companionMemoryState = com.example.myapplication.model.CompanionMemoryState.fromStorageValue(
+                companionMemoryState
+            ),
+            companionReplyMetadata = companionContext.replyMetadata,
+        ).withCompanionSourceProof(companionContext.eligibility)
     }
 
-    private fun ChatMessage.toEntity(): MessageEntity {
+    internal fun ChatMessage.toEntity(): MessageEntity {
         val normalizedReasoningSteps = normalizeChatReasoningSteps(reasoningSteps)
         return MessageEntity(
             id = id,
@@ -267,7 +312,11 @@ class RoomConversationStore(
             status = status.name,
             createdAt = createdAt,
             modelName = modelName,
-            reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(normalizedReasoningSteps) },
+            reasoningContent = reasoningContent.ifBlank {
+                reasoningStepsToContent(
+                    normalizedReasoningSteps
+                )
+            },
             reasoningStepsJson = gson.toJson(normalizedReasoningSteps),
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
@@ -282,6 +331,10 @@ class RoomConversationStore(
             citationsJson = gson.toJson(citations),
             roleplayOutputFormat = roleplayOutputFormat.name,
             roleplayInteractionMode = roleplayInteractionMode?.storageValue.orEmpty(),
+            memoryRevision = memoryRevision,
+            memoryRecallRequestId = memoryRecallRequestId,
+            companionTurnId = companionTurnId,
+            companionMemoryState = companionMemoryState.storageValue,
         )
     }
 

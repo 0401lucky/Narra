@@ -13,41 +13,41 @@ import java.security.MessageDigest
 class LegacyUpgradeFixtureContractTest {
 
     @Test
-    fun s3UpgradeContract_measuresSchema47To48InMainProcess() {
+    fun s3UpgradeContract_measuresSchema56To57InMainProcess() {
         val sourceVersion = requireNotNull(
             BenchmarkFixtureId.S3_SUPPORTED_UPGRADE.sourceDatabaseVersion,
         )
 
-        assertEquals(47, sourceVersion)
-        assertEquals(48, ChatDatabase.CURRENT_VERSION)
+        assertEquals(56, sourceVersion)
+        assertEquals(57, ChatDatabase.CURRENT_VERSION)
         assertEquals(sourceVersion + 1, ChatDatabase.CURRENT_VERSION)
         assertTrue(
             ChatDatabase.ALL_MIGRATIONS.any { migration ->
                 migration.startVersion == sourceVersion &&
-                    migration.endVersion == ChatDatabase.CURRENT_VERSION
+                        migration.endVersion == ChatDatabase.CURRENT_VERSION
             },
         )
     }
 
     @Test
-    fun schema47Asset_matchesExportedRoomSchemaAndDeclaredSha256() {
+    fun schema56Asset_matchesExportedRoomSchemaAndDeclaredSha256() {
         val schemaFile = resolveAppFile(
-            "schemas/com.example.myapplication.data.local.chat.ChatDatabase/47.json",
+            "schemas/com.example.myapplication.data.local.chat.ChatDatabase/56.json",
         )
-        val assetFile = resolveAppFile("src/baseline/assets/benchmark/s3-schema-v47.sql")
+        val assetFile = resolveAppFile("src/baseline/assets/benchmark/s3-schema-v56.sql")
         val builderSource = resolveAppFile(
             "src/baseline/java/com/example/myapplication/system/performance/" +
-                "LegacyUpgradeFixtureBuilder.kt",
+                    "LegacyUpgradeFixtureBuilder.kt",
         ).readText()
         val databaseSchema = JsonParser.parseString(schemaFile.readText())
             .asJsonObject
             .getAsJsonObject("database")
 
-        assertEquals(47, databaseSchema.get("version").asInt)
-        assertEquals(47, builderSource.readIntConstant("MEASURED_SOURCE_SCHEMA_VERSION"))
-        assertEquals(48, builderSource.readIntConstant("MEASURED_TARGET_SCHEMA_VERSION"))
+        assertEquals(56, databaseSchema.get("version").asInt)
+        assertEquals(56, builderSource.readIntConstant("MEASURED_SOURCE_SCHEMA_VERSION"))
+        assertEquals(57, builderSource.readIntConstant("MEASURED_TARGET_SCHEMA_VERSION"))
         assertEquals(
-            "benchmark/s3-schema-v47.sql",
+            "benchmark/s3-schema-v56.sql",
             builderSource.readStringConstant("SCHEMA_ASSET_PATH"),
         )
         assertEquals(
@@ -64,15 +64,15 @@ class LegacyUpgradeFixtureContractTest {
         )
 
         val assetDocumentation = assetFile.readText()
-        assertTrue(assetDocumentation.contains("fixture 进程直接创建 v47 快照，不执行 Room 迁移"))
-        assertTrue(assetDocumentation.contains("被测主进程首次打开时真实执行 v47→v48"))
+        assertTrue(assetDocumentation.contains("fixture 进程直接创建 v56 快照，不执行 Room 迁移"))
+        assertTrue(assetDocumentation.contains("被测主进程首次打开时真实执行 v56→v57"))
     }
 
     @Test
     fun fixtureBuilder_doesNotMigrateSnapshotBeforeMeasuredMainProcessLaunch() {
         val builderSource = resolveAppFile(
             "src/baseline/java/com/example/myapplication/system/performance/" +
-                "LegacyUpgradeFixtureBuilder.kt",
+                    "LegacyUpgradeFixtureBuilder.kt",
         ).readText()
 
         assertTrue(
@@ -122,14 +122,14 @@ class LegacyUpgradeFixtureContractTest {
     }
 
     private fun String.readIntConstant(name: String): Int {
-        val pattern = Regex("""const val ${Regex.escape(name)} = (\d+)""")
+        val pattern = Regex("""const val ${Regex.escape(name)}\s*=\s*(\d+)""")
         return requireNotNull(pattern.find(this)) { "未找到常量 $name" }
             .groupValues[1]
             .toInt()
     }
 
     private fun String.readStringConstant(name: String): String {
-        val pattern = Regex("""const val ${Regex.escape(name)} = "([^"]+)"""")
+        val pattern = Regex("""const val ${Regex.escape(name)}\s*=\s*"([^"]+)"""")
         return requireNotNull(pattern.find(this)) { "未找到常量 $name" }
             .groupValues[1]
     }

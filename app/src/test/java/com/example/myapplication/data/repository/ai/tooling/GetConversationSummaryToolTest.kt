@@ -14,6 +14,9 @@ import org.junit.Test
 class GetConversationSummaryToolTest {
     @Test
     fun execute_returnsCurrentConversationSummary() = runBlocking {
+        val messages = (1..8).map { index ->
+            com.example.myapplication.model.ChatMessage("m$index", "conversation-1", com.example.myapplication.model.MessageRole.USER, "完整来源$index", createdAt = index.toLong())
+        }
         val tool = GetConversationSummaryTool()
         val result = tool.execute(
             invocation = ToolInvocation(
@@ -30,8 +33,11 @@ class GetConversationSummaryToolTest {
                             summary = "已经确认主要线索指向北境商会。",
                             coveredMessageCount = 8,
                             updatedAt = 100L,
+                            sourceSnapshot = com.example.myapplication.conversation.ConversationSummaryCoverageSupport.sourceSnapshot(messages),
+                            completionStatus = com.example.myapplication.model.PromptCompletionStatus.COMPLETED,
                         ),
                     ),
+                    sourceMessages = messages,
                 ),
                 runtimeContext = GatewayToolRuntimeContext(
                     promptMode = PromptMode.CHAT,

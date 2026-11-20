@@ -12,6 +12,7 @@ import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
@@ -58,18 +59,19 @@ internal object RoleplayOnlineReferenceSupport {
         return mappedMessages
             .filter { message ->
                 message.sourceMessageId.isNotBlank() &&
-                    message.messageStatus == MessageStatus.COMPLETED &&
-                    !message.isRecalled &&
-                    message.systemEventKind == RoleplayOnlineEventKind.NONE &&
-                    message.contentType == RoleplayContentType.DIALOGUE &&
-                    message.copyText.isNotBlank()
+                        message.messageStatus == MessageStatus.COMPLETED &&
+                        !message.isRecalled &&
+                        message.systemEventKind == RoleplayOnlineEventKind.NONE &&
+                        message.contentType == RoleplayContentType.DIALOGUE &&
+                        message.copyText.isNotBlank()
             }
             .takeLast(maxCandidates)
             .mapIndexed { index, message ->
                 OnlineMessageReferenceCandidate(
                     shortId = (REFERENCE_ID_BASE + index).toString(),
                     sourceMessageId = message.sourceMessageId,
-                    speakerName = message.speakerName.trim().ifBlank { defaultSpeakerName(message, scenario, assistant, settings) },
+                    speakerName = message.speakerName.trim()
+                        .ifBlank { defaultSpeakerName(message, scenario, assistant, settings) },
                     preview = message.copyText
                         .replace('\n', ' ')
                         .trim()
@@ -131,12 +133,23 @@ internal object RoleplayOnlineReferenceSupport {
         settings: AppSettings,
         outputParser: RoleplayOutputParser,
     ): List<ChatMessage> {
-        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val currentInteractionMode =
+            RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val allowThought = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
         return messages.mapNotNull { message ->
+            // typed 留白是控制证据，回到线上后也不变成用户说过的“继续”。
+            if (message.companionMemoryState == com.example.myapplication.model.CompanionMemoryState.CONTROL &&
+                !message.companionTurnId.isNullOrBlank()
+            ) return@mapNotNull null
+            RoleplayTranscriptFormatter.visibleMessageForCharacter(
+                message,
+                assistant?.id.orEmpty(),
+                scenario.isGroupChat
+            )
+        }.mapNotNull { message ->
             if (message.role != MessageRole.ASSISTANT) {
                 return@mapNotNull message
             }
@@ -159,6 +172,15 @@ internal object RoleplayOnlineReferenceSupport {
                 return@mapNotNull sanitizeLongformAssistantMessageForPrompt(message)
             }
             if (currentInteractionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+                com.example.myapplication.roleplay.companion.CompanionReplyProjector.project(
+                    message,
+                    characterName
+                )?.let { reply ->
+                    return@mapNotNull message.copy(
+                        content = reply.displayText,
+                        parts = emptyList(),
+                    ).takeIf { reply.beats.isNotEmpty() }
+                }
                 return@mapNotNull message
             }
             resolveInlineFallbackParts(message)?.let { fallbackParts ->
@@ -194,7 +216,7 @@ internal object RoleplayOnlineReferenceSupport {
                 allowNarration = scenario.enableNarration,
             ).filter { segment ->
                 segment.contentType != com.example.myapplication.model.RoleplayContentType.THOUGHT &&
-                    segment.contentType != com.example.myapplication.model.RoleplayContentType.NARRATION
+                        segment.contentType != com.example.myapplication.model.RoleplayContentType.NARRATION
             }.joinToString(separator = "\n\n") { it.content.trim() }
                 .trim()
             if (cleanedContent == message.content.trim()) {
@@ -228,7 +250,8 @@ internal object RoleplayOnlineReferenceSupport {
         characterName: String,
         allowThought: Boolean,
     ): ChatMessage? {
-        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val currentInteractionMode =
+            RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val transcriptLines = extractAssistantTranscriptLines(
             message = message,
             scenario = scenario,
@@ -244,7 +267,7 @@ internal object RoleplayOnlineReferenceSupport {
                         AssistantTranscriptLineKind.DIALOGUE -> textMessagePart(line.content)
                         AssistantTranscriptLineKind.THOUGHT,
                         AssistantTranscriptLineKind.NARRATION,
-                        -> {
+                            -> {
                             if (allowThought) thoughtMessagePart(line.content) else null
                         }
                     }
@@ -271,7 +294,7 @@ internal object RoleplayOnlineReferenceSupport {
                         AssistantTranscriptLineKind.THOUGHT -> thoughtMessagePart(line.content)
                         AssistantTranscriptLineKind.DIALOGUE,
                         AssistantTranscriptLineKind.NARRATION,
-                        -> textMessagePart(line.content)
+                            -> textMessagePart(line.content)
                     }
                 }
                 if (parts.isEmpty()) {
@@ -284,7 +307,9 @@ internal object RoleplayOnlineReferenceSupport {
                             specialFallback = "",
                         ),
                         parts = parts,
-                        roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario),
+                        roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(
+                            scenario
+                        ),
                         roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
                     )
                 }
@@ -296,7 +321,7 @@ internal object RoleplayOnlineReferenceSupport {
                         AssistantTranscriptLineKind.THOUGHT -> "（${line.content}）"
                         AssistantTranscriptLineKind.DIALOGUE,
                         AssistantTranscriptLineKind.NARRATION,
-                        -> line.content
+                            -> line.content
                     }
                 }.trim()
                 content.takeIf { it.isNotBlank() }?.let { sanitizedContent ->
@@ -319,8 +344,8 @@ internal object RoleplayOnlineReferenceSupport {
         val eventLines = messages
             .filter { message ->
                 message.role == MessageRole.ASSISTANT &&
-                    message.systemEventKind != RoleplayOnlineEventKind.NONE &&
-                    message.status == MessageStatus.COMPLETED
+                        message.systemEventKind != RoleplayOnlineEventKind.NONE &&
+                        message.status == MessageStatus.COMPLETED
             }
             .takeLast(maxItems.coerceAtLeast(1))
             .mapNotNull { message ->
@@ -356,10 +381,12 @@ internal object RoleplayOnlineReferenceSupport {
                 val endedText = plainText.ifBlank { "上一轮视频通话已结束。" }
                 "$endedText 当前已回到普通线上聊天。".trim()
             }
+
             RoleplayOnlineEventKind.SCREENSHOT -> "用户刚截了一张聊天截图。"
             RoleplayOnlineEventKind.COMPENSATION_OPENING -> {
                 plainText.ifBlank { "系统刚补发了一轮久未联系后的开场。" }
             }
+
             else -> plainText.takeIf { it.isNotBlank() }
         }?.trim()
     }
@@ -389,24 +416,28 @@ internal object RoleplayOnlineReferenceSupport {
                             content = line.removePrefix(thoughtPrefix).trim(),
                         )
                     }
+
                     line.startsWith(dialoguePrefix) -> {
                         AssistantTranscriptLine(
                             kind = AssistantTranscriptLineKind.DIALOGUE,
                             content = line.removePrefix(dialoguePrefix).trim(),
                         )
                     }
+
                     line.startsWith("旁白：") -> {
                         AssistantTranscriptLine(
                             kind = AssistantTranscriptLineKind.NARRATION,
                             content = line.removePrefix("旁白：").trim(),
                         )
                     }
+
                     line.startsWith("系统：") -> {
                         AssistantTranscriptLine(
                             kind = AssistantTranscriptLineKind.NARRATION,
                             content = line.removePrefix("系统：").trim(),
                         )
                     }
+
                     else -> AssistantTranscriptLine(
                         kind = AssistantTranscriptLineKind.DIALOGUE,
                         content = line,
@@ -439,9 +470,11 @@ internal object RoleplayOnlineReferenceSupport {
                 .resolveUserPersona(scenario, settings)
                 .displayName
                 .ifBlank { "你" }
+
             com.example.myapplication.model.RoleplaySpeaker.CHARACTER -> scenario.characterDisplayNameOverride.trim()
                 .ifBlank { assistant?.name?.trim().orEmpty() }
                 .ifBlank { "对方" }
+
             else -> message.speakerName.ifBlank { "对方" }
         }
     }
@@ -457,9 +490,10 @@ internal object RoleplayOnlineReferenceSupport {
             OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let {
                 return normalizeChatMessageParts(it)
             }
-            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)?.let {
-                return normalizeChatMessageParts(it)
-            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)
+                ?.let {
+                    return normalizeChatMessageParts(it)
+                }
         }
         if (normalizedParts.isEmpty()) {
             OnlineInlineThoughtFallback.splitToParts(message.content)?.let {

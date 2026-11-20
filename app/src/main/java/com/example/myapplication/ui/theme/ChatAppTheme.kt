@@ -119,26 +119,186 @@ fun resolveAppColorScheme(
         AppColorTheme.VANILLA -> if (darkTheme) VanillaDarkColors else VanillaLightColors
         AppColorTheme.OCEAN -> if (darkTheme) OceanDarkColors else OceanLightColors
     }
+    val isDynamic = dynamicColorScheme != null
     return colorScheme.copy(
-        primary = if (darkTheme || dynamicColorScheme != null) colorScheme.primary else when (appColorTheme) {
+        primary = if (darkTheme || isDynamic) colorScheme.primary else when (appColorTheme) {
             AppColorTheme.MATCHA -> Color(0xFF326B58)
             AppColorTheme.VANILLA -> Color(0xFF79552D)
             AppColorTheme.OCEAN -> Color(0xFF326692)
         },
         onPrimary = if (darkTheme) colorScheme.onPrimary else Color.White,
-        background = if (darkTheme) Color(0xFF141617) else Color(0xFFF5F6F7),
-        onBackground = if (darkTheme) Color(0xFFE6E8E9) else Color(0xFF212628),
-        surface = if (darkTheme) Color(0xFF191C1D) else Color.White,
-        onSurface = if (darkTheme) Color(0xFFE6E8E9) else Color(0xFF212628),
-        surfaceVariant = if (darkTheme) Color(0xFF303638) else Color(0xFFE9EDEF),
-        onSurfaceVariant = if (darkTheme) Color(0xFFB9C1C4) else Color(0xFF566267),
-        surfaceContainerLowest = if (darkTheme) Color(0xFF101213) else Color.White,
-        surfaceContainerLow = if (darkTheme) Color(0xFF1D2123) else Color(0xFFF9FAFB),
-        surfaceContainer = if (darkTheme) Color(0xFF222729) else Color(0xFFF0F3F4),
-        surfaceContainerHigh = if (darkTheme) Color(0xFF2A3032) else Color(0xFFE9EDEF),
-        surfaceContainerHighest = if (darkTheme) Color(0xFF343B3D) else Color(0xFFE2E7E9),
-        outline = if (darkTheme) Color(0xFF899498) else Color(0xFF77858B),
-        outlineVariant = if (darkTheme) Color(0xFF3B4448) else Color(0xFFDDE3E6),
+        background = when {
+            isDynamic && darkTheme -> Color(0xFF141617)
+            isDynamic -> Color(0xFFF5F6F7)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF121614)
+                AppColorTheme.VANILLA -> Color(0xFF161412)
+                AppColorTheme.OCEAN -> Color(0xFF111519)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFF2F7F4)
+                AppColorTheme.VANILLA -> Color(0xFFF9F6F0)
+                AppColorTheme.OCEAN -> Color(0xFFF2F6FA)
+            }
+        },
+        onBackground = when {
+            isDynamic && darkTheme -> Color(0xFFE6E8E9)
+            isDynamic -> Color(0xFF212628)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFE4EAE6)
+                AppColorTheme.VANILLA -> Color(0xFFECE6DF)
+                AppColorTheme.OCEAN -> Color(0xFFE3E9EF)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF1D2420)
+                AppColorTheme.VANILLA -> Color(0xFF26211C)
+                AppColorTheme.OCEAN -> Color(0xFF1B2228)
+            }
+        },
+        surface = if (darkTheme) {
+            if (isDynamic) Color(0xFF191C1D) else when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF171C19)
+                AppColorTheme.VANILLA -> Color(0xFF1C1916)
+                AppColorTheme.OCEAN -> Color(0xFF161B20)
+            }
+        } else {
+            Color.White
+        },
+        onSurface = when {
+            isDynamic && darkTheme -> Color(0xFFE6E8E9)
+            isDynamic -> Color(0xFF212628)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFE4EAE6)
+                AppColorTheme.VANILLA -> Color(0xFFECE6DF)
+                AppColorTheme.OCEAN -> Color(0xFFE3E9EF)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF1D2420)
+                AppColorTheme.VANILLA -> Color(0xFF26211C)
+                AppColorTheme.OCEAN -> Color(0xFF1B2228)
+            }
+        },
+        surfaceVariant = when {
+            isDynamic && darkTheme -> Color(0xFF303638)
+            isDynamic -> Color(0xFFE9EDEF)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF2E3732)
+                AppColorTheme.VANILLA -> Color(0xFF36302A)
+                AppColorTheme.OCEAN -> Color(0xFF2D3640)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFE4ECE7)
+                AppColorTheme.VANILLA -> Color(0xFFECE6DD)
+                AppColorTheme.OCEAN -> Color(0xFFE3EAF2)
+            }
+        },
+        onSurfaceVariant = when {
+            isDynamic && darkTheme -> Color(0xFFB9C1C4)
+            isDynamic -> Color(0xFF566267)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFB8C4BC)
+                AppColorTheme.VANILLA -> Color(0xFFC8BFB4)
+                AppColorTheme.OCEAN -> Color(0xFFB6C2CE)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF4E5D55)
+                AppColorTheme.VANILLA -> Color(0xFF5E5449)
+                AppColorTheme.OCEAN -> Color(0xFF4D5B68)
+            }
+        },
+        surfaceContainerLowest = if (darkTheme) {
+            if (isDynamic) Color(0xFF101213) else when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF0E1210)
+                AppColorTheme.VANILLA -> Color(0xFF110F0D)
+                AppColorTheme.OCEAN -> Color(0xFF0D1014)
+            }
+        } else {
+            Color.White
+        },
+        surfaceContainerLow = when {
+            isDynamic && darkTheme -> Color(0xFF1D2123)
+            isDynamic -> Color(0xFFF9FAFB)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF1B211E)
+                AppColorTheme.VANILLA -> Color(0xFF211E1A)
+                AppColorTheme.OCEAN -> Color(0xFF1A2026)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFF7FAF8)
+                AppColorTheme.VANILLA -> Color(0xFFFCFBF8)
+                AppColorTheme.OCEAN -> Color(0xFFF7FAFD)
+            }
+        },
+        surfaceContainer = when {
+            isDynamic && darkTheme -> Color(0xFF222729)
+            isDynamic -> Color(0xFFF0F3F4)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF202723)
+                AppColorTheme.VANILLA -> Color(0xFF27231F)
+                AppColorTheme.OCEAN -> Color(0xFF1F262D)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFECF3EF)
+                AppColorTheme.VANILLA -> Color(0xFFF3EFE8)
+                AppColorTheme.OCEAN -> Color(0xFFEBF1F7)
+            }
+        },
+        surfaceContainerHigh = when {
+            isDynamic && darkTheme -> Color(0xFF2A3032)
+            isDynamic -> Color(0xFFE9EDEF)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF28302C)
+                AppColorTheme.VANILLA -> Color(0xFF2F2A25)
+                AppColorTheme.OCEAN -> Color(0xFF272F38)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFE4ECE7)
+                AppColorTheme.VANILLA -> Color(0xFFECE6DD)
+                AppColorTheme.OCEAN -> Color(0xFFE3EAF2)
+            }
+        },
+        surfaceContainerHighest = when {
+            isDynamic && darkTheme -> Color(0xFF343B3D)
+            isDynamic -> Color(0xFFE2E7E9)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF313B36)
+                AppColorTheme.VANILLA -> Color(0xFF39332D)
+                AppColorTheme.OCEAN -> Color(0xFF303A44)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFDCE6E0)
+                AppColorTheme.VANILLA -> Color(0xFFE5DDD2)
+                AppColorTheme.OCEAN -> Color(0xFFDBE4EE)
+            }
+        },
+        outline = when {
+            isDynamic && darkTheme -> Color(0xFF899498)
+            isDynamic -> Color(0xFF77858B)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF86948C)
+                AppColorTheme.VANILLA -> Color(0xFF968C81)
+                AppColorTheme.OCEAN -> Color(0xFF8694A3)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF6F7E76)
+                AppColorTheme.VANILLA -> Color(0xFF80766B)
+                AppColorTheme.OCEAN -> Color(0xFF6E7D8C)
+            }
+        },
+        outlineVariant = when {
+            isDynamic && darkTheme -> Color(0xFF3B4448)
+            isDynamic -> Color(0xFFDDE3E6)
+            darkTheme -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFF39443E)
+                AppColorTheme.VANILLA -> Color(0xFF453D36)
+                AppColorTheme.OCEAN -> Color(0xFF38434F)
+            }
+            else -> when (appColorTheme) {
+                AppColorTheme.MATCHA -> Color(0xFFD5E0DA)
+                AppColorTheme.VANILLA -> Color(0xFFE0D7CB)
+                AppColorTheme.OCEAN -> Color(0xFFD4DFEB)
+            }
+        },
         error = if (darkTheme) Color(0xFFFFB4AB) else Color(0xFFB3261E),
         onError = if (darkTheme) Color(0xFF690005) else Color.White,
     )

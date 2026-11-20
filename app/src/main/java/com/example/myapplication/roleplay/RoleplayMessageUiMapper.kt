@@ -49,7 +49,8 @@ object RoleplayMessageUiMapper {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
-        val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val currentScenarioInteractionMode =
+            RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val assistantsById = settings.resolvedAssistants().associateBy { it.id }
 
         return buildList {
@@ -105,7 +106,8 @@ object RoleplayMessageUiMapper {
                 val streamingCharacterName = loadingMessage?.speakerName?.trim()
                     ?.ifBlank { null }
                     ?: characterName
-                val streamingAssistant = assistantsById[loadingMessage?.speakerId?.trim().orEmpty()] ?: assistant
+                val streamingAssistant =
+                    assistantsById[loadingMessage?.speakerId?.trim().orEmpty()] ?: assistant
                 val streamingAvatarSpec = resolveAssistantAvatarSpec(
                     scenario = scenario,
                     message = loadingMessage,
@@ -125,6 +127,7 @@ object RoleplayMessageUiMapper {
                             streamingInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM -> {
                                 RoleplayContentType.LONGFORM
                             }
+
                             streamingThoughtContent != null -> RoleplayContentType.THOUGHT
                             else -> RoleplayContentType.DIALOGUE
                         },
@@ -326,14 +329,16 @@ object RoleplayMessageUiMapper {
         speakerIconName: String,
         outputParser: RoleplayOutputParser,
     ) {
-        val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val currentScenarioInteractionMode =
+            RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val normalizedParts = resolveAssistantDisplayParts(
             message = message,
             interactionMode = currentScenarioInteractionMode,
         )
         val initialSize = target.size
-        val canRetry = !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
-            (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+        val canRetry =
+            !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
+                    (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
         val rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
         val outputFormat = RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)
         val messageInteractionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
@@ -391,7 +396,8 @@ object RoleplayMessageUiMapper {
                 )
             }
             val longformSource = rawContent
-            val longformParts = ChatStatusBlockParser.extract(longformSource, hideStatusBlocksInBubble = true)
+            val longformParts =
+                ChatStatusBlockParser.extract(longformSource, hideStatusBlocksInBubble = true)
             if (!longformParts.isSameSingleText(longformSource)) {
                 longformParts.forEach { part ->
                     when (part.type) {
@@ -427,6 +433,38 @@ object RoleplayMessageUiMapper {
                     createdAt = message.createdAt,
                     messageStatus = message.status,
                     canRetry = canRetry,
+                )
+            }
+            return
+        }
+        val companionReply =
+            com.example.myapplication.roleplay.companion.CompanionReplyProjector.project(
+                message,
+                characterName
+            )
+        if (companionReply != null) {
+            companionReply.beats.forEach { beat ->
+                target += RoleplayMessageUiModel(
+                    uiItemId = beat.id,
+                    sourceMessageId = message.id,
+                    contentType = beat.contentType,
+                    speaker = beat.speaker,
+                    speakerName = beat.speakerName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
+                    content = beat.content,
+                    replyToMessageId = beat.replyToMessageId,
+                    replyToPreview = beat.replyToPreview,
+                    replyToSpeakerName = beat.replyToSpeakerName,
+                    emotion = beat.emotion,
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    isRecalled = message.isRecalled,
+                    // 陪伴通过场次操作栏安全重生成，不能误进旧“回退到此楼层”路径。
+                    canRetry = false,
+                    companionReply = companionReply,
+                    companionBeat = beat,
                 )
             }
             return
@@ -875,12 +913,14 @@ object RoleplayMessageUiMapper {
             if (!cleanedParts.isSameSingleText(normalizedParts.single().text)) {
                 return normalizeChatMessageParts(cleanedParts)
             }
-            OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let { fallbackParts ->
-                return normalizeChatMessageParts(fallbackParts)
-            }
-            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)?.let { fallbackParts ->
-                return normalizeChatMessageParts(fallbackParts)
-            }
+            OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)
+                ?.let { fallbackParts ->
+                    return normalizeChatMessageParts(fallbackParts)
+                }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)
+                ?.let { fallbackParts ->
+                    return normalizeChatMessageParts(fallbackParts)
+                }
         }
         if (normalizedParts.isEmpty()) {
             val cleanedParts = ChatStatusBlockParser.extract(
@@ -893,9 +933,10 @@ object RoleplayMessageUiMapper {
             OnlineInlineThoughtFallback.splitToParts(message.content)?.let { fallbackParts ->
                 return normalizeChatMessageParts(fallbackParts)
             }
-            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(message.content)?.let { fallbackParts ->
-                return normalizeChatMessageParts(fallbackParts)
-            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(message.content)
+                ?.let { fallbackParts ->
+                    return normalizeChatMessageParts(fallbackParts)
+                }
         }
         return normalizedParts
     }
@@ -1050,6 +1091,7 @@ object RoleplayMessageUiMapper {
                 speaker = RoleplaySpeaker.CHARACTER,
                 speakerName = characterName,
             )
+
             else -> segment
         }
     }
@@ -1067,7 +1109,8 @@ object RoleplayMessageUiMapper {
         messageStatus: MessageStatus,
         canRetry: Boolean,
     ) {
-        val displayLongformContent = RoleplayLongformMarkupParser.stripMarkupForDisplay(longformSource)
+        val displayLongformContent =
+            RoleplayLongformMarkupParser.stripMarkupForDisplay(longformSource)
         if (messageStatus == MessageStatus.LOADING && displayLongformContent.isBlank()) {
             return
         }
@@ -1094,8 +1137,8 @@ object RoleplayMessageUiMapper {
 
     private fun List<ChatMessagePart>.isSameSingleText(source: String): Boolean {
         return size == 1 &&
-            single().type == ChatMessagePartType.TEXT &&
-            single().text == source.replace("\r\n", "\n")
+                single().type == ChatMessagePartType.TEXT &&
+                single().text == source.replace("\r\n", "\n")
     }
 
     private fun ChatMessagePart.toRoleplayActionUiModel(
@@ -1139,6 +1182,7 @@ object RoleplayMessageUiMapper {
                         if (suffix.isNotBlank()) append(suffix)
                     }
                 }
+
                 ChatActionType.VIDEO_CALL -> actionMetadataValue("reason")
                 null -> ""
             },

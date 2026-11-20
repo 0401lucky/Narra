@@ -11,11 +11,13 @@
 
     <!-- 重开/清空剧情对话框（选择查看对象对话框复用 strings.xml 中的 roleplay_phone_owner_* 与 common_cancel） -->
     <string name="roleplay_restart_dialog_title">重开剧情</string>
-    <string name="roleplay_restart_dialog_body">将创建一条新的剧情线，旧剧情历史不会继续沿用。是否继续？</string>
+    <string name="roleplay_restart_dialog_body">将建立新对话，旧原文、日记和记忆档案保留。日常相处延续角色记忆；独立剧情建立新档案。在线信息、信箱和钱包玩法会重置。是否继续？</string>
     <string name="roleplay_restart_dialog_confirm">重开</string>
     <string name="roleplay_reset_dialog_title">清空剧情</string>
-    <string name="roleplay_reset_dialog_body">会保留场景配置，只清空当前剧情消息。此操作不可撤销。</string>
+    <string name="roleplay_reset_dialog_body">将清空当前对话的消息、摘要、日记和在线信息，并同步清理依赖这些原文的记忆资料。场景配置、独立人工修订和其它对话保留。此操作不可撤销。</string>
     <string name="roleplay_reset_dialog_confirm">确定清空</string>
+    <string name="roleplay_delete_dialog_title">删除会话及历史档案</string>
+    <string name="roleplay_delete_dialog_body">将删除此会话资料、该剧情的当前与历史对话、相关日记和玩法数据，以及这段剧情的独立记忆档案。日常记忆空间保留，但依赖已删除原文的资料会同步清理。此操作不可撤销。</string>
 
     <!-- 设置页开关组 -->
     <string name="roleplay_settings_show_presence_strip">显示身份条</string>

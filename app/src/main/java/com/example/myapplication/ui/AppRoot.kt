@@ -1,5 +1,11 @@
 package com.example.myapplication.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -35,6 +41,12 @@ import kotlinx.coroutines.flow.map
 import com.example.myapplication.ui.screen.compliance.ComplianceScreen
 import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
 
+private enum class AppRootStage {
+    LOADING,
+    COMPLIANCE_GATE,
+    READY,
+}
+
 @Composable
 fun AppRoot(
     appGraph: AppGraph,
@@ -59,6 +71,7 @@ fun AppRoot(
             settingsEditor = appGraph.aiSettingsEditor,
             modelCatalogRepository = appGraph.aiModelCatalogRepository,
             imageFileCleaner = appGraph.localImageStore::deleteIfLocalAsync,
+            onAssistantRemoved = appGraph.memoryArchiveRepository::closeCharacterSpaces,
             voiceCloneSampleCleaner = appGraph.voiceCloneSampleCleaner,
             mimoTtsClient = appGraph.mimoTtsClient,
             remoteSpeechRecognitionService = appGraph.remoteSpeechRecognitionService,
@@ -113,64 +126,74 @@ fun AppRoot(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            when {
-                complianceUiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(36.dp))
+            val rootStage = when {
+                complianceUiState.isLoading -> AppRootStage.LOADING
+                !complianceUiState.isAccepted -> AppRootStage.COMPLIANCE_GATE
+                themeSettings == null -> AppRootStage.LOADING
+                else -> AppRootStage.READY
+            }
+            AnimatedContent(
+                targetState = rootStage,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
+                        .togetherWith(fadeOut(animationSpec = tween(140)))
+                },
+                label = "app_root_stage_transition",
+            ) { stage ->
+                when (stage) {
+                    AppRootStage.LOADING -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+                            )
+                        }
                     }
-                }
 
-                !complianceUiState.isAccepted -> {
-                    ComplianceScreen(
-                        uiState = complianceUiState,
-                        mode = ComplianceScreenMode.GATE,
-                        onAccept = complianceViewModel::acceptCurrentPolicy,
-                        onExit = onExit,
-                        onRetry = complianceViewModel::retryObservation,
-                        onClearErrorMessage = complianceViewModel::clearErrorMessage,
-                    )
-                }
-
-                themeSettings == null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(36.dp))
-                    }
-                }
-
-                else -> {
-                    val voiceInputDependencies = remember(appGraph) {
-                        VoiceInputDependencies(
-                            settingsFlow = appGraph.aiSettingsRepository.settingsFlow
-                                .map { it.voiceRecognitionSettings },
-                            systemService = appGraph.systemSpeechRecognitionService,
-                            remoteService = appGraph.remoteSpeechRecognitionService,
-                            audioRecorderFactory = appGraph.audioRecorderFactory,
+                    AppRootStage.COMPLIANCE_GATE -> {
+                        ComplianceScreen(
+                            uiState = complianceUiState,
+                            mode = ComplianceScreenMode.GATE,
+                            onAccept = complianceViewModel::acceptCurrentPolicy,
+                            onExit = onExit,
+                            onRetry = complianceViewModel::retryObservation,
+                            onClearErrorMessage = complianceViewModel::clearErrorMessage,
                         )
                     }
-                    CompositionLocalProvider(
-                        LocalImagePersister provides appGraph.localImageStore,
-                        LocalVoiceInput provides voiceInputDependencies,
-                    ) {
-                        AppNavHost(
-                            appGraph = appGraph,
-                            navController = navController,
-                            settingsViewModel = settingsViewModel,
-                            appUpdateViewModel = appUpdateViewModel,
-                            complianceViewModel = complianceViewModel,
-                            startDestination = AppRoutes.ROLEPLAY_GRAPH,
-                        )
-                        AppUpdateDialogHost(
-                            uiState = appUpdateState,
-                            onDismiss = appUpdateViewModel::dismissDialog,
-                            onDownload = appUpdateViewModel::startUpdateDownload,
-                            onInstall = appUpdateViewModel::installDownloadedUpdate,
-                        )
+
+                    AppRootStage.READY -> {
+                        val voiceInputDependencies = remember(appGraph) {
+                            VoiceInputDependencies(
+                                settingsFlow = appGraph.aiSettingsRepository.settingsFlow
+                                    .map { it.voiceRecognitionSettings },
+                                systemService = appGraph.systemSpeechRecognitionService,
+                                remoteService = appGraph.remoteSpeechRecognitionService,
+                                audioRecorderFactory = appGraph.audioRecorderFactory,
+                            )
+                        }
+                        CompositionLocalProvider(
+                            LocalImagePersister provides appGraph.localImageStore,
+                            LocalVoiceInput provides voiceInputDependencies,
+                        ) {
+                            AppNavHost(
+                                appGraph = appGraph,
+                                navController = navController,
+                                settingsViewModel = settingsViewModel,
+                                appUpdateViewModel = appUpdateViewModel,
+                                complianceViewModel = complianceViewModel,
+                                startDestination = AppRoutes.ROLEPLAY_GRAPH,
+                            )
+                            AppUpdateDialogHost(
+                                uiState = appUpdateState,
+                                onDismiss = appUpdateViewModel::dismissDialog,
+                                onDownload = appUpdateViewModel::startUpdateDownload,
+                                onInstall = appUpdateViewModel::installDownloadedUpdate,
+                            )
+                        }
                     }
                 }
             }

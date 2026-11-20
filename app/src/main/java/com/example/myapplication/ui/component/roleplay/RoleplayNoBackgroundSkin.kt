@@ -107,20 +107,25 @@ internal fun rememberRoleplayDialogueBubbleStyle(
     }
 }
 
-internal fun RoleplayDialogueBubbleStyle.shape(isUser: Boolean): RoundedCornerShape {
+internal fun RoleplayDialogueBubbleStyle.shape(
+    isUser: Boolean,
+    groupedWithPrevious: Boolean = false,
+    groupedWithNext: Boolean = false,
+): RoundedCornerShape {
     val tailCorner = if (showTail) NarraUi.radiusSmall else radius
+    val groupedCorner = minOf(radius, NarraUi.radiusSmall)
     return if (isUser) {
         RoundedCornerShape(
             topStart = radius,
-            topEnd = tailCorner,
+            topEnd = if (groupedWithPrevious) groupedCorner else tailCorner,
             bottomStart = radius,
-            bottomEnd = radius,
+            bottomEnd = if (groupedWithNext) groupedCorner else radius,
         )
     } else {
         RoundedCornerShape(
-            topStart = tailCorner,
+            topStart = if (groupedWithPrevious) groupedCorner else tailCorner,
             topEnd = radius,
-            bottomStart = radius,
+            bottomStart = if (groupedWithNext) groupedCorner else radius,
             bottomEnd = radius,
         )
     }

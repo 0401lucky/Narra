@@ -12,6 +12,18 @@ import org.junit.Test
 
 class RoleplayContextStatusCoordinatorTest {
     @Test
+    fun clearConversationScopedContext_leavesCanonicalManualRevision() = runBlocking {
+        val memory = FakeMemoryRepository(initialEntries = listOf(MemoryEntry(
+            id = "canonical", scopeType = MemoryScopeType.CONVERSATION, scopeId = "conversation",
+            content = "原文清理后仍有独立人工来源", archiveRevision = 2,
+        )))
+        val summaries = FakeConversationSummaryRepository()
+        RoleplayContextStatusCoordinator(summaries, memory).clearConversationScopedContext("conversation")
+        assertEquals(1, memory.currentEntries().size)
+        assertEquals(2L, memory.currentEntries().single().archiveRevision)
+    }
+
+    @Test
     fun buildContextStatus_readsSummaryWhenConversationExists() = runBlocking {
         val coordinator = RoleplayContextStatusCoordinator(
             conversationSummaryRepository = FakeConversationSummaryRepository(

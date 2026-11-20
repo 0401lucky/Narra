@@ -83,8 +83,66 @@ class DefaultAiTranslationService(
         )
     },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AiTranslationService {
+) : AiTranslationService, SnapshotAiTranslationService {
     private val gson = AppJson.gson
+
+    override fun freeze(settingsSnapshot: AppSettings): TranslationRequestSnapshot {
+        val provider = settingsSnapshot.resolveFunctionProvider(ProviderFunction.TRANSLATION)
+        val protocol = provider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
+        val baseUrl = apiServiceFactory.normalizeBaseUrl(provider?.baseUrl ?: settingsSnapshot.baseUrl, protocol)
+        val uri = runCatching { java.net.URI(baseUrl) }.getOrNull()
+            ?: throw IllegalArgumentException("翻译服务地址无效，请检查配置")
+        require(uri.rawUserInfo == null && uri.rawQuery == null && uri.rawFragment == null) {
+            "翻译服务地址应为不带认证信息或查询参数的 API 路径"
+        }
+        val apiKey = (provider?.apiKey ?: settingsSnapshot.apiKey).trim()
+        require(apiKey.isNotBlank()) { "请先为翻译用途配置 API Key" }
+        val modelId = resolveTranslationModelId(settingsSnapshot)
+        val frozenProvider = provider?.copy(apiKey = "")
+        val endpoint = when (protocol) {
+            ProviderApiProtocol.OPENAI_COMPATIBLE -> buildOpenAiTextUrl(baseUrl, frozenProvider)
+            ProviderApiProtocol.ANTHROPIC -> "${baseUrl}messages"
+        }
+        val endpointUri = runCatching { java.net.URI(endpoint) }.getOrNull()
+            ?: throw IllegalArgumentException("翻译服务地址无效，请检查配置")
+        require(endpointUri.rawUserInfo == null && endpointUri.rawQuery == null && endpointUri.rawFragment == null) {
+            "翻译服务地址应为不带认证信息或查询参数的 API 路径"
+        }
+        require(!endpointUri.rawPath.orEmpty().contains(apiKey) && !endpointUri.path.orEmpty().contains(apiKey)) {
+            "翻译服务地址不能包含 API Key，请使用独立密钥设置"
+        }
+        return TranslationRequestSnapshot(
+            identity = TranslationRequestIdentity(
+                providerId = provider?.id.orEmpty(), baseUrl = baseUrl, endpoint = endpoint,
+                modelId = modelId, apiProtocol = protocol,
+                textApiMode = if (protocol == ProviderApiProtocol.OPENAI_COMPATIBLE)
+                    provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
+                else OpenAiTextApiMode.CHAT_COMPLETIONS,
+            ),
+            apiKey = apiKey,
+            provider = frozenProvider,
+        )
+    }
+
+    override suspend fun translateText(
+        snapshot: TranslationRequestSnapshot,
+        text: String,
+        targetLanguage: String,
+        sourceLanguage: String,
+    ): String {
+        currentCoroutineContext().ensureActive()
+        val identity = snapshot.identity
+        val content = runNetworkCall {
+            requestCompletionText(
+                baseUrl = identity.baseUrl, apiKey = snapshot.apiKey, modelId = identity.modelId,
+                requestMessages = buildTranslationRequestMessages(text.trim(), targetLanguage.trim(), sourceLanguage.trim()),
+                apiProtocol = identity.apiProtocol, provider = snapshot.provider, operation = "翻译失败",
+            )
+        }.trim()
+        currentCoroutineContext().ensureActive()
+        check(content.isNotBlank()) { "翻译模型未返回有效内容" }
+        return content
+    }
 
     override suspend fun translateText(
         text: String,

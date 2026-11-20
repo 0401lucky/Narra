@@ -16,6 +16,7 @@ import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMemoryExtractionCoordinator
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
+import com.example.myapplication.conversation.ConversationSummaryCoverageSupport
 import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationTitleCoordinator
 import com.example.myapplication.conversation.ConversationTransferCoordinator
@@ -1493,13 +1494,9 @@ class ChatViewModel(
         requestMessages: List<ChatMessage>,
     ): List<ChatMessage> {
         val summary = conversationSummaryRepository.getSummary(promptAssemblyInput.conversation.id)
-        return ConversationMessageTransforms.trimRequestMessagesWithSummary(
+        return ConversationSummaryCoverageSupport.trimRequestMessagesWithSummary(
+            summary = summary,
             requestMessages = requestMessages,
-            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-            summaryCoveredMessageCount = summary
-                ?.takeIf { it.summary.isNotBlank() }
-                ?.coveredMessageCount
-                ?: 0,
             recentWindow = resolveSummaryRecentWindow(promptAssemblyInput.assistant),
         )
     }
@@ -1526,11 +1523,10 @@ class ChatViewModel(
         assistant: Assistant?,
         forceRefresh: Boolean = false,
     ): SummaryUpdateResult {
-        val completedMessages = messages.filter { it.status == MessageStatus.COMPLETED }
         return summaryCoordinator.updateConversationSummary(
             conversationId = conversationId,
             assistantId = assistant?.id.orEmpty().ifBlank { currentAssistantId.value },
-            completedMessages = completedMessages,
+            completedMessages = messages,
             settings = settings,
             config = SummaryGenerationConfig(
                 triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
@@ -1541,18 +1537,18 @@ class ChatViewModel(
             buildSummaryInput = { summaryMessages ->
                 ChatConversationSupport.buildConversationExcerpt(
                     messages = summaryMessages,
-                    maxLength = MAX_SUMMARY_INPUT_LENGTH,
-                    perMessageLimit = 200,
+                    maxLength = Int.MAX_VALUE,
+                    perMessageLimit = Int.MAX_VALUE,
                 )
             },
             generateSummary = { conversationText, baseUrl, apiKey, modelId, apiProtocol ->
-                aiPromptExtrasService.generateConversationSummary(
+                aiPromptExtrasService.generateConversationSummaryResult(
                     conversationText = conversationText,
                     baseUrl = baseUrl,
                     apiKey = apiKey,
                     modelId = modelId,
                     apiProtocol = apiProtocol,
-                    provider = settings.activeProvider(),
+                    provider = settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY),
                 )
             },
         )

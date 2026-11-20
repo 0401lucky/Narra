@@ -6,14 +6,19 @@ import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
+import com.example.myapplication.model.MEMORY_ENGINE_CURRENT
 
 class ReadMemoryTool(
     private val memorySelector: MemorySelector = MemorySelector(),
     private val gson: Gson = AppJson.gson,
+    private val memoryArchiveRepository: MemoryArchiveRepository? = null,
+    private val canReadMemory: suspend (String) -> Boolean = { true },
 ) : AppTool {
     override val name: String = NAME
 
-    override val description: String = "读取当前角色与会话可访问的长期记忆与场景记忆，帮助模型回忆已确认事实。"
+    override val description: String =
+        "读取当前角色与会话可访问的长期记忆与场景记忆，帮助模型回忆已确认事实。"
 
     override val inputSchema: Map<String, Any> = mapOf(
         "type" to "object",
@@ -40,8 +45,51 @@ class ReadMemoryTool(
             ?: return errorResult("当前没有可用角色，无法读取记忆")
         val conversation = runtimeContext.conversation
             ?: return errorResult("当前没有可用会话，无法读取记忆")
+        if (!assistant.memoryEnabled || !canReadMemory(assistant.id)) return errorResult("当前角色未开启记忆")
 
         val arguments = parseArguments(invocation)
+        if ((memoryArchiveRepository?.getEngineVersion() ?: 0) >= MEMORY_ENGINE_CURRENT) {
+            val memoryContext =
+                runtimeContext.memoryContext ?: return errorResult("请求缺少冻结的记忆归属")
+            if (memoryArchiveRepository!!.getRuntimeContext(
+                    conversation.id,
+                    assistant.id
+                ) != memoryContext
+            ) return errorResult("记忆归属已改变")
+            val entries = memoryArchiveRepository.listRecords(memoryContext, 1000)
+                .filter {
+                    it.status in setOf(
+                        com.example.myapplication.model.MemoryRecordStatus.ACTIVE,
+                        com.example.myapplication.model.MemoryRecordStatus.ARCHIVED
+                    )
+                }
+                .filter {
+                    arguments.query.isBlank() || it.content.contains(
+                        arguments.query,
+                        ignoreCase = true
+                    )
+                }
+                .take(arguments.limit)
+                .map { record ->
+                    mapOf(
+                        "id" to record.id,
+                        "revision" to record.revision,
+                        "kind" to record.kind.name.lowercase(),
+                        "category" to record.category.name.lowercase(),
+                        "content" to record.content.take(MemoryToolPayloadPolicy.MAX_CONTENT_LENGTH),
+                        "content_truncated" to (record.content.length > MemoryToolPayloadPolicy.MAX_CONTENT_LENGTH),
+                    )
+                }
+            return ToolExecutionResult(
+                payload = gson.toJson(
+                    mapOf(
+                        "query" to arguments.query,
+                        "memories" to entries,
+                        "space_id" to memoryContext.spaceId
+                    )
+                )
+            )
+        }
         val accessibleEntries = MemoryScopeSupport.filterAccessibleEntries(
             entries = context.memoryRepository.listEntries(),
             assistant = assistant,

@@ -39,6 +39,7 @@ data class RoleplayScenario(
     val isMuted: Boolean = false,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val memoryPurpose: MemoryPurpose = MemoryPurpose.LEGACY_COMPAT,
 )
 
 fun RoleplayScenario.shouldInjectDescriptionPrompt(): Boolean =

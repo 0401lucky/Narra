@@ -50,6 +50,7 @@ internal object GatewayRequestMessageBuilder {
             systemPrompt = systemPrompt,
             promptMode = promptMode,
             messages = completedMessages,
+            companionMode = promptEnvelope.companionMode,
         )
         return buildList {
             if (effectiveSystemPrompt.isNotBlank()) {
@@ -146,8 +147,10 @@ internal object GatewayRequestMessageBuilder {
         systemPrompt: String,
         promptMode: PromptMode,
         messages: List<ChatMessage>,
+        companionMode: Boolean = false,
     ): String {
         val customPrompt = systemPrompt.trim()
+        if (companionMode) return customPrompt
         val specialPlayPrompt = "\n\n${GatewaySpecialPlaySupport.defaultSpecialPlayPrompt}"
         return when (promptMode) {
             PromptMode.ROLEPLAY -> {
@@ -157,6 +160,7 @@ internal object GatewayRequestMessageBuilder {
                     "$customPrompt$specialPlayPrompt"
                 }
             }
+
             PromptMode.CHAT -> {
                 if (customPrompt.isBlank()) {
                     "$defaultChatFormattingPrompt$specialPlayPrompt"
@@ -184,14 +188,19 @@ internal object GatewayRequestMessageBuilder {
                                     .takeIf { it.isNotBlank() }
                                     ?.let { thought -> "【心声】$thought" }
                             }
+
                             else -> part.text.takeIf { it.isNotBlank() }
                         }
+
                         ChatMessagePartType.ACTION -> null
-                        ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)
+                        ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(
+                            part
+                        )
+
                         ChatMessagePartType.STATUS -> null
                         ChatMessagePartType.IMAGE,
                         ChatMessagePartType.FILE,
-                        -> null
+                            -> null
                     }
                 }.joinToString(separator = "\n\n").trim()
                 if (assistantContext.isNotBlank()) {
@@ -204,8 +213,8 @@ internal object GatewayRequestMessageBuilder {
             return listOf(
                 replyPrefix,
                 message.content
-                .ifBlank { message.parts.toPlainText() }
-                .takeIf { it.isNotBlank() }.orEmpty(),
+                    .ifBlank { message.parts.toPlainText() }
+                    .takeIf { it.isNotBlank() }.orEmpty(),
             ).filter { it.isNotBlank() }
                 .joinToString(separator = "\n")
                 .takeIf { it.isNotBlank() }

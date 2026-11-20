@@ -6,8 +6,16 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.DEFAULT_MEMORY_RECALL_TOKEN_BUDGET
+import com.example.myapplication.model.FunctionModelProviderIds
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MAX
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MIN
+import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.ProviderFunctionModelMode
+import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.JsonParser
 import java.io.IOException
 import java.util.concurrent.Executors
@@ -25,10 +33,13 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,6 +49,284 @@ class AppSettingsStoreTest {
     private companion object {
         /** 单次 Preferences emission 触发的安全存储读取次数；新增加密字段时同步更新。 */
         const val SECURE_READS_PER_EMISSION = 5
+    }
+
+    @Test
+    fun settingsFlow_legacyAndInvalidEmbeddingFields_disableOnlyEmbedding() = runTest {
+        val invalidFields = listOf(
+            "embeddingModelMode" to null,
+            "embeddingModelMode" to "null",
+            "embeddingModelMode" to "\"FOLLOW_DEFAULT\"",
+            "embeddingModelMode" to "\"FUTURE_MODE\"",
+            "embeddingModelMode" to "\"DISABLED\"",
+            "embeddingModelMode" to "false",
+            "embeddingModelMode" to "0",
+            "embeddingModelMode" to "[]",
+            "embeddingModelMode" to "{}",
+            "embeddingModel" to null,
+            "embeddingModel" to "null",
+            "embeddingModel" to "[]",
+            "embeddingModel" to "true",
+        )
+        for ((field, rawValue) in invalidFields) {
+            val providerJson = AppJson.gson.toJsonTree(
+                ProviderSettings(
+                    id = "provider",
+                    baseUrl = "https://fixture.example.test/v1/",
+                    selectedModel = "fixture-chat",
+                    titleSummaryModel = "fixture-summary",
+                    memoryModel = "fixture-extraction",
+                    embeddingModel = "fixture-vector",
+                    embeddingModelMode = ProviderFunctionModelMode.CUSTOM,
+                ),
+            ).asJsonObject
+            if (rawValue == null) providerJson.remove(field)
+            else providerJson.add(field, JsonParser.parseString(rawValue))
+            withStoreFixture(
+                mutablePreferencesOf(
+                    stringPreferencesKey("providers_json") to "[$providerJson]",
+                    stringPreferencesKey("function_model_provider_ids_json") to
+                            """{"memoryProviderId":"provider","embeddingProviderId":"provider"}""",
+                ),
+            ) { fixture ->
+                fixture.secureStore.putStringMap(
+                    "provider_api_keys",
+                    mapOf("provider" to "fixture-key")
+                )
+                val settings = fixture.openStore().settingsFlow.first()
+                assertEquals("$field=$rawValue", 1, settings.providers.size)
+                assertEquals("fixture-chat", settings.activeProvider()?.selectedModel)
+                assertEquals(
+                    "fixture-summary",
+                    settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
+                )
+                assertEquals(
+                    "fixture-extraction",
+                    settings.resolveFunctionModel(ProviderFunction.MEMORY)
+                )
+                assertNull(settings.resolveEmbeddingProvider())
+                assertEquals("", settings.resolveFunctionModel(ProviderFunction.EMBEDDING))
+                assertEquals(
+                    ProviderFunctionModelMode.DISABLED,
+                    settings.providers.single().embeddingModelMode
+                )
+            }
+        }
+    }
+
+    @Test
+    fun settingsFlow_invalidEmbeddingAssignment_preservesOtherFunctionAssignments() = runTest {
+        for (rawValue in listOf("null", "true", "23", "[]", "{}")) {
+            withStoreFixture(
+                mutablePreferencesOf(
+                    stringPreferencesKey("providers_json") to AppJson.gson.toJson(
+                        listOf(
+                            ProviderSettings(id = "provider")
+                        )
+                    ),
+                    stringPreferencesKey("function_model_provider_ids_json") to
+                            """{"memoryProviderId":"provider","embeddingProviderId":$rawValue}""",
+                ),
+            ) { fixture ->
+                val settings = fixture.openStore().settingsFlow.first()
+                assertEquals("provider", settings.functionModelProviderIds.memoryProviderId)
+                assertEquals("", settings.functionModelProviderIds.embeddingProviderId)
+                assertNull(settings.resolveEmbeddingProvider())
+            }
+        }
+    }
+
+    @Test
+    fun saveProviderSettings_embeddingRoundTripsWithSecureKeysAndIndependentSelection() = runTest {
+        withStoreFixture { fixture ->
+            val store = fixture.openStore()
+            val chat = ProviderSettings(
+                id = "chat",
+                baseUrl = "https://chat.example.test/v1/",
+                apiKey = "sk-fixture-chat-secret",
+                selectedModel = "fixture-chat",
+                memoryModel = "fixture-extraction",
+            )
+            val embedding = ProviderSettings(
+                id = "embedding",
+                baseUrl = "https://embedding.example.test/v1/",
+                apiKey = "sk-fixture-embedding-secret",
+                embeddingModel = "  fixture-vector  ",
+                embeddingModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+            store.saveMemorySettings(autoSummaryEvery = 7, capacity = 1350)
+            store.saveMemoryRecallTokenBudget(2345)
+            store.saveMemoryPromptSettings("合成提取模板", "合成注入模板")
+            store.saveProviderSettings(listOf(chat, embedding), chat.id)
+            store.saveFunctionModelProviderIds(FunctionModelProviderIds(embeddingProviderId = embedding.id))
+            advanceUntilIdle()
+
+            val preferences = fixture.dataStore.data.first()
+            val ordinaryValues = preferences.asMap().values.joinToString()
+            assertFalse(ordinaryValues.contains(chat.apiKey))
+            assertFalse(ordinaryValues.contains(embedding.apiKey))
+            assertEquals(
+                embedding.apiKey,
+                fixture.secureStore.getStringMap("provider_api_keys")[embedding.id]
+            )
+
+            val restored = fixture.openStore().settingsFlow.first()
+            assertEquals(chat.id, restored.activeProvider()?.id)
+            assertEquals(chat.selectedModel, restored.activeProvider()?.selectedModel)
+            assertEquals(chat.memoryModel, restored.resolveFunctionModel(ProviderFunction.MEMORY))
+            assertEquals(embedding.id, restored.resolveEmbeddingProvider()?.id)
+            assertEquals(embedding.apiKey, restored.resolveEmbeddingProvider()?.apiKey)
+            assertEquals(
+                "fixture-vector",
+                restored.resolveFunctionModel(ProviderFunction.EMBEDDING)
+            )
+            assertEquals(7, restored.memoryAutoSummaryEvery)
+            assertEquals(1350, restored.memoryCapacity)
+            assertEquals(2345, restored.memoryRecallTokenBudget)
+            assertEquals("合成提取模板", restored.memoryExtractionPrompt)
+            assertEquals("合成注入模板", restored.memoryInjectionPrompt)
+
+            store.saveProviderSettings(
+                listOf(
+                    chat,
+                    embedding.copy(embeddingModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT)
+                ),
+                chat.id,
+            )
+            advanceUntilIdle()
+            assertNull(store.settingsFlow.first().resolveEmbeddingProvider())
+            val storedProviders = JsonParser.parseString(
+                fixture.dataStore.data.first()[stringPreferencesKey("providers_json")],
+            ).asJsonArray
+            assertEquals("DISABLED", storedProviders[1].asJsonObject["embeddingModelMode"].asString)
+
+            store.saveProviderSettings(listOf(chat), chat.id)
+            advanceUntilIdle()
+            val afterDelete = fixture.openStore().settingsFlow.first()
+            assertNull(afterDelete.resolveEmbeddingProvider())
+            assertEquals("", afterDelete.functionModelProviderIds.embeddingProviderId)
+            assertEquals(
+                chat.selectedModel,
+                afterDelete.resolveFunctionModel(ProviderFunction.CHAT)
+            )
+        }
+    }
+
+    @Test
+    fun migrateSensitiveData_legacyProviderKeyMovesToSecureStoreWithoutEnablingEmbedding() =
+        runTest {
+            withStoreFixture(
+                mutablePreferencesOf(
+                    stringPreferencesKey("providers_json") to
+                            """[{"id":"legacy","baseUrl":"https://fixture.example.test/v1/","apiKey":"sk-fixture-legacy-secret","selectedModel":"fixture-chat","memoryModel":"fixture-extraction"}]""",
+                ),
+            ) { fixture ->
+                val store = fixture.openStore()
+                store.migrateSensitiveData()
+                advanceUntilIdle()
+                assertEquals(
+                    "sk-fixture-legacy-secret",
+                    fixture.secureStore.getStringMap("provider_api_keys")["legacy"]
+                )
+                assertFalse(
+                    fixture.dataStore.data.first().asMap().values.joinToString()
+                        .contains("sk-fixture-legacy-secret")
+                )
+                val restored = fixture.openStore().settingsFlow.first()
+                assertEquals(
+                    "fixture-extraction",
+                    restored.resolveFunctionModel(ProviderFunction.MEMORY)
+                )
+                assertNull(restored.resolveEmbeddingProvider())
+                assertEquals(DEFAULT_MEMORY_RECALL_TOKEN_BUDGET, restored.memoryRecallTokenBudget)
+            }
+        }
+
+    @Test
+    fun saveMemoryRecallTokenBudget_clampsAndPreservesOtherMemorySettings() = runTest {
+        withStoreFixture { fixture ->
+            val store = fixture.openStore()
+            assertEquals(
+                DEFAULT_MEMORY_RECALL_TOKEN_BUDGET,
+                store.settingsFlow.first().memoryRecallTokenBudget
+            )
+            store.saveMemorySettings(autoSummaryEvery = 13, capacity = 2750)
+            store.saveMemoryPromptSettings("现有提取模板", "现有注入模板")
+            for ((raw, expected) in listOf(
+                -1 to MEMORY_RECALL_TOKEN_BUDGET_MIN,
+                Int.MAX_VALUE to MEMORY_RECALL_TOKEN_BUDGET_MAX,
+                3456 to 3456
+            )) {
+                store.saveMemoryRecallTokenBudget(raw)
+                advanceUntilIdle()
+                val restored = fixture.openStore().settingsFlow.first()
+                assertEquals(expected, restored.memoryRecallTokenBudget)
+                assertEquals(13, restored.memoryAutoSummaryEvery)
+                assertEquals(2750, restored.memoryCapacity)
+                assertEquals("现有提取模板", restored.memoryExtractionPrompt)
+                assertEquals("现有注入模板", restored.memoryInjectionPrompt)
+            }
+        }
+    }
+
+    @Test
+    fun residentLimits_roundTripDefaultsClampingAndOtherSettings() = runTest {
+        withStoreFixture { fixture ->
+            val store = fixture.openStore()
+            assertEquals(
+                com.example.myapplication.model.MemoryResidentLimits(12, 10, 10, 8),
+                store.settingsFlow.first().memoryResidentLimits
+            )
+            store.saveMemorySettings(13, 2750)
+            store.saveMemoryRecallTokenBudget(3456)
+            store.saveMemoryPromptSettings("保留用户模板", "保留注入模板")
+            store.saveMemoryResidentLimits(
+                com.example.myapplication.model.MemoryResidentLimits(
+                    -1,
+                    200,
+                    4,
+                    0
+                )
+            )
+            advanceUntilIdle()
+            val restored = fixture.openStore().settingsFlow.first()
+            assertEquals(
+                com.example.myapplication.model.MemoryResidentLimits(0, 100, 4, 0),
+                restored.memoryResidentLimits
+            )
+            assertEquals(13, restored.memoryAutoSummaryEvery)
+            assertEquals(2750, restored.memoryCapacity)
+            assertEquals(3456, restored.memoryRecallTokenBudget)
+            assertEquals("保留用户模板", restored.memoryExtractionPrompt)
+            assertEquals("保留注入模板", restored.memoryInjectionPrompt)
+        }
+    }
+
+    private suspend fun TestScope.withStoreFixture(
+        initial: Preferences = emptyPreferences(),
+        block: suspend (StoreFixture) -> Unit,
+    ) {
+        val fixture = StoreFixture(testScheduler)
+        fixture.dataStore.emit(initial)
+        try {
+            block(fixture)
+        } finally {
+            fixture.sharingScope.cancel()
+        }
+    }
+
+    private class StoreFixture(scheduler: TestCoroutineScheduler) {
+        val dataStore = MutablePreferencesDataStore(replay = 1)
+        val secureStore = RecordingSecureValueStore()
+        private val dispatcher = StandardTestDispatcher(scheduler)
+        val sharingScope = CoroutineScope(SupervisorJob() + dispatcher)
+
+        fun openStore() = AppSettingsStore(
+            dataStore = dataStore,
+            secureValueStore = secureStore,
+            sharingScope = sharingScope,
+            settingsDispatcher = dispatcher,
+        )
     }
 
     @Test
@@ -309,7 +598,7 @@ class AppSettingsStoreTest {
             assertTrue(
                 secureStore.readThreadNames.all { threadName ->
                     threadName.startsWith("settings-parser-test") &&
-                        !threadName.contains("main", ignoreCase = true)
+                            !threadName.contains("main", ignoreCase = true)
                 },
             )
         } finally {
@@ -361,20 +650,26 @@ private class RecordingSecureValueStore : SettingsSecureValueStore {
     var readCount: Int = 0
         private set
     val readThreadNames = linkedSetOf<String>()
+    private val strings = mutableMapOf<String, String>()
+    private val maps = mutableMapOf<String, Map<String, String>>()
 
     override fun getString(key: String): String {
         readCount += 1
         readThreadNames += Thread.currentThread().name
-        return ""
+        return strings[key].orEmpty()
     }
 
-    override fun putString(key: String, value: String) = Unit
+    override fun putString(key: String, value: String) {
+        strings[key] = value
+    }
 
     override fun getStringMap(key: String): Map<String, String> {
         readCount += 1
         readThreadNames += Thread.currentThread().name
-        return emptyMap()
+        return maps[key].orEmpty()
     }
 
-    override fun putStringMap(key: String, values: Map<String, String>) = Unit
+    override fun putStringMap(key: String, values: Map<String, String>) {
+        maps[key] = values.toMap()
+    }
 }

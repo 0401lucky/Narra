@@ -41,6 +41,7 @@ object RoleplayMessageFormatSupport {
             scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM || scenario.longformModeEnabled -> {
                 RoleplayInteractionMode.OFFLINE_LONGFORM
             }
+
             else -> RoleplayInteractionMode.OFFLINE_DIALOGUE
         }
     }
@@ -52,7 +53,7 @@ object RoleplayMessageFormatSupport {
             RoleplayInteractionMode.OFFLINE_LONGFORM -> RoleplayOutputFormat.LONGFORM
             RoleplayInteractionMode.ONLINE_PHONE -> RoleplayOutputFormat.PROTOCOL
             RoleplayInteractionMode.OFFLINE_DIALOGUE -> when {
-            scenario.enableRoleplayProtocol -> RoleplayOutputFormat.PROTOCOL
+                scenario.enableRoleplayProtocol -> RoleplayOutputFormat.PROTOCOL
                 else -> RoleplayOutputFormat.PLAIN
             }
         }
@@ -96,13 +97,18 @@ object RoleplayMessageFormatSupport {
         if (normalizedParts.any { part -> part.isOnlineThoughtPart() || part.isActionPart() }) {
             return RoleplayInteractionMode.ONLINE_PHONE
         }
-        if (OnlineActionProtocolParser.parse(rawContent = rawContent, characterName = "角色") != null) {
+        if (OnlineActionProtocolParser.parse(
+                rawContent = rawContent,
+                characterName = "角色"
+            ) != null
+        ) {
             return RoleplayInteractionMode.ONLINE_PHONE
         }
         return when {
             outputFormat == RoleplayOutputFormat.PROTOCOL && fallbackInteractionMode == RoleplayInteractionMode.ONLINE_PHONE -> {
                 RoleplayInteractionMode.ONLINE_PHONE
             }
+
             outputFormat == RoleplayOutputFormat.PROTOCOL -> RoleplayInteractionMode.OFFLINE_DIALOGUE
             else -> fallbackInteractionMode
         }
@@ -111,6 +117,7 @@ object RoleplayMessageFormatSupport {
     fun resolveAssistantRawContent(
         message: ChatMessage,
     ): String {
+        if (!message.companionTurnId.isNullOrBlank()) return message.content
         return message.parts.toPlainText()
             .ifBlank { message.content }
             .trim()
@@ -132,9 +139,12 @@ object RoleplayMessageFormatSupport {
             hasProtocolStructure -> RoleplayOutputFormat.PROTOCOL
             hasOnlineJsonProtocol -> RoleplayOutputFormat.PROTOCOL
             hasLongformSpeech -> RoleplayOutputFormat.LONGFORM
-            hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL && hasVisibleTextOutsideThoughtBlocks(normalizedContent) -> {
+            hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL && hasVisibleTextOutsideThoughtBlocks(
+                normalizedContent
+            ) -> {
                 RoleplayOutputFormat.LONGFORM
             }
+
             hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL -> RoleplayOutputFormat.PROTOCOL
             hasThought && preferredFormat == RoleplayOutputFormat.LONGFORM -> RoleplayOutputFormat.LONGFORM
             hasThought -> RoleplayOutputFormat.LONGFORM
@@ -147,7 +157,10 @@ object RoleplayMessageFormatSupport {
         if (!onlineJsonProtocolMarkerPattern.containsMatchIn(rawContent)) {
             return false
         }
-        return OnlineActionProtocolParser.parse(rawContent = rawContent, characterName = "角色") != null
+        return OnlineActionProtocolParser.parse(
+            rawContent = rawContent,
+            characterName = "角色"
+        ) != null
     }
 
     private fun hasVisibleTextOutsideThoughtBlocks(
@@ -163,10 +176,10 @@ object RoleplayMessageFormatSupport {
     ): Boolean {
         val normalizedContent = normalizeRoleplayProtocolAliases(rawContent)
         return !longformSpeechTagPattern.containsMatchIn(normalizedContent) &&
-            (
-                sharedThoughtTagPattern.containsMatchIn(normalizedContent) ||
-                    llmControlTagPattern.containsMatchIn(normalizedContent) ||
-                    llmControlWordPattern.containsMatchIn(normalizedContent)
-                )
+                (
+                        sharedThoughtTagPattern.containsMatchIn(normalizedContent) ||
+                                llmControlTagPattern.containsMatchIn(normalizedContent) ||
+                                llmControlWordPattern.containsMatchIn(normalizedContent)
+                        )
     }
 }

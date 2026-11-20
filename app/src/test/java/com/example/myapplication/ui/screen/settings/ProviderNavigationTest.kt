@@ -16,10 +16,13 @@ import com.example.myapplication.testutil.createTestAiServices
 import com.example.myapplication.ui.navigation.AppRoutes
 import com.example.myapplication.ui.navigation.registerSettingsProviderRoutes
 import com.example.myapplication.ui.screenshot.ProviderSettingsRenderTest
+import com.example.myapplication.ui.screenshot.ScreenshotCases
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -28,6 +31,89 @@ import retrofit2.Response
 
 /** 使用真实目的地绑定验证返回顺序；更新与 Provider API 都是隔离的本地 Fake。 */
 class ProviderNavigationTest : ProviderSettingsRenderTest() {
+    @Test
+    fun modelRoute_embeddingSelectionAndDisable_preserveChatAndPersistIndependentPurpose() {
+        val chat = ProviderSettings(
+            id = "chat",
+            name = "聊天服务",
+            baseUrl = "https://chat.example.test/v1/",
+            apiKey = "fixture-chat-key",
+            selectedModel = "fixture-chat",
+        )
+        val embedding = ProviderSettings(
+            id = "embedding",
+            name = "向量服务",
+            baseUrl = "https://embedding.example.test/v1/",
+            apiKey = "fixture-embedding-key",
+            availableModels = listOf("fixture-vector"),
+        )
+        val incompatible = embedding.copy(
+            id = "anthropic",
+            name = "不支持的服务",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        var apiFactories = 0
+        val services = createTestAiServices(
+            settings = AppSettings(
+                providers = listOf(chat, embedding, incompatible),
+                selectedProviderId = chat.id,
+                memoryRecallTokenBudget = 2345,
+            ),
+            apiServiceProvider = { _, _ ->
+                apiFactories++
+                error("设置路由测试不应创建模型 API")
+            },
+        )
+        val viewModel = SettingsViewModel(
+            services.settingsRepository,
+            services.settingsEditor,
+            services.modelCatalogRepository
+        )
+        val updates = isolatedUpdateViewModel()
+        lateinit var navigation: NavHostController
+        drainMainLooper()
+        renderProvider(case = ScreenshotCases.require("E11_config-light"), content = {
+            navigation = rememberNavController()
+            NavHost(navigation, startDestination = "embedding-origin") {
+                composable("embedding-origin") { Text("合成模型入口") }
+                registerSettingsProviderRoutes(navigation, viewModel, updates)
+            }
+        })
+        composeRule.runOnIdle { navigation.navigate(AppRoutes.SETTINGS_MODEL) }
+        drainMainLooper()
+        composeRule.onNodeWithTag("settings_model_list")
+            .performScrollToNode(hasTestTag("embedding_model_card"))
+        composeRule.onNodeWithTag("embedding_model_card").performClick()
+        composeRule.onNodeWithText("跟随默认模型").assertDoesNotExist()
+        composeRule.onNodeWithText(incompatible.name).assertDoesNotExist()
+        composeRule.onNodeWithText(embedding.name).performClick()
+        composeRule.onNode(hasText("fixture-vector") and hasClickAction()).performClick()
+        pageControl(hasContentDescription("返回")).performTouchInput { click() }
+        drainMainLooper()
+        composeRule.onNodeWithText("合成模型入口").assertIsDisplayed()
+
+        val enabled = runBlocking { services.settingsStore.settingsFlow.first() }
+        assertEquals(embedding.id, enabled.resolveEmbeddingProvider()?.id)
+        assertEquals("fixture-vector", enabled.resolveFunctionModel(ProviderFunction.EMBEDDING))
+        assertEquals(chat, enabled.activeProvider())
+        assertEquals(2345, enabled.memoryRecallTokenBudget)
+
+        composeRule.runOnIdle { navigation.navigate(AppRoutes.SETTINGS_MODEL) }
+        drainMainLooper()
+        composeRule.onNodeWithTag("settings_model_list")
+            .performScrollToNode(hasTestTag("embedding_model_card"))
+        composeRule.onNodeWithTag("embedding_model_card").performClick()
+        composeRule.onNodeWithText("关闭向量检索").performClick()
+        pageControl(hasContentDescription("返回")).performTouchInput { click() }
+        drainMainLooper()
+        composeRule.onNodeWithText("合成模型入口").assertIsDisplayed()
+        val disabled = runBlocking { services.settingsStore.settingsFlow.first() }
+        assertEquals(null, disabled.resolveEmbeddingProvider())
+        assertEquals("", disabled.resolveFunctionModel(ProviderFunction.EMBEDDING))
+        assertEquals(chat, disabled.activeProvider())
+        assertEquals(0, apiFactories)
+    }
+
     @Test
     fun listBack_startsSaveThenPopsImmediately_evenWhenWriteLaterFails() =
         verifyBack(detail = false)

@@ -11,6 +11,8 @@ import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
+import com.example.myapplication.model.MEMORY_ENGINE_CURRENT
 
 data class ResolvedGatewayTooling(
     val enabledToolNames: Set<String> = emptySet(),
@@ -23,6 +25,7 @@ class ToolAvailabilityResolver(
     private val worldBookRepository: WorldBookRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val memoryWriteService: MemoryWriteService = NoOpMemoryWriteService,
+    private val memoryArchiveRepository: MemoryArchiveRepository? = null,
 ) {
     suspend fun resolve(
         settings: AppSettings,
@@ -31,9 +34,17 @@ class ToolAvailabilityResolver(
         promptMode: PromptMode,
         toolingOptions: GatewayToolingOptions,
     ): ResolvedGatewayTooling {
-        val runtimeContext = toolingOptions.runtimeContext
+        val archiveEnabled =
+            (memoryArchiveRepository?.getEngineVersion() ?: 0) >= MEMORY_ENGINE_CURRENT
+        val runtimeContext = toolingOptions.runtimeContext?.let { runtime ->
+            if (memoryArchiveRepository == null) runtime else runtime.copy(
+                memoryContext = runtime.memoryContext ?: memoryArchiveRepository.getRuntimeContext(
+                    runtime.conversation?.id.orEmpty(), runtime.assistant?.id.orEmpty(),
+                )
+            )
+        }
         val modelSupportsTools = selectedModel.isNotBlank() &&
-            ModelAbility.TOOL in activeProvider?.resolveModelAbilities(selectedModel).orEmpty()
+                ModelAbility.TOOL in activeProvider?.resolveModelAbilities(selectedModel).orEmpty()
         val enabledToolNames = linkedSetOf<String>()
         if (modelSupportsTools && runtimeContext != null) {
             if (hasReadableMemories(runtimeContext)) {
@@ -45,7 +56,7 @@ class ToolAvailabilityResolver(
             if (hasAccessibleWorldBookEntries(runtimeContext)) {
                 enabledToolNames += SearchWorldBookTool.NAME
             }
-            if (canSaveMemory(runtimeContext)) {
+            if (canSaveMemory(runtimeContext) && (!archiveEnabled || runtimeContext.memoryContext != null)) {
                 enabledToolNames += SaveMemoryTool.NAME
             }
         }
@@ -81,6 +92,16 @@ class ToolAvailabilityResolver(
             return false
         }
         val conversation = runtimeContext.conversation ?: return false
+        if ((memoryArchiveRepository?.getEngineVersion() ?: 0) >= MEMORY_ENGINE_CURRENT) {
+            val context = runtimeContext.memoryContext ?: return false
+            if (context.characterId != assistant.id || context.conversationId != conversation.id ||
+                memoryArchiveRepository!!.getRuntimeContext(
+                    conversation.id,
+                    assistant.id
+                ) != context
+            ) return false
+            return memoryArchiveRepository!!.listRecords(context, 1).isNotEmpty()
+        }
         return MemoryScopeSupport.filterAccessibleEntries(
             entries = memoryRepository.listEntries(),
             assistant = assistant,
@@ -105,17 +126,29 @@ class ToolAvailabilityResolver(
         if (conversationId.isBlank()) {
             return false
         }
-        return conversationSummaryRepository.getSummary(conversationId)
-            ?.summary
-            ?.isNotBlank() == true
+        val memoryContext = runtimeContext.memoryContext
+        if (memoryContext != null && (memoryContext.characterId != runtimeContext.assistant?.id ||
+                    memoryContext.conversationId != conversationId)
+        ) return false
+        if (runtimeContext.promptMode == PromptMode.ROLEPLAY && memoryContext == null) return false
+        val summary =
+            if (memoryContext == null) conversationSummaryRepository.getSummary(conversationId)
+            else conversationSummaryRepository.getSummaryForContext(memoryContext)
+        val messages = conversationSummaryRepository.getSummarySourceMessages(conversationId)
+            ?: runtimeContext.recentMessages
+        return com.example.myapplication.conversation.ConversationSummaryCoverageSupport.usableSummary(
+            summary,
+            messages,
+            memoryContext
+        ) != null
     }
 
     private fun canSaveMemory(
         runtimeContext: GatewayToolRuntimeContext,
     ): Boolean {
         return runtimeContext.promptMode == PromptMode.ROLEPLAY &&
-            runtimeContext.assistant?.memoryEnabled == true &&
-            runtimeContext.conversation != null
+                runtimeContext.assistant?.memoryEnabled == true &&
+                runtimeContext.conversation != null
     }
 
     private fun resolveSearchToolConfig(

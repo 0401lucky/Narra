@@ -2,6 +2,7 @@ package com.example.myapplication.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,13 +16,13 @@ import com.example.myapplication.ui.screen.settings.CharacterArtStudioScreen
 import com.example.myapplication.ui.screen.settings.AssistantDetailScreen
 import com.example.myapplication.ui.screen.settings.AssistantExtensionsScreen
 import com.example.myapplication.ui.screen.settings.AssistantListScreen
-import com.example.myapplication.ui.screen.settings.AssistantMemoryScreen
 import com.example.myapplication.ui.screen.settings.AssistantPromptScreen
-import com.example.myapplication.ui.screen.settings.memory.SimpleMemoryEditorScreen
 import com.example.myapplication.ui.screen.settings.worldbook.buildWorldBookBooks
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.CharacterArtStudioViewModel
-import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel
+import com.example.myapplication.viewmodel.MemoryArchiveViewModel
+import com.example.myapplication.viewmodel.MemoryArchiveReadExtras
+import com.example.myapplication.viewmodel.MemoryOriginalViewModel
 
 // 角色列表、详情、基本信息、提示词、扩展、记忆
 
@@ -53,20 +54,22 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
 
     composable(AppRoutes.SETTINGS_ASSISTANT_DETAIL) { backStackEntry ->
         val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
-        val presets by appGraph.presetRepository.observePresets().collectAsStateWithLifecycle(emptyList())
+        val presets by appGraph.presetRepository.observePresets()
+            .collectAsStateWithLifecycle(emptyList())
         val worldBookViewModel = rememberWorldBookViewModel(
             navController = navController,
             appGraph = appGraph,
             backStackEntry = backStackEntry,
         )
         val worldBookState by worldBookViewModel.uiState.collectAsStateWithLifecycle()
-        val memoryManagementViewModel = rememberMemoryManagementViewModel(
+        val archiveOverview = rememberMemoryArchiveOverviewViewModel(
             navController = navController,
             appGraph = appGraph,
             backStackEntry = backStackEntry,
         )
-        val memoryManagementState by memoryManagementViewModel.uiState.collectAsStateWithLifecycle()
-        val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
+        val archiveOverviewState by archiveOverview.uiState.collectAsStateWithLifecycle()
+        LaunchedEffect(backStackEntry) { archiveOverview.refresh() }
+        val assistantId = Uri.decode(backStackEntry.arguments?.getString("assistantId").orEmpty())
         val resolvedAssistants = storedSettings.resolvedAssistants()
         val assistant = resolvedAssistants.firstOrNull { it.id == assistantId } ?: return@composable
 
@@ -77,13 +80,10 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
             linkedWorldBookCount = buildWorldBookBooks(
                 worldBookState.entries.filter { entry ->
                     entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ATTACHABLE &&
-                        entry.resolvedBookId() in assistant.linkedWorldBookBookIds
+                            entry.resolvedBookId() in assistant.linkedWorldBookBookIds
                 },
             ).size,
-            assistantMemoryCount = memoryManagementState.memories.count { memory ->
-                memory.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
-                    memory.scopeId == assistant.id
-            },
+            assistantMemoryCount = archiveOverviewState.counts[assistant.id] ?: 0,
             onOpenBasic = {
                 navController.navigate(AppRoutes.settingsAssistantBasic(assistant.id)) {
                     launchSingleTop = true
@@ -108,6 +108,9 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
                 navController.navigate(AppRoutes.settingsAssistantMemory(assistant.id)) {
                     launchSingleTop = true
                 }
+            },
+            onOpenCompanionVoice = {
+                navController.navigate(AppRoutes.roleplayCompanionVoice(assistant.id)) { launchSingleTop = true }
             },
             onUpdateAssistant = settingsViewModel::updateAssistant,
             onSelectPreset = { presetId ->
@@ -192,7 +195,8 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
     composable(AppRoutes.SETTINGS_ASSISTANT_PROMPT) { backStackEntry ->
         val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
         val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
-        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
+        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId }
+            ?: return@composable
         AssistantPromptScreen(
             assistant = assistant,
             onSave = settingsViewModel::updateAssistant,
@@ -209,7 +213,8 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
         )
         val worldBookState by worldBookViewModel.uiState.collectAsStateWithLifecycle()
         val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
-        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
+        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId }
+            ?: return@composable
         AssistantExtensionsScreen(
             assistant = assistant,
             worldBookEntries = worldBookState.entries,
@@ -223,75 +228,37 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
         )
     }
 
-    composable(AppRoutes.SETTINGS_ASSISTANT_MEMORY) { backStackEntry ->
-        val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
-        val memoryManagementViewModel = rememberMemoryManagementViewModel(
-            navController = navController,
-            appGraph = appGraph,
-            backStackEntry = backStackEntry,
-        )
-        val memoryManagementState by memoryManagementViewModel.uiState.collectAsStateWithLifecycle()
-        val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
-        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
-        val assistantMemories = memoryManagementState.memories.filter { entry ->
-            when (entry.scopeType) {
-                com.example.myapplication.model.MemoryScopeType.GLOBAL -> assistant.useGlobalMemory &&
-                    (entry.characterId.isBlank() || entry.characterId == assistant.id)
-                com.example.myapplication.model.MemoryScopeType.ASSISTANT -> {
-                    !assistant.useGlobalMemory && (
-                        entry.scopeId == assistant.id ||
-                            (entry.scopeId.isBlank() && entry.characterId == assistant.id)
-                    )
-                }
-                com.example.myapplication.model.MemoryScopeType.CONVERSATION -> entry.characterId == assistant.id
-            }
-        }
-        val assistantSummaries = memoryManagementState.summaries.filter { summary ->
-            summary.assistantId == assistant.id
-        }
-        AssistantMemoryScreen(
-            assistant = assistant,
-            memories = assistantMemories,
-            summaries = assistantSummaries,
-            onSaveAssistant = settingsViewModel::updateAssistant,
-            onUpsertMemory = memoryManagementViewModel::upsertMemory,
-            onDeleteMemory = memoryManagementViewModel::deleteMemory,
-            onTogglePinned = memoryManagementViewModel::togglePinned,
-            onOpenGlobalMemorySettings = {
-                navController.navigate(AppRoutes.SETTINGS_MEMORY) {
-                    launchSingleTop = true
-                }
-            },
-            onNavigateBack = { navController.popBackStack() },
-        )
-    }
-
-    composable(AppRoutes.SETTINGS_ASSISTANT_MEMORY_SIMPLE) { backStackEntry ->
-        val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
-        val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
-        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
-        val conversationId = backStackEntry.arguments
-            ?.getString("conversationId")
-            ?.let(Uri::decode)
-            ?.takeIf { it.isNotBlank() }
-        val simpleViewModel: SimpleMemoryEditorViewModel = viewModel(
-            key = "simple-memory-$assistantId-${conversationId.orEmpty()}",
-            factory = SimpleMemoryEditorViewModel.factory(
-                assistantId = assistantId,
-                conversationId = conversationId,
-                memoryRepository = appGraph.memoryRepository,
-                assistantsProvider = { settingsViewModel.storedSettings.value.resolvedAssistants() },
-            ),
-        )
-        SimpleMemoryEditorScreen(
-            viewModel = simpleViewModel,
-            assistantName = assistant.name,
-            onOpenAdvancedManagement = {
-                navController.navigate(AppRoutes.settingsAssistantMemory(assistantId)) {
-                    launchSingleTop = true
-                }
-            },
-            onNavigateBack = { navController.popBackStack() },
-        )
-    }
+    registerMemoryArchiveRoutes(
+        navController = navController,
+        settingsProvider = {
+            val settings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+            settings
+        },
+        archiveFactory = { characterId, conversationId, savedState ->
+            MemoryArchiveViewModel.factory(
+                appGraph.memoryArchiveRepository, characterId, conversationId,
+                memoryArchiveTaskActions(appGraph), savedState,
+                MemoryArchiveReadExtras(
+                    appGraph.memoryVectorRepository::archiveProgress,
+                    appGraph.memoryArchiveTransferRepository::getOrigins,
+                    { runtime, retryUncertain ->
+                        appGraph.memoryVectorRepository.rebuild(
+                            runtime,
+                            forceRebuild = true,
+                            retryUncertain = retryUncertain
+                        )
+                    })
+            )
+        },
+        originalFactory = { characterId, spaceId, personaKey, conversationId ->
+            MemoryOriginalViewModel.factory(
+                appGraph.memoryArchiveRepository,
+                characterId,
+                spaceId,
+                personaKey,
+                conversationId
+            )
+        },
+        onUpdateAssistant = settingsViewModel::updateAssistant,
+    )
 }

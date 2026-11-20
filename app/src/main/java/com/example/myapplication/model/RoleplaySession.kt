@@ -8,4 +8,5 @@ data class RoleplaySession(
     val conversationId: String,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val runId: String = "",
 )

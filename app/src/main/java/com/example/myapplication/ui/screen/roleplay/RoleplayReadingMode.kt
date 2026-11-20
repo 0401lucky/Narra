@@ -74,6 +74,7 @@ fun RoleplayReadingMode(
     lineHeightScale: Float,
     highContrast: Boolean,
     onDismiss: () -> Unit,
+    companionObservationEnabledFor: (String) -> Boolean = { true },
 ) {
     val effectiveHighContrast = highContrast || rememberSystemHighTextContrastEnabled()
     val benchmarkExpectedMessageCount = if (
@@ -121,7 +122,7 @@ fun RoleplayReadingMode(
             .benchmarkReadyTag(
                 readyId = BenchmarkReadyIds.READING_READY,
                 ready = scenarioTitle.isNotBlank() &&
-                    messages.size == benchmarkExpectedMessageCount,
+                        messages.size == benchmarkExpectedMessageCount,
             ),
     ) {
         RoleplaySceneBackground(
@@ -166,12 +167,16 @@ fun RoleplayReadingMode(
                             color = readingColors.primary,
                         )
                         NarraIconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.common_close),
-                                tint = readingColors.primary)
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(id = R.string.common_close),
+                                tint = readingColors.primary
+                            )
                         }
                     }
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f).testTag("roleplay_reading_list"),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                            .testTag("roleplay_reading_list"),
                         contentPadding = PaddingValues(
                             start = NarraUi.space24,
                             end = NarraUi.space24,
@@ -233,6 +238,13 @@ fun RoleplayReadingMode(
                             key = { _, message -> message.uiItemId },
                             contentType = { _, message -> roleplayLazyContentType(message) },
                         ) { _, message ->
+                            message.companionReply?.takeIf { it.beats.firstOrNull()?.id == message.uiItemId }
+                                ?.let { reply ->
+                                    CompanionObservationPanel(
+                                        reply,
+                                        enabled = companionObservationEnabledFor(reply.source.characterId)
+                                    )
+                                }
                             when (message.contentType) {
                                 RoleplayContentType.NARRATION -> NarrationReadingBlock(
                                     message = message,
@@ -247,7 +259,11 @@ fun RoleplayReadingMode(
                                     colors = readingColors,
                                 )
 
-                                RoleplayContentType.SYSTEM -> SystemReadingBlock(message, backdropState, readingColors)
+                                RoleplayContentType.SYSTEM -> SystemReadingBlock(
+                                    message,
+                                    backdropState,
+                                    readingColors
+                                )
 
                                 RoleplayContentType.DIALOGUE -> DialogueReadingBlock(
                                     message = message,
@@ -289,8 +305,9 @@ private fun ThoughtReadingBlock(
     lineHeightScale: Float,
     colors: ReadingModeColors,
 ) {
-    val paragraphs = remember(message.content) {
-        message.content.toLongformParagraphs()
+    val parsedCompanion = message.companionBeat != null
+    val paragraphs = remember(message.content, parsedCompanion) {
+        message.content.toLongformParagraphs(parsedCompanion)
     }
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -303,7 +320,10 @@ private fun ThoughtReadingBlock(
             variant = ImmersiveReadingGlassVariant.THOUGHT,
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+                modifier = Modifier.padding(
+                    horizontal = NarraUi.space16,
+                    vertical = NarraUi.space12
+                ),
                 verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 paragraphs.forEach { paragraph ->
@@ -312,6 +332,7 @@ private fun ThoughtReadingBlock(
                             text = paragraph,
                             narrationColor = colors.thought,
                             dialogueColor = colors.accent,
+                            parsedCompanion = parsedCompanion,
                         ),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 15.sp,
@@ -332,8 +353,9 @@ private fun NarrationReadingBlock(
     lineHeightScale: Float,
     colors: ReadingModeColors,
 ) {
-    val paragraphs = remember(message.content) {
-        message.content.toLongformParagraphs()
+    val parsedCompanion = message.companionBeat != null
+    val paragraphs = remember(message.content, parsedCompanion) {
+        message.content.toLongformParagraphs(parsedCompanion)
     }
     Column(
         modifier = Modifier
@@ -347,6 +369,7 @@ private fun NarrationReadingBlock(
                     text = paragraph,
                     narrationColor = colors.muted,
                     dialogueColor = colors.accent,
+                    parsedCompanion = parsedCompanion,
                 ),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 16.sp,
@@ -386,7 +409,10 @@ private fun DialogueReadingBlock(
             },
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+                modifier = Modifier.padding(
+                    horizontal = NarraUi.space16,
+                    vertical = NarraUi.space12
+                ),
                 verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 FlowRow(
@@ -406,7 +432,10 @@ private fun DialogueReadingBlock(
                         )
                     }
                 }
-                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                val parsedCompanion = message.companionBeat != null
+                val paragraphs = remember(message.content, parsedCompanion) {
+                    message.content.toLongformParagraphs(parsedCompanion)
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                     paragraphs.forEach { paragraph ->
                         Text(
@@ -415,12 +444,14 @@ private fun DialogueReadingBlock(
                                     text = paragraph,
                                     narrationColor = colors.primary,
                                     dialogueColor = colors.accent,
+                                    parsedCompanion = parsedCompanion,
                                 )
                             } else {
                                 buildCharacterDialogueAnnotatedString(
                                     text = paragraph,
                                     narrationColor = colors.primary,
                                     dialogueColor = colors.accent,
+                                    parsedCompanion = parsedCompanion,
                                 )
                             },
                             style = MaterialTheme.typography.bodyLarge.copy(
@@ -530,6 +561,42 @@ private fun ReadingModeMetaChip(
 
 private const val ReadingModePanelMinimumAlpha = 0.94f
 
+/** 独立陪伴阅读复用原阅读段落的主题、富文本、卡片与行高。 */
+@Composable
+internal fun RoleplayReadingMessage(
+    message: RoleplayMessageUiModel, backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float
+) {
+    val colors = remember(backdropState) { resolveReadingModeColors(backdropState) }
+    when (message.contentType) {
+        RoleplayContentType.NARRATION -> NarrationReadingBlock(message, lineHeightScale, colors)
+        RoleplayContentType.THOUGHT -> ThoughtReadingBlock(
+            message,
+            backdropState,
+            lineHeightScale,
+            colors
+        )
+
+        RoleplayContentType.SYSTEM -> SystemReadingBlock(message, backdropState, colors)
+        RoleplayContentType.DIALOGUE, RoleplayContentType.ACTION -> DialogueReadingBlock(
+            message,
+            backdropState,
+            lineHeightScale,
+            colors
+        )
+
+        RoleplayContentType.LONGFORM -> LongformReadingBlock(
+            message,
+            backdropState,
+            lineHeightScale,
+            colors
+        )
+
+        RoleplayContentType.SPECIAL_PLAY -> TransferReadingBlock(message)
+        RoleplayContentType.STATUS -> Unit
+    }
+}
+
 private data class ReadingModeColors(
     val primary: Color,
     val muted: Color,
@@ -542,37 +609,64 @@ private data class ReadingModeColors(
 private fun resolveReadingModeColors(backdropState: ImmersiveBackdropState): ReadingModeColors {
     val palette = backdropState.palette
     val luminance = calculateImmersiveBackdropAmbientLuminance(backdropState)
-    fun surfaces(backings: List<Color>, variant: ImmersiveReadingGlassVariant, tint: Color): List<Color> {
+    fun surfaces(
+        backings: List<Color>,
+        variant: ImmersiveReadingGlassVariant,
+        tint: Color
+    ): List<Color> {
         val spec = resolveImmersiveReadingGlassSpec(variant)
         val adjusted = adjustImmersiveReadingOverlayColor(tint, luminance, variant)
         val overlay = if (variant == ImmersiveReadingGlassVariant.PANEL) {
             adjusted.copy(alpha = maxOf(adjusted.alpha, ReadingModePanelMinimumAlpha))
         } else adjusted
-        val darken = if (variant == ImmersiveReadingGlassVariant.PANEL || variant == ImmersiveReadingGlassVariant.DIALOGUE) {
-            0f
-        } else adjustImmersiveReadingContentDarkenAlpha(spec.contentDarkenAlpha, luminance, variant)
+        val darken =
+            if (variant == ImmersiveReadingGlassVariant.PANEL || variant == ImmersiveReadingGlassVariant.DIALOGUE) {
+                0f
+            } else adjustImmersiveReadingContentDarkenAlpha(
+                spec.contentDarkenAlpha,
+                luminance,
+                variant
+            )
         return backings.flatMap { backing ->
             val underlay = palette.panelHighlight.copy(alpha = 0.06f).compositeOver(backing)
-            listOf(palette.panelHighlight.copy(alpha = spec.highlightAlpha), Color.Transparent,
-                palette.shadowColor.copy(alpha = spec.highlightAlpha * 0.35f)).map { sheen ->
-                Color.Black.copy(alpha = darken).compositeOver(sheen.compositeOver(overlay.compositeOver(underlay)))
+            listOf(
+                palette.panelHighlight.copy(alpha = spec.highlightAlpha), Color.Transparent,
+                palette.shadowColor.copy(alpha = spec.highlightAlpha * 0.35f)
+            ).map { sheen ->
+                Color.Black.copy(alpha = darken)
+                    .compositeOver(sheen.compositeOver(overlay.compositeOver(underlay)))
             }
         }
     }
     // scrim与背景的所有合成值都在黑白端点内；无需依赖某个固定背景采样点。
-    val panel = surfaces(listOf(Color.Black, Color.White), ImmersiveReadingGlassVariant.PANEL, palette.readingSurface)
-    val cardVariants = listOf(ImmersiveReadingGlassVariant.CARD, ImmersiveReadingGlassVariant.THOUGHT,
-        ImmersiveReadingGlassVariant.PILL)
+    val panel = surfaces(
+        listOf(Color.Black, Color.White),
+        ImmersiveReadingGlassVariant.PANEL,
+        palette.readingSurface
+    )
+    val cardVariants = listOf(
+        ImmersiveReadingGlassVariant.CARD, ImmersiveReadingGlassVariant.THOUGHT,
+        ImmersiveReadingGlassVariant.PILL
+    )
     val all = panel + cardVariants.flatMap { variant ->
         val spec = resolveImmersiveReadingGlassSpec(variant)
         val tint = if (variant == ImmersiveReadingGlassVariant.PILL) {
             lerp(palette.panelTintStrong, palette.panelTint, 0.46f).copy(alpha = spec.overlayAlpha)
         } else palette.panelTint.copy(alpha = spec.overlayAlpha)
         surfaces(panel, variant, tint)
-    } + listOf(palette.userAccent.copy(alpha = 0.08f), palette.panelTint.copy(alpha = 0.09f)).flatMap {
+    } + listOf(
+        palette.userAccent.copy(alpha = 0.08f),
+        palette.panelTint.copy(alpha = 0.09f)
+    ).flatMap {
         surfaces(panel, ImmersiveReadingGlassVariant.DIALOGUE, it)
     }
+
     fun readable(preferred: Color) = readableRoleplayTextOnSurfaces(preferred, all)
-    return ReadingModeColors(readable(palette.onGlass), readable(palette.onGlassMuted),
-        readable(palette.characterAccent), readable(palette.userAccent), readable(palette.thoughtText))
+    return ReadingModeColors(
+        readable(palette.onGlass),
+        readable(palette.onGlassMuted),
+        readable(palette.characterAccent),
+        readable(palette.userAccent),
+        readable(palette.thoughtText)
+    )
 }

@@ -24,8 +24,12 @@ object AppRoutes {
     const val SETTINGS_ASSISTANT_ART_STUDIO = "settings/assistants/{assistantId}/art-studio"
     const val SETTINGS_ASSISTANT_PROMPT = "settings/assistants/{assistantId}/prompt"
     const val SETTINGS_ASSISTANT_EXTENSIONS = "settings/assistants/{assistantId}/extensions"
-    const val SETTINGS_ASSISTANT_MEMORY = "settings/assistants/{assistantId}/memory"
-    const val SETTINGS_ASSISTANT_MEMORY_SIMPLE = "settings/assistants/{assistantId}/memory/simple?conversationId={conversationId}"
+    const val SETTINGS_ASSISTANT_MEMORY =
+        "settings/assistants/{assistantId}/memory?conversationId={conversationId}"
+    const val SETTINGS_ASSISTANT_MEMORY_SIMPLE =
+        "settings/assistants/{assistantId}/memory/simple?conversationId={conversationId}"
+    const val SETTINGS_MEMORY_ORIGINAL =
+        "settings/assistants/{assistantId}/memory/archive/{spaceId}/read/{conversationId}?personaKey={personaKey}"
     const val SETTINGS_WORLD_BOOKS = "settings/worldbook"
     const val SETTINGS_WORLD_BOOK_BOOK = "settings/worldbook/book/{bookId}"
     const val SETTINGS_WORLD_BOOK_EDIT = "settings/worldbook/{entryId}?bookName={bookName}"
@@ -40,14 +44,25 @@ object AppRoutes {
     const val ROLEPLAY_MANAGE = "roleplay/manage"
     const val ROLEPLAY_EDIT = "roleplay/edit/{scenarioId}"
     const val ROLEPLAY_PLAY = "roleplay/play/{scenarioId}"
+    const val ROLEPLAY_COMPANION = "roleplay/companion/{scenarioId}/{companionEntryId}"
+    const val ROLEPLAY_COMPANION_SETTINGS =
+        "roleplay/play/{scenarioId}/companion-settings/{assistantId}"
     const val ROLEPLAY_SETTINGS = "roleplay/play/{scenarioId}/settings"
     const val ROLEPLAY_READING = "roleplay/play/{scenarioId}/reading"
+    const val ROLEPLAY_COMPANION_READING =
+        "roleplay/play/{scenarioId}/companion-reading/{assistantId}?messageId={messageId}&archiveSpaceId={archiveSpaceId}&archiveRunId={archiveRunId}"
+    const val ROLEPLAY_COMPANION_HISTORY = "roleplay/play/{scenarioId}/companion-history/{assistantId}"
+    const val ROLEPLAY_COMPANION_APPEARANCE_TRANSFER =
+        "roleplay/play/{scenarioId}/companion-appearance-transfer/{assistantId}"
+    const val ROLEPLAY_COMPANION_VISUALS = "roleplay/play/{scenarioId}/companion-visuals/{assistantId}"
+    const val ROLEPLAY_COMPANION_VOICE = "roleplay/companion-voice/{assistantId}"
     const val ROLEPLAY_DIARY = "roleplay/play/{scenarioId}/diary"
     const val ROLEPLAY_DIARY_DETAIL = "roleplay/play/{scenarioId}/diary/{entryId}"
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val ROLEPLAY_MAILBOX = "roleplay/play/{scenarioId}/mailbox"
     const val ROLEPLAY_WALLET = "roleplay/play/{scenarioId}/wallet"
-    const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
+    const val PHONE_CHECK =
+        "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
     const val MOMENTS_GLOBAL = "moments"
     const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
 
@@ -79,15 +94,29 @@ object AppRoutes {
         return "settings/assistants/$assistantId/extensions"
     }
 
-    fun settingsAssistantMemory(assistantId: String): String {
-        return "settings/assistants/$assistantId/memory"
+    fun settingsAssistantMemory(assistantId: String, conversationId: String? = null): String {
+        val base = "settings/assistants/${Uri.encode(assistantId)}/memory"
+        return conversationId?.takeIf { it.isNotBlank() }
+            ?.let { "$base?conversationId=${Uri.encode(it)}" } ?: base
     }
 
     fun settingsAssistantMemorySimple(assistantId: String, conversationId: String? = null): String {
-        val base = "settings/assistants/$assistantId/memory/simple"
+        val base = "settings/assistants/${Uri.encode(assistantId)}/memory/simple"
         val trimmed = conversationId?.trim().orEmpty()
         return if (trimmed.isEmpty()) base else "$base?conversationId=${Uri.encode(trimmed)}"
     }
+
+    fun settingsMemoryOriginal(
+        assistantId: String,
+        spaceId: String,
+        conversationId: String,
+        personaKey: String
+    ): String =
+        "settings/assistants/${Uri.encode(assistantId)}/memory/archive/${Uri.encode(spaceId)}/read/${
+            Uri.encode(
+                conversationId
+            )
+        }?personaKey=${Uri.encode(personaKey)}"
 
     fun settingsWorldBookEdit(
         entryId: String,
@@ -109,9 +138,47 @@ object AppRoutes {
         return "roleplay/play/${Uri.encode(scenarioId)}"
     }
 
+    fun roleplayCompanion(
+        scenarioId: String,
+        entryId: String = java.util.UUID.randomUUID().toString()
+    ): String =
+        "roleplay/companion/${Uri.encode(scenarioId)}/${Uri.encode(entryId)}"
+
     fun roleplaySettings(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/settings"
     }
+
+    fun roleplayCompanionSettings(scenarioId: String, assistantId: String): String =
+        "roleplay/play/${Uri.encode(scenarioId)}/companion-settings/${Uri.encode(assistantId)}"
+
+    @JvmOverloads
+    fun roleplayCompanionReading(
+        scenarioId: String,
+        assistantId: String,
+        messageId: String? = null,
+        archiveSpaceId: String? = null,
+        archiveRunId: String? = null,
+    ): String {
+        val base = "roleplay/play/${Uri.encode(scenarioId)}/companion-reading/${Uri.encode(assistantId)}"
+        val query = listOf(
+            "messageId" to messageId,
+            "archiveSpaceId" to archiveSpaceId,
+            "archiveRunId" to archiveRunId,
+        ).mapNotNull { (name, value) -> value?.let { "$name=${Uri.encode(it)}" } }
+        return if (query.isEmpty()) base else "$base?${query.joinToString("&")}"
+    }
+
+    fun roleplayCompanionHistory(scenarioId: String, assistantId: String): String =
+        "roleplay/play/${Uri.encode(scenarioId)}/companion-history/${Uri.encode(assistantId)}"
+
+    fun roleplayCompanionAppearanceTransfer(scenarioId: String, assistantId: String): String =
+        "roleplay/play/${Uri.encode(scenarioId)}/companion-appearance-transfer/${Uri.encode(assistantId)}"
+
+    fun roleplayCompanionVisuals(scenarioId: String, assistantId: String): String =
+        "roleplay/play/${Uri.encode(scenarioId)}/companion-visuals/${Uri.encode(assistantId)}"
+
+    fun roleplayCompanionVoice(assistantId: String): String =
+        "roleplay/companion-voice/${Uri.encode(assistantId)}"
 
     fun roleplayReading(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/reading"

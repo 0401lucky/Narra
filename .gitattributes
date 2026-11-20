@@ -7,3 +7,13 @@
 # picking either side (task state lives in task.json, not index.md). See
 # .trellis/spec/cli/backend/directory-structure.md for details.
 .trellis/workspace/*/journal-*.md merge=union
+
+# 固定迁移来源按原始字节校验 SHA-256，跨宿主检出保持 LF。
+app/schemas/com.example.myapplication.data.local.chat.ChatDatabase/53.json text eol=lf
+app/schemas/com.example.myapplication.data.local.chat.ChatDatabase/54.json text eol=lf
+app/schemas/com.example.myapplication.data.local.chat.ChatDatabase/55.json text eol=lf
+app/schemas/com.example.myapplication.data.local.chat.ChatDatabase/56.json text eol=lf
+app/src/baseline/assets/benchmark/s3-schema-v53.sql text eol=lf
+app/src/baseline/assets/benchmark/s3-schema-v54.sql text eol=lf
+app/src/baseline/assets/benchmark/s3-schema-v55.sql text eol=lf
+app/src/baseline/assets/benchmark/s3-schema-v56.sql text eol=lf

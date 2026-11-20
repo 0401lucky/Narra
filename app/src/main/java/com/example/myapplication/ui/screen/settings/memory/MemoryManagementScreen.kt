@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -56,12 +59,16 @@ import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
 import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
 import com.example.myapplication.model.MEMORY_CAPACITY_MAX
 import com.example.myapplication.model.MEMORY_CAPACITY_MIN
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MAX
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MIN
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MemoryPromptDefaults
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.MemoryResidentLimits
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsHelpButton
@@ -73,6 +80,8 @@ import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColor
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
 import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
 import com.example.myapplication.viewmodel.MemoryManagementUiState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -119,11 +128,13 @@ fun MemoryManagementScreen(
     assistants: List<Assistant>,
     memoryAutoSummaryEvery: Int,
     memoryCapacity: Int,
+    memoryRecallTokenBudget: Int,
     memoryExtractionPrompt: String,
     memoryInjectionPrompt: String,
     memoryInjectionPosition: MemoryInjectionPosition,
     onUpdateMemoryAutoSummaryEvery: (Int) -> Unit,
     onUpdateMemoryCapacity: (Int) -> Unit,
+    onUpdateMemoryRecallTokenBudget: (Int) -> Unit,
     onUpdateMemoryExtractionPrompt: (String) -> Unit,
     onUpdateMemoryInjectionPrompt: (String) -> Unit,
     onUpdateMemoryInjectionPosition: (MemoryInjectionPosition) -> Unit,
@@ -133,6 +144,13 @@ fun MemoryManagementScreen(
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
     initialAssistantId: String = "",
+    archiveCharacterIds: List<String> = emptyList(),
+    archiveError: String? = null,
+    onOpenArchive: (String) -> Unit = {},
+    memoryResidentLimits: MemoryResidentLimits = MemoryResidentLimits(),
+    onUpdateMemoryResidentLimits: (MemoryResidentLimits) -> Unit = {},
+    onTogglePinnedEntry: (MemoryEntry) -> Unit = { onTogglePinned(it.id) },
+    onDeleteMemoryEntry: (MemoryEntry) -> Unit = { onDeleteMemory(it.id) },
 ) {
     val palette = rememberSettingsPalette()
     val snackbarHostState = rememberSettingsSnackbarHostState(
@@ -237,6 +255,17 @@ fun MemoryManagementScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                if (archiveCharacterIds.isNotEmpty()) item {
+                    ArchiveCard {
+                        Text("角色记忆档案", style = MaterialTheme.typography.titleMedium)
+                        Text("经历、事件、长期认知、当前状态和本轮材料均在角色档案中管理。", style = MaterialTheme.typography.bodySmall)
+                        archiveCharacterIds.forEach { id ->
+                            val assistant = assistants.find { it.id == id }
+                            ArchiveAction(assistant?.name?.ifBlank { "未命名角色" } ?: "已移除角色 / 历史档案 · $id", { onOpenArchive(id) }, tag = "open_memory_archive_$id")
+                        }
+                        archiveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    }
+                }
                 item {
                     SettingsPageIntro(
                         title = stringResource(R.string.memory_viewer_title),
@@ -257,9 +286,15 @@ fun MemoryManagementScreen(
                     MemoryGlobalConfigCard(
                         autoSummaryEvery = memoryAutoSummaryEvery,
                         memoryCapacity = memoryCapacity,
+                        memoryRecallTokenBudget = memoryRecallTokenBudget,
                         onAutoSummaryEveryChange = onUpdateMemoryAutoSummaryEvery,
                         onMemoryCapacityChange = onUpdateMemoryCapacity,
+                        onMemoryRecallTokenBudgetChange = onUpdateMemoryRecallTokenBudget,
                     )
+                }
+
+                item {
+                    MemoryResidentLimitsCard(memoryResidentLimits, onUpdateMemoryResidentLimits)
                 }
 
                 item {
@@ -291,6 +326,8 @@ fun MemoryManagementScreen(
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
+                            Text("旧格式兼容记录与会话摘要", style = MaterialTheme.typography.titleSmall)
+                            Text("以下操作与档案使用同一份记忆。新空间资料请从角色档案查看。", style = MaterialTheme.typography.bodySmall)
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
                                     text = stringResource(R.string.memory_select_role_label),
@@ -420,8 +457,9 @@ fun MemoryManagementScreen(
                                             entry = entry,
                                             assistantLabel = resolveMemoryAssistantLabel(entry, assistantNamesById),
                                             showAssistantLabel = selectedAssistantId == AllAssistantFilterKey,
-                                            onTogglePinned = { onTogglePinned(entry.id) },
-                                            onDelete = { onDeleteMemory(entry.id) },
+                                            onTogglePinned = { onTogglePinnedEntry(entry) },
+                                            onDelete = onDeleteMemoryEntry,
+                                            enabled = !uiState.isBusy,
                                         )
                                     }
                                 }
@@ -458,8 +496,9 @@ fun MemoryManagementScreen(
                                         entry = entry,
                                         assistantLabel = resolveMemoryAssistantLabel(entry, assistantNamesById),
                                         showAssistantLabel = selectedAssistantId == AllAssistantFilterKey,
-                                        onTogglePinned = { onTogglePinned(entry.id) },
-                                        onDelete = { onDeleteMemory(entry.id) },
+                                        onTogglePinned = { onTogglePinnedEntry(entry) },
+                                        onDelete = onDeleteMemoryEntry,
+                                        enabled = !uiState.isBusy,
                                     )
                                 }
                             }
@@ -479,8 +518,9 @@ fun MemoryManagementScreen(
                                         entry = entry,
                                         assistantLabel = resolveMemoryAssistantLabel(entry, assistantNamesById),
                                         showAssistantLabel = selectedAssistantId == AllAssistantFilterKey,
-                                        onTogglePinned = { onTogglePinned(entry.id) },
-                                        onDelete = { onDeleteMemory(entry.id) },
+                                        onTogglePinned = { onTogglePinnedEntry(entry) },
+                                        onDelete = onDeleteMemoryEntry,
+                                        enabled = !uiState.isBusy,
                                     )
                                 }
                             }
@@ -529,8 +569,9 @@ fun MemoryManagementScreen(
                                                 entry = item.entry,
                                                 assistantLabel = resolveMemoryAssistantLabel(item.entry, assistantNamesById),
                                                 showAssistantLabel = true,
-                                                onTogglePinned = { onTogglePinned(item.entry.id) },
-                                                onDelete = { onDeleteMemory(item.entry.id) },
+                                                onTogglePinned = { onTogglePinnedEntry(item.entry) },
+                                                onDelete = onDeleteMemoryEntry,
+                                                enabled = !uiState.isBusy,
                                             )
                                         }
 
@@ -706,10 +747,11 @@ private fun MemoryEntryCard(
     assistantLabel: String?,
     showAssistantLabel: Boolean,
     onTogglePinned: () -> Unit,
-    onDelete: () -> Unit,
+    onDelete: (MemoryEntry) -> Unit,
+    enabled: Boolean,
 ) {
     val palette = rememberSettingsPalette()
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var pendingDelete by remember(entry.id) { mutableStateOf<MemoryEntry?>(null) }
     var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -783,7 +825,7 @@ private fun MemoryEntryCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                NarraIconButton(onClick = onTogglePinned, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = onTogglePinned, enabled = enabled, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
                         contentDescription = if (entry.pinned) stringResource(R.string.memory_unpin) else stringResource(R.string.memory_pinned_label),
@@ -791,7 +833,7 @@ private fun MemoryEntryCard(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                NarraIconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = { pendingDelete = entry }, enabled = enabled, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = stringResource(R.string.common_delete),
@@ -803,21 +845,21 @@ private fun MemoryEntryCard(
         }
     }
 
-    if (showDeleteConfirm) {
+    pendingDelete?.let { selected ->
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { pendingDelete = null },
             title = { Text("删除记忆") },
             text = { Text("确定要删除这条记忆吗？此操作不可撤销。") },
             confirmButton = {
                 TextButton(onClick = {
-                    showDeleteConfirm = false
-                    onDelete()
-                }) {
+                    pendingDelete = null
+                    onDelete(selected)
+                }, enabled = enabled) {
                     Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = { pendingDelete = null }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
@@ -1018,8 +1060,10 @@ private const val MEMORY_CAPACITY_STEP = 50
 private fun MemoryGlobalConfigCard(
     autoSummaryEvery: Int,
     memoryCapacity: Int,
+    memoryRecallTokenBudget: Int,
     onAutoSummaryEveryChange: (Int) -> Unit,
     onMemoryCapacityChange: (Int) -> Unit,
+    onMemoryRecallTokenBudgetChange: (Int) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
     var autoEveryDraft by rememberSaveable(autoSummaryEvery) { mutableIntStateOf(autoSummaryEvery) }
@@ -1076,7 +1120,7 @@ private fun MemoryGlobalConfigCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "记忆上限",
+                        text = "活动经历池",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -1088,8 +1132,8 @@ private fun MemoryGlobalConfigCard(
                         color = palette.accent,
                     )
                     SettingsHelpButton(
-                        title = "记忆上限",
-                        description = "全局 store 最多保留 N 条记忆。超出时按置顶、重要性和时间排序，优先保留前面的条目。",
+                        title = "活动经历池",
+                        description = "作为每个角色活动经历池的容量起点。超出后转入历史归档，仍可检索；不会删除保存的记忆正文。召回条数和本轮预算另行限制。",
                     )
                 }
                 Slider(
@@ -1103,6 +1147,57 @@ private fun MemoryGlobalConfigCard(
                     steps = (MEMORY_CAPACITY_MAX - MEMORY_CAPACITY_MIN) / MEMORY_CAPACITY_STEP - 1,
                 )
             }
+
+            MemoryRecallBudgetSetting(
+                tokenBudget = memoryRecallTokenBudget,
+                onTokenBudgetChange = onMemoryRecallTokenBudgetChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MemoryRecallBudgetSetting(
+    tokenBudget: Int,
+    onTokenBudgetChange: (Int) -> Unit,
+) {
+    var budgetDraft by rememberSaveable(tokenBudget) { mutableStateOf(tokenBudget.toString()) }
+    val parsedBudget = budgetDraft.toIntOrNull()
+    val isValid = parsedBudget != null &&
+        parsedBudget in MEMORY_RECALL_TOKEN_BUDGET_MIN..MEMORY_RECALL_TOKEN_BUDGET_MAX
+
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+        Text(
+            text = "本轮记忆预算",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "认知、置顶、经历与状态共用此额度。只限制本轮使用量，保存的记忆正文保持完整。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = budgetDraft,
+            onValueChange = { budgetDraft = it.filter(Char::isDigit) },
+            modifier = Modifier.fillMaxWidth().testTag("memory_recall_token_budget"),
+            label = { Text("估算 token") },
+            supportingText = { Text("范围：$MEMORY_RECALL_TOKEN_BUDGET_MIN–$MEMORY_RECALL_TOKEN_BUDGET_MAX") },
+            singleLine = true,
+            isError = !isValid,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = NarraShapes.small,
+        )
+        NarraTextButton(
+            onClick = { parsedBudget?.takeIf { isValid }?.let(onTokenBudgetChange) },
+            enabled = isValid && parsedBudget != tokenBudget,
+            modifier = Modifier
+                .align(Alignment.End)
+                .heightIn(min = NarraMinimumTouchTarget)
+                .testTag("memory_recall_budget_save"),
+        ) {
+            Text("保存预算")
         }
     }
 }

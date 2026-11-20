@@ -1,16 +1,37 @@
 package com.example.myapplication.data.repository.context
 
+import com.example.myapplication.conversation.ConversationSummaryCoverageSupport
+import com.example.myapplication.data.local.chat.MessageEntity
 import com.example.myapplication.data.local.memory.ConversationSummaryEntity
 import com.example.myapplication.data.local.memory.ConversationSummarySegmentEntity
 import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.data.local.memory.MemoryEntryEntity
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.ConversationSummarySegment
+import com.example.myapplication.model.ConversationSummarySource
+import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.CompanionMemoryState
+import com.example.myapplication.model.CompanionSourceEligibility
+import com.example.myapplication.model.withCompanionSourceProof
+import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.MemoryRuntimeContext
+import com.example.myapplication.model.PromptCompletionStatus
+import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
+import com.example.myapplication.model.RoleplayOutputFormat
+import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import java.util.Locale
 
 interface MemoryRepository {
     fun observeEntries(): Flow<List<MemoryEntry>>
@@ -26,6 +47,8 @@ interface MemoryRepository {
     suspend fun upsertEntry(entry: MemoryEntry)
 
     suspend fun deleteEntry(entryId: String)
+
+    suspend fun deleteEntry(entryId: String, expectedRevision: Long) = deleteEntry(entryId)
 
     /**
      * 全局兜底裁剪：当 memory_entries 总条数超过 [capacity] 时，按 listEntries 默认排序
@@ -44,19 +67,37 @@ interface ConversationSummaryRepository {
 
     fun observeSummaries(): Flow<List<ConversationSummary>>
 
-    fun observeSummarySegments(conversationId: String): Flow<List<ConversationSummarySegment>> = flowOf(emptyList())
+    fun observeSummarySegments(conversationId: String): Flow<List<ConversationSummarySegment>> =
+        flowOf(emptyList())
 
     suspend fun getSummary(conversationId: String): ConversationSummary?
 
+    suspend fun getSummaryForContext(context: MemoryRuntimeContext): ConversationSummary? =
+        getSummary(context.conversationId)?.takeIf { it.memoryContext == context }
+
     suspend fun listSummaries(): List<ConversationSummary>
 
-    suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> = emptyList()
+    suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> =
+        emptyList()
 
     suspend fun listAllSummarySegments(): List<ConversationSummarySegment> = emptyList()
+
+    /** null 仅用于没有消息存储能力的兼容实现；Room 返回完整当前原文。 */
+    suspend fun getSummarySourceMessages(conversationId: String): List<ChatMessage>? = null
 
     suspend fun upsertSummary(summary: ConversationSummary)
 
     suspend fun upsertSummarySegment(segment: ConversationSummarySegment) = Unit
+
+    suspend fun saveSummaryIfSourcesCurrent(
+        summary: ConversationSummary,
+        expectedSummary: ConversationSummary?,
+    ): Boolean = false
+
+    suspend fun saveSummarySegmentIfSourcesCurrent(
+        segment: ConversationSummarySegment,
+        expectedSummary: ConversationSummary?,
+    ): Boolean = false
 
     suspend fun deleteSummary(conversationId: String)
 
@@ -65,6 +106,7 @@ interface ConversationSummaryRepository {
 
 class RoomMemoryRepository(
     private val memoryDao: MemoryDao,
+    private val companionDao: com.example.myapplication.data.local.companion.CompanionDao? = null,
 ) : MemoryRepository, ConversationSummaryRepository {
     override fun observeEntries(): Flow<List<MemoryEntry>> {
         return memoryDao.observeMemoryEntries().map { entries ->
@@ -111,12 +153,26 @@ class RoomMemoryRepository(
     }
 
     override suspend fun getSummary(conversationId: String): ConversationSummary? {
-        return memoryDao.getConversationSummary(conversationId)?.let(::toSummaryDomain)
+        if (memoryDao.hasSummaryRuntimeBinding(conversationId)) return null
+        return memoryDao.getScopedConversationSummary(conversationId, "")?.let(::toSummaryDomain)
+    }
+
+    override suspend fun getSummaryForContext(context: MemoryRuntimeContext): ConversationSummary? {
+        val key = ConversationSummaryCoverageSupport.memoryContextKey(context)
+        return memoryDao.getCurrentRuntimeSummary(context.conversationId, context.characterId, key)
+            ?.let(::toSummaryDomain)
     }
 
     override fun observeSummary(conversationId: String): Flow<ConversationSummary?> {
-        return memoryDao.observeConversationSummary(conversationId).map { entity ->
-            entity?.let(::toSummaryDomain)
+        return combine(
+            memoryDao.observeConversationSummary(conversationId),
+            memoryDao.observeSummaryRuntimeBinding(conversationId),
+        ) { entity, hasRuntime ->
+            if (hasRuntime) null else (entity?.takeIf { it.memoryContextJson.isEmpty() }
+                ?: memoryDao.getConversationSummaryCache(
+                    conversationId,
+                    ""
+                ))?.let(::toSummaryDomain)
         }
     }
 
@@ -137,32 +193,78 @@ class RoomMemoryRepository(
     }
 
     override suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> {
-        return memoryDao.listConversationSummarySegments(conversationId).map(::toSummarySegmentDomain)
+        return memoryDao.listConversationSummarySegments(conversationId)
+            .map(::toSummarySegmentDomain)
     }
 
     override suspend fun listAllSummarySegments(): List<ConversationSummarySegment> {
         return memoryDao.listAllConversationSummarySegments().map(::toSummarySegmentDomain)
     }
 
+    override suspend fun getSummarySourceMessages(conversationId: String): List<ChatMessage> {
+        return resolvedSummarySources(memoryDao.getSummarySourceMessages(conversationId))
+    }
+
     override suspend fun upsertSummary(summary: ConversationSummary) {
-        memoryDao.upsertConversationSummary(
-            ConversationSummaryEntity(
-                conversationId = summary.conversationId,
-                assistantId = summary.assistantId,
-                summary = summary.summary,
-                coveredMessageCount = summary.coveredMessageCount,
-                updatedAt = summary.updatedAt,
-            ),
-        )
+        memoryDao.upsertConversationSummaryWithCache(toSummaryEntity(summary))
     }
 
     override suspend fun upsertSummarySegment(segment: ConversationSummarySegment) {
         memoryDao.upsertConversationSummarySegment(toSummarySegmentEntity(segment))
     }
 
+    override suspend fun saveSummaryIfSourcesCurrent(
+        summary: ConversationSummary,
+        expectedSummary: ConversationSummary?,
+    ): Boolean {
+        val contextKey = ConversationSummaryCoverageSupport.memoryContextKey(summary.memoryContext)
+        val current = memoryDao.getScopedConversationSummary(summary.conversationId, contextKey)
+        if (current?.let(::toSummaryDomain) != expectedSummary) return false
+        val sourceEntities = memoryDao.getSummarySourceMessages(summary.conversationId)
+        val sources = resolvedSummarySources(sourceEntities)
+        if (ConversationSummaryCoverageSupport.processedSummaryCoverage(
+                summary,
+                sources,
+                summary.memoryContext
+            ) == 0 ||
+            summary.coveredMessageCount != ConversationSummaryCoverageSupport.verifiedSummaryCoverage(
+                summary,
+                sources,
+                summary.memoryContext
+            )
+        ) return false
+        return memoryDao.publishConversationSummary(
+            toSummaryEntity(summary),
+            current,
+            sourceEntities
+        )
+    }
+
+    override suspend fun saveSummarySegmentIfSourcesCurrent(
+        segment: ConversationSummarySegment,
+        expectedSummary: ConversationSummary?,
+    ): Boolean {
+        val contextKey = ConversationSummaryCoverageSupport.memoryContextKey(segment.memoryContext)
+        val current = memoryDao.getScopedConversationSummary(segment.conversationId, contextKey)
+        if (current?.let(::toSummaryDomain) != expectedSummary) return false
+        val sourceEntities = memoryDao.getSummarySourceMessages(segment.conversationId)
+        if (ConversationSummaryCoverageSupport.segmentRange(
+                segment,
+                resolvedSummarySources(sourceEntities),
+                segment.memoryContext
+            ) == null
+        ) {
+            return false
+        }
+        return memoryDao.saveConversationSummarySegment(
+            toSummarySegmentEntity(segment),
+            current,
+            sourceEntities
+        )
+    }
+
     override suspend fun deleteSummary(conversationId: String) {
-        memoryDao.deleteConversationSummary(conversationId)
-        memoryDao.deleteConversationSummarySegments(conversationId)
+        memoryDao.deleteConversationSummaryAndSegments(conversationId)
     }
 
     override suspend fun deleteSummarySegments(conversationId: String) {
@@ -182,6 +284,19 @@ class RoomMemoryRepository(
             lastUsedAt = entity.lastUsedAt,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toSummaryEntity(summary: ConversationSummary): ConversationSummaryEntity {
+        return ConversationSummaryEntity(
+            conversationId = summary.conversationId,
+            assistantId = summary.assistantId,
+            summary = summary.summary,
+            coveredMessageCount = summary.coveredMessageCount,
+            updatedAt = summary.updatedAt,
+            sourceSnapshotJson = AppJson.gson.toJson(summary.sourceSnapshot),
+            completionStatus = summary.completionStatus.name.lowercase(Locale.ROOT),
+            memoryContextJson = ConversationSummaryCoverageSupport.memoryContextKey(summary.memoryContext),
         )
     }
 
@@ -208,6 +323,9 @@ class RoomMemoryRepository(
             summary = entity.summary,
             coveredMessageCount = entity.coveredMessageCount,
             updatedAt = entity.updatedAt,
+            sourceSnapshot = decodeSummarySources(entity.sourceSnapshotJson),
+            completionStatus = decodeCompletionStatus(entity.completionStatus),
+            memoryContext = ConversationSummaryCoverageSupport.decodeMemoryContext(entity.memoryContextJson),
         )
     }
 
@@ -224,6 +342,9 @@ class RoomMemoryRepository(
             summary = entity.summary,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            sourceSnapshot = decodeSummarySources(entity.sourceSnapshotJson),
+            completionStatus = decodeCompletionStatus(entity.completionStatus),
+            memoryContext = ConversationSummaryCoverageSupport.decodeMemoryContext(entity.memoryContextJson),
         )
     }
 
@@ -240,8 +361,87 @@ class RoomMemoryRepository(
             summary = segment.summary,
             createdAt = segment.createdAt,
             updatedAt = segment.updatedAt,
+            sourceSnapshotJson = AppJson.gson.toJson(segment.sourceSnapshot),
+            completionStatus = segment.completionStatus.name.lowercase(Locale.ROOT),
+            memoryContextJson = ConversationSummaryCoverageSupport.memoryContextKey(segment.memoryContext),
         )
     }
+
+    private suspend fun resolvedSummarySources(entities: List<MessageEntity>): List<ChatMessage> {
+        val qualified = entities.associate { entity ->
+            val turn =
+                entity.companionTurnId.takeIf { it.isNotBlank() }?.let { companionDao?.getTurn(it) }
+            val encounter = turn?.let { companionDao?.getEncounter(it.encounterId) }
+            val selectedAttempt = turn?.selectedAttemptId?.let { companionDao?.getAttempt(it) }
+            entity.id to com.example.myapplication.data.local.companion.CompanionSourceStorage.classify(
+                entity,
+                turn,
+                encounter,
+                selectedAttempt
+            )
+        }
+        return toSummarySourceMessages(entities, qualified)
+    }
+
+    private fun decodeSummarySources(json: String): List<ConversationSummarySource> {
+        return runCatching {
+            AppJson.gson.fromJson(json, Array<ConversationSummarySource>::class.java).orEmpty()
+                .toList().also { sources ->
+                    require(sources.all {
+                        it.messageId.isNotBlank() && it.messageRevision > 0L && it.fingerprint.length == 64 &&
+                                it.startOffset == 0 && (it.endOffset > 0 && it.kind == null ||
+                                it.endOffset == 0 && it.kind == ConversationSummaryCoverageSupport.CONTROL_NOOP)
+                    }) { "摘要来源凭据无效" }
+                }
+        }.logFailure("MemoryRepository") { "summary sources decode failed, raw.len=${json.length}" }
+            .getOrDefault(emptyList())
+    }
+
+    private fun decodeCompletionStatus(value: String): PromptCompletionStatus =
+        PromptCompletionStatus.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
+            ?: PromptCompletionStatus.UNKNOWN
+
+}
+
+internal fun toSummarySourceMessages(
+    entities: List<MessageEntity>,
+    eligibility: Map<String, CompanionSourceEligibility> = emptyMap(),
+): List<ChatMessage> {
+    return runCatching {
+        entities.map { entity ->
+            ChatMessage(
+                id = entity.id,
+                conversationId = entity.conversationId,
+                role = MessageRole.valueOf(entity.role),
+                content = entity.content,
+                status = MessageStatus.valueOf(entity.status),
+                createdAt = entity.createdAt,
+                parts = normalizeChatMessageParts(
+                    AppJson.gson.fromJson(entity.partsJson, Array<ChatMessagePart>::class.java)
+                        .orEmpty().toList(),
+                ),
+                attachments = AppJson.gson.fromJson(
+                    entity.attachmentsJson, Array<MessageAttachment>::class.java,
+                ).orEmpty().toList(),
+                replyToMessageId = entity.replyToMessageId,
+                replyToPreview = entity.replyToPreview,
+                replyToSpeakerName = entity.replyToSpeakerName,
+                speakerId = entity.speakerId,
+                speakerName = entity.speakerName,
+                isRecalled = entity.isRecalled,
+                systemEventKind = RoleplayOnlineEventKind.fromStorageValue(entity.systemEventKind),
+                roleplayOutputFormat = RoleplayOutputFormat.valueOf(entity.roleplayOutputFormat),
+                roleplayInteractionMode = RoleplayInteractionMode.fromStorageValueOrNull(entity.roleplayInteractionMode),
+                memoryRevision = entity.memoryRevision,
+                memoryRecallRequestId = entity.memoryRecallRequestId,
+                companionTurnId = entity.companionTurnId,
+                companionMemoryState = CompanionMemoryState.fromStorageValue(entity.companionMemoryState),
+            ).withCompanionSourceProof(
+                eligibility[entity.id] ?: CompanionSourceEligibility.UNAVAILABLE
+            )
+        }
+    }.logFailure("MemoryRepository") { "summary message sources decode failed" }
+        .getOrDefault(emptyList())
 }
 
 object EmptyMemoryRepository : MemoryRepository {

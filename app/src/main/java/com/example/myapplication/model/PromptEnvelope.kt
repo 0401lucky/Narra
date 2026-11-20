@@ -8,13 +8,16 @@ data class PromptEnvelope(
     val stopSequences: List<String> = emptyList(),
     val statusCardsEnabled: Boolean = true,
     val hideStatusBlocksInBubble: Boolean = true,
+    @Transient val memoryRecallRequest: MemoryRecallRequest? = null,
+    @Transient val companionRequestGuard: CompanionRequestGuard? = null,
+    @Transient val companionMode: Boolean = false,
 ) {
     val hasRuntimeOverrides: Boolean
         get() = preHistoryMessages.isNotEmpty() ||
-            postHistoryMessages.isNotEmpty() ||
-            historyInjections.isNotEmpty() ||
-            sampler.hasAnyValue() ||
-            stopSequences.isNotEmpty()
+                postHistoryMessages.isNotEmpty() ||
+                historyInjections.isNotEmpty() ||
+                sampler.hasAnyValue() ||
+                stopSequences.isNotEmpty()
 }
 
 data class PromptEnvelopeMessage(
@@ -52,11 +55,11 @@ data class PromptHistoryInjection(
 
 fun PresetSamplerConfig.hasAnyValue(): Boolean {
     return temperature != null ||
-        topP != null ||
-        topK != null ||
-        minP != null ||
-        repetitionPenalty != null ||
-        frequencyPenalty != null ||
-        presencePenalty != null ||
-        maxOutputTokens != null
+            topP != null ||
+            topK != null ||
+            minP != null ||
+            repetitionPenalty != null ||
+            frequencyPenalty != null ||
+            presencePenalty != null ||
+            maxOutputTokens != null
 }

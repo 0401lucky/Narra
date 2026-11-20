@@ -43,4 +43,6 @@ data class RoleplayChatSummaryRow(
     val lastMessageContent: String?,
     val lastMessageCreatedAt: Long?,
     val lastMessageRole: String?,
+    val memoryPurpose: String = "legacy_compat",
+    val sessionRunId: String? = null,
 )

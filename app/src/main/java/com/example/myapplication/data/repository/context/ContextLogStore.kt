@@ -56,6 +56,16 @@ class ContextLogStore {
         return mutableSnapshots.value.firstOrNull { it.id == id }
     }
 
+    /** 持久提交后仅更新明确关联的本轮快照；预览和其他轮次不借用这份回执。 */
+    fun attachMemoryReceipt(receipt: com.example.myapplication.model.MemoryRecallReceipt) {
+        mutableSnapshots.update { snapshots ->
+            snapshots.map { snapshot ->
+                if (snapshot.memoryRecallRequestId != receipt.requestId) snapshot
+                else snapshot.copy(memoryRecallReceipt = receipt)
+            }
+        }
+    }
+
     /** 容量变更：调小时立即截断已有快照。 */
     fun setCapacity(value: Int) {
         val coerced = value.coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX)

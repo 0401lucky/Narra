@@ -1,11 +1,13 @@
 package com.example.myapplication.context
 
+import com.example.myapplication.conversation.ConversationSummaryCoverageSupport
 import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
 import com.example.myapplication.data.repository.context.EmptyMemoryRepository
 import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
 import com.example.myapplication.data.repository.context.EmptyPresetRepository
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
 import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
@@ -28,9 +30,13 @@ import com.example.myapplication.model.PresetPromptEntryKind
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.resolveActivePresetIdChain
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.MemoryRecallPlan
+import com.example.myapplication.model.MEMORY_ENGINE_CURRENT
+import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
 
 data class PromptContextResult(
     val systemPrompt: String,
@@ -46,9 +52,20 @@ data class PromptContextResult(
     val worldBookItems: List<ContextGovernanceItem> = emptyList(),
     val memoryItems: List<ContextGovernanceItem> = emptyList(),
     val contextSections: List<ContextLogSection> = emptyList(),
+    val memoryRecallPlan: MemoryRecallPlan? = null,
 )
 
 interface PromptContextAssembler {
+    suspend fun assembleCompanion(
+        settings: AppSettings,
+        assistant: Assistant,
+        conversation: Conversation,
+        userInputText: String,
+        recentMessages: List<ChatMessage>,
+        scenarioPresetId: String,
+        companionContext: com.example.myapplication.model.CompanionPromptContext,
+    ): PromptContextResult = error("当前上下文组装器不支持陪伴授权范围")
+
     suspend fun assemble(
         settings: AppSettings,
         assistant: Assistant?,
@@ -72,6 +89,13 @@ class DefaultPromptContextAssembler(
     private val phoneSnapshotPromptInjector: PhoneSnapshotPromptInjector = PhoneSnapshotPromptInjector(),
     private val presetRepository: PresetRepository = EmptyPresetRepository,
     private val presetPromptRenderer: PresetPromptRenderer = PresetPromptRenderer(),
+    private val memoryArchiveRepository: MemoryArchiveRepository? = null,
+    private val memoryRecallEngine: MemoryRecallEngine? = memoryArchiveRepository?.let {
+        MemoryRecallEngine(
+            it
+        )
+    },
+    private val onRecallContext: (com.example.myapplication.model.MemoryRuntimeContext) -> Unit = {},
 ) : PromptContextAssembler {
     override suspend fun assemble(
         settings: AppSettings,
@@ -83,6 +107,35 @@ class DefaultPromptContextAssembler(
         includePhoneSnapshot: Boolean,
         markUsage: Boolean,
         scenarioPresetId: String?,
+    ): PromptContextResult = assembleScoped(
+        settings, assistant, conversation, userInputText,
+        recentMessages, promptMode, includePhoneSnapshot, markUsage, scenarioPresetId, null
+    )
+
+    override suspend fun assembleCompanion(
+        settings: AppSettings,
+        assistant: Assistant,
+        conversation: Conversation,
+        userInputText: String,
+        recentMessages: List<ChatMessage>,
+        scenarioPresetId: String,
+        companionContext: com.example.myapplication.model.CompanionPromptContext,
+    ): PromptContextResult = assembleScoped(
+        settings, assistant, conversation, userInputText,
+        recentMessages, PromptMode.ROLEPLAY, false, true, scenarioPresetId, companionContext
+    )
+
+    private suspend fun assembleScoped(
+        settings: AppSettings,
+        assistant: Assistant?,
+        conversation: Conversation,
+        userInputText: String,
+        recentMessages: List<ChatMessage>,
+        promptMode: PromptMode,
+        includePhoneSnapshot: Boolean,
+        markUsage: Boolean,
+        scenarioPresetId: String?,
+        companionContext: com.example.myapplication.model.CompanionPromptContext?,
     ): PromptContextResult {
         val resolvedUserName = settings.resolvedUserDisplayName()
         val resolvedCharacterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
@@ -96,27 +149,89 @@ class DefaultPromptContextAssembler(
             userInputText = userInputText,
             recentMessages = recentMessages,
         ).entries
-        val selectedMemories = memorySelector.select(
-            entries = memoryRepository.listEntries(),
-            assistant = assistant,
-            conversation = conversation,
-            promptMode = promptMode,
-            userInputText = userInputText,
-            recentMessages = recentMessages,
+        val memoryContext = if (promptMode == PromptMode.ROLEPLAY && assistant != null) {
+            memoryArchiveRepository?.getRuntimeContext(conversation.id, assistant.id)
+                ?.takeIf {
+                    ConversationSummaryCoverageSupport.isValidMemoryContext(it) &&
+                            it.conversationId == conversation.id && it.characterId == assistant.id
+                }
+        } else null
+        if (companionContext != null) {
+            check(memoryContext == companionContext.scope.context) { "陪伴授权运行已改变" }
+        }
+        val archiveRecallEnabled = promptMode == PromptMode.ROLEPLAY &&
+                (memoryArchiveRepository?.getEngineVersion() ?: 0) >= MEMORY_ENGINE_CURRENT
+        if (archiveRecallEnabled && assistant?.memoryEnabled == true && memoryContext != null && markUsage) {
+            memoryArchiveRepository?.archiveRecallOverflow(memoryContext, settings.memoryCapacity)
+            onRecallContext(memoryContext)
+        }
+        val memoryRecallPlan =
+            if (archiveRecallEnabled && assistant?.memoryEnabled == true && memoryContext != null) {
+                try {
+                    memoryRecallEngine?.recall(
+                        memoryContext,
+                        userInputText,
+                        recentMessages,
+                        assistant.memoryMaxItems.takeIf { it > 0 } ?: DEFAULT_MEMORY_MAX_ITEMS,
+                        settings.memoryRecallTokenBudget,
+                        allowVector = markUsage && settings.resolveEmbeddingProvider() != null)
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    if (companionContext == null) throw failure
+                    // 召回失败只丢弃本请求的记忆，不读取前一请求或兼容列表作为替代。
+                    null
+                }
+            } else null
+        val selectedMemories =
+            if (archiveRecallEnabled || companionContext != null) emptyList() else memorySelector.select(
+                entries = memoryRepository.listEntries(),
+                assistant = assistant,
+                conversation = conversation,
+                promptMode = promptMode,
+                userInputText = userInputText,
+                recentMessages = recentMessages,
+            )
+        val summarySourceMessages = if (companionContext != null) recentMessages else
+            conversationSummaryRepository.getSummarySourceMessages(conversation.id)
+                ?: recentMessages
+        val canReadSummary =
+            companionContext == null && (promptMode != PromptMode.ROLEPLAY || memoryContext != null)
+        val storedSummary = when {
+            !canReadSummary -> null
+            memoryContext != null -> conversationSummaryRepository.getSummaryForContext(
+                memoryContext
+            )
+
+            else -> conversationSummaryRepository.getSummary(conversation.id)
+        }
+        val conversationSummary = ConversationSummaryCoverageSupport.usableSummary(
+            storedSummary,
+            summarySourceMessages,
+            memoryContext,
         )
-        val conversationSummary = conversationSummaryRepository.getSummary(conversation.id)
-        val recentSummarySegments = conversationSummaryRepository.listSummarySegments(conversation.id)
-            .filter { segment -> segment.summary.isNotBlank() }
-            .sortedWith(compareBy({ it.startCreatedAt }, { it.endCreatedAt }))
-            .takeLast(RECENT_SUMMARY_SEGMENT_LIMIT)
-        val phoneObservation = if (promptMode == PromptMode.ROLEPLAY) {
+        val recentSummarySegments =
+            (if (canReadSummary) conversationSummaryRepository.listSummarySegments(conversation.id) else emptyList())
+                .mapNotNull { segment ->
+                    ConversationSummaryCoverageSupport.usableSegment(
+                        segment,
+                        summarySourceMessages,
+                        memoryContext
+                    )
+                }
+                .sortedWith(compareBy({ it.startCreatedAt }, { it.endCreatedAt }, { it.id }))
+                .takeLast(RECENT_SUMMARY_SEGMENT_LIMIT)
+        val phoneObservation = if (promptMode == PromptMode.ROLEPLAY && companionContext == null) {
             phoneSnapshotRepository.getObservation(conversation.id)
         } else {
             null
         }
         val shouldIncludePhoneObservation = phoneObservation != null && (
-            !phoneObservation.hasVisibleFeedback || isPhoneObservationTopic(userInputText, recentMessages)
-        )
+                !phoneObservation.hasVisibleFeedback || isPhoneObservationTopic(
+                    userInputText,
+                    recentMessages
+                )
+                )
         val phoneSnapshotItems = if (includePhoneSnapshot) {
             phoneSnapshotRepository.getSnapshot(
                 conversationId = conversation.id,
@@ -139,13 +254,14 @@ class DefaultPromptContextAssembler(
                 timestamp = System.currentTimeMillis(),
             )
         }
-        val memorySection = formatMemorySection(
-            entries = selectedMemories,
-            promptMode = promptMode,
-            injectionPromptOverride = settings.memoryInjectionPrompt,
-            userName = resolvedUserName,
-            characterName = resolvedCharacterName,
-        )
+        val memorySection =
+            memoryRecallPlan?.section?.takeIf(String::isNotBlank) ?: formatMemorySection(
+                entries = selectedMemories,
+                promptMode = promptMode,
+                injectionPromptOverride = settings.memoryInjectionPrompt,
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
+            )
         val assistantSystemPromptSection = assistant?.systemPrompt
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
@@ -184,7 +300,7 @@ class DefaultPromptContextAssembler(
                 }
             }
         val greetingSection = formatGreetingSection(
-            greeting = assistant?.greeting,
+            greeting = assistant?.greeting.takeIf { companionContext == null },
             userName = resolvedUserName,
             characterName = resolvedCharacterName,
         )
@@ -205,7 +321,8 @@ class DefaultPromptContextAssembler(
             .joinToString(separator = "\n\n")
         val worldBookSections = formatWorldBookSections(matchedWorldBookEntries)
         val phoneSnapshotSection = formatPhoneSnapshotSection(phoneSnapshotItems)
-        val phoneObservationSection = formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
+        val phoneObservationSection =
+            formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
         val phoneContextSection = listOfNotNull(phoneSnapshotSection, phoneObservationSection)
             .joinToString(separator = "\n\n")
             .takeIf { it.isNotBlank() }
@@ -245,6 +362,7 @@ class DefaultPromptContextAssembler(
             recentMessages = recentMessages,
             matchedWorldBookEntries = matchedWorldBookEntries,
             selectedMemories = selectedMemories,
+            memoryPromptOverride = memorySection,
             conversationSummary = conversationSummary,
             summarySegments = recentSummarySegments,
             phoneSnapshotItems = phoneSnapshotItems,
@@ -260,31 +378,39 @@ class DefaultPromptContextAssembler(
         }
         val activePresetId = activePreset?.id.orEmpty().ifBlank { DEFAULT_PRESET_ID }
         val renderedPreset = activePreset?.let { preset ->
-            presetPromptRenderer.render(
-                PresetPromptRenderInput(
-                    preset = preset,
-                    userName = resolvedUserName,
-                    characterName = resolvedCharacterName,
-                    slotValues = mapOf(
-                        "main_prompt" to assistantSystemPromptSection.orEmpty(),
-                        "description" to roleSection.orEmpty(),
-                        "char_prompt" to assistantSystemPromptSection.orEmpty(),
-                        "persona" to userPersonaSection.orEmpty(),
-                        "scenario" to scenarioSection.orEmpty(),
-                        "example_dialogue" to exampleDialoguesSection.orEmpty(),
-                        "summary" to summarySlotValue,
-                        "world_info" to worldBookSections.joinToString(separator = "\n\n"),
-                        "world_info_after" to "",
-                        "long_memory" to memorySection.orEmpty(),
-                        "phone_context" to phoneContextSection.orEmpty(),
-                        "context" to legacySystemPrompt,
-                        "post_history" to "",
-                        "status_rules" to "",
-                    ),
+            val renderInput = PresetPromptRenderInput(
+                preset = if (companionContext != null)
+                    com.example.myapplication.roleplay.companion.CompanionPromptSupport.adaptBuiltInPreset(
+                        preset
+                    )
+                else preset,
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
+                slotValues = mapOf(
+                    "main_prompt" to assistantSystemPromptSection.orEmpty(),
+                    "description" to roleSection.orEmpty(),
+                    "char_prompt" to assistantSystemPromptSection.orEmpty(),
+                    "persona" to userPersonaSection.orEmpty(),
+                    "scenario" to scenarioSection.orEmpty(),
+                    "example_dialogue" to exampleDialoguesSection.orEmpty(),
+                    "summary" to summarySlotValue,
+                    "world_info" to worldBookSections.joinToString(separator = "\n\n"),
+                    "world_info_after" to "",
+                    "long_memory" to memorySection.orEmpty(),
+                    "phone_context" to phoneContextSection.orEmpty(),
+                    "context" to legacySystemPrompt,
+                    "post_history" to "",
+                    "status_rules" to "",
                 ),
             )
+            if (memoryRecallPlan == null) presetPromptRenderer.render(renderInput)
+            else MemoryRecallAssemblySupport.renderPreset(
+                presetPromptRenderer,
+                renderInput,
+                memoryRecallPlan
+            )
         }
-        val presetSummaryFallbackSection = if (renderedPreset != null && activePreset != null &&
+        val presetSummaryFallbackSection = if (renderedPreset != null &&
             shouldAddPresetSummaryFallback(
                 preset = activePreset,
                 renderedPreset = renderedPreset,
@@ -300,15 +426,32 @@ class DefaultPromptContextAssembler(
         } else {
             null
         }
-        val systemPrompt = renderedPreset?.systemPrompt
-            ?.let { prompt -> appendSummaryFallback(prompt, presetSummaryFallbackSection?.content.orEmpty()) }
+        val preliminarySystemPrompt = renderedPreset?.systemPrompt
+            ?.let { prompt ->
+                appendSummaryFallback(
+                    prompt,
+                    presetSummaryFallbackSection?.content.orEmpty()
+                )
+            }
             ?: legacySystemPrompt
-        val promptEnvelope = renderedPreset?.promptEnvelope ?: PromptEnvelope()
+        val preliminaryEnvelope = renderedPreset?.promptEnvelope ?: PromptEnvelope()
+        val recalledAssembly = memoryRecallPlan?.let {
+            MemoryRecallAssemblySupport.reconcile(
+                preliminarySystemPrompt,
+                preliminaryEnvelope,
+                it
+            )
+        }
+        val systemPrompt = recalledAssembly?.systemPrompt ?: preliminarySystemPrompt
+        val promptEnvelope = recalledAssembly?.envelope ?: preliminaryEnvelope
+        val finalRecallPlan = recalledAssembly?.plan
         val contextSections = if (renderedPreset == null) {
             baseContextSections
         } else {
             mergePresetContextSections(
-                presetSections = renderedPreset.contextSections + listOfNotNull(presetSummaryFallbackSection),
+                presetSections = renderedPreset.contextSections + listOfNotNull(
+                    presetSummaryFallbackSection
+                ),
                 chatHistorySections = baseContextSections.filter { section ->
                     section.sourceType == ContextLogSourceType.CHAT_HISTORY
                 },
@@ -332,7 +475,7 @@ class DefaultPromptContextAssembler(
             summaryCoveredMessageCount = conversationSummary?.coveredMessageCount ?: 0,
             summarySegmentCount = recentSummarySegments.size,
             worldBookHitCount = matchedWorldBookEntries.size,
-            memoryInjectionCount = selectedMemories.size,
+            memoryInjectionCount = finalRecallPlan?.materials?.size ?: selectedMemories.size,
             summaryPreview = conversationSummary?.summary
                 ?.trim()
                 .orEmpty()
@@ -345,13 +488,19 @@ class DefaultPromptContextAssembler(
                     content = limitEntryContent(entry.content).ifBlank { "（无内容）" },
                 )
             },
-            memoryItems = selectedMemories.map { entry ->
+            memoryItems = finalRecallPlan?.materials?.map { material ->
+                ContextGovernanceItem(
+                    title = material.label + if (material.fragment) " · 片段" else "",
+                    content = material.content, memoryRef = material.ref
+                )
+            } ?: selectedMemories.map { entry ->
                 ContextGovernanceItem(
                     title = resolveMemoryGovernanceTitle(entry, promptMode),
                     content = limitEntryContent(entry.content).ifBlank { "（无内容）" },
                 )
             },
             contextSections = contextSections,
+            memoryRecallPlan = finalRecallPlan,
         )
     }
 
@@ -573,6 +722,9 @@ class DefaultPromptContextAssembler(
                     "【对话摘要】\n"
                 },
             )
+            if (conversationSummary?.completionStatus == PromptCompletionStatus.UNKNOWN) {
+                append("此摘要的完整覆盖尚未验证，作为历史参考，不能代替本轮原文。\n")
+            }
             append(summaryText)
         }
     }
@@ -596,9 +748,13 @@ class DefaultPromptContextAssembler(
             append("以下内容来自历史剧情记录的分段压缩，用于承接未随近期原文发送的历史内容：\n")
             usableSegments.forEachIndexed { index, segment ->
                 append(index + 1)
-                append(". 覆盖 ")
-                append(segment.messageCount)
-                append(" 条消息：")
+                if (segment.completionStatus == PromptCompletionStatus.COMPLETED && segment.sourceSnapshot.isNotEmpty()) {
+                    append(". 覆盖 ")
+                    append(segment.sourceSnapshot.size)
+                    append(" 条消息：")
+                } else {
+                    append(". 覆盖未验证的历史参考：")
+                }
                 append(normalizePromptContent(segment.summary))
                 append('\n')
             }
@@ -624,7 +780,7 @@ class DefaultPromptContextAssembler(
             }
             val longTermEntries = regularEntries.filter { entry ->
                 entry.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT ||
-                    entry.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL
+                        entry.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL
             }
             val sceneEntries = regularEntries.filter { entry ->
                 entry.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION
@@ -769,7 +925,7 @@ class DefaultPromptContextAssembler(
                 com.example.myapplication.model.MemoryScopeType.CONVERSATION -> "剧情约束"
                 com.example.myapplication.model.MemoryScopeType.ASSISTANT,
                 com.example.myapplication.model.MemoryScopeType.GLOBAL,
-                -> "长期记忆"
+                    -> "长期记忆"
             }
         }
         return "记忆 · ${entry.scopeType.label}"
@@ -782,6 +938,7 @@ class DefaultPromptContextAssembler(
         recentMessages: List<ChatMessage>,
         matchedWorldBookEntries: List<WorldBookEntry>,
         selectedMemories: List<MemoryEntry>,
+        memoryPromptOverride: String?,
         conversationSummary: ConversationSummary?,
         summarySegments: List<ConversationSummarySegment>,
         phoneSnapshotItems: List<String>,
@@ -791,13 +948,13 @@ class DefaultPromptContextAssembler(
         val characterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
         val sections = mutableListOf<ContextLogSection>()
 
-        val memoryLogSection = formatMemorySection(
+        val memoryLogSection = (memoryPromptOverride ?: formatMemorySection(
             entries = selectedMemories,
             promptMode = promptMode,
             injectionPromptOverride = settings.memoryInjectionPrompt,
             userName = userName,
             characterName = characterName,
-        )?.let { memoryPrompt ->
+        ))?.let { memoryPrompt ->
             ContextLogSection(
                 sourceType = ContextLogSourceType.LONG_MEMORY,
                 title = if (promptMode == PromptMode.ROLEPLAY) "长记忆提示词" else "记忆提示词",
@@ -1024,7 +1181,7 @@ class DefaultPromptContextAssembler(
             .filter { it.enabled }
             .any { entry ->
                 entry.kind == PresetPromptEntryKind.SUMMARY ||
-                    SUMMARY_PLACEHOLDER_REGEX.containsMatchIn(entry.content)
+                        SUMMARY_PLACEHOLDER_REGEX.containsMatchIn(entry.content)
             }
         if (hasExplicitSummarySlot) {
             return false

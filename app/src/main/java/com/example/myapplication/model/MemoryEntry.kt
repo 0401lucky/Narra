@@ -29,6 +29,7 @@ data class MemoryEntry(
     val lastUsedAt: Long = 0L,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = createdAt,
+    val archiveRevision: Long? = null,
 ) {
     fun resolvedScopeId(): String {
         return scopeId.trim()

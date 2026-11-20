@@ -6,6 +6,8 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.FunctionModelProviderIds
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MAX
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MIN
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MomentsSettings
 import com.example.myapplication.model.ProviderSettings
@@ -49,7 +51,7 @@ class FakeSettingsStore(
         val activeProvider = providers.firstOrNull { it.id == selectedProvider?.id && it.enabled }
             ?: providers.firstOrNull { it.enabled }
             ?: selectedProvider
-        state.value = AppSettings(
+        state.value = state.value.copy(
             baseUrl = activeProvider?.baseUrl.orEmpty(),
             apiKey = activeProvider?.apiKey.orEmpty(),
             selectedModel = activeProvider?.selectedModel.orEmpty(),
@@ -238,7 +240,23 @@ class FakeSettingsStore(
         )
     }
 
-    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+    override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) {
+        state.value = state.value.copy(
+            memoryRecallTokenBudget = tokenBudget.coerceIn(
+                MEMORY_RECALL_TOKEN_BUDGET_MIN,
+                MEMORY_RECALL_TOKEN_BUDGET_MAX,
+            ),
+        )
+    }
+
+    override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) {
+        state.value = state.value.copy(memoryResidentLimits = limits.normalized())
+    }
+
+    override suspend fun saveMemoryPromptSettings(
+        extractionPrompt: String,
+        injectionPrompt: String
+    ) {
         state.value = state.value.copy(
             memoryExtractionPrompt = extractionPrompt,
             memoryInjectionPrompt = injectionPrompt,

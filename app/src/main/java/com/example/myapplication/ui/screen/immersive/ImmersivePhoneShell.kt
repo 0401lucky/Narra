@@ -10,6 +10,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearEasing
@@ -29,6 +30,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.Orientation
@@ -38,6 +40,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -96,6 +99,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -135,6 +139,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -145,7 +150,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.BuildConfig
+import com.example.myapplication.R
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MemoryPurpose
+import com.example.myapplication.ui.component.roleplay.MemoryPurposeSelector
 import com.example.myapplication.model.CharacterShakeFilters
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayChatSummary
@@ -186,6 +194,10 @@ import com.composables.icons.lucide.NotebookPen
 import com.composables.icons.lucide.Shuffle
 import com.composables.icons.lucide.Image
 import com.composables.icons.lucide.Info
+import com.composables.icons.lucide.EyeOff
+import com.composables.icons.lucide.MapPin
+import com.composables.icons.lucide.RefreshCw
+import com.composables.icons.lucide.Trash2
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -211,8 +223,8 @@ data class ImmersivePhoneCallbacks(
     val onOpenPresetLibrary: () -> Unit,
     val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onOpenAssistantCreate: () -> Unit,
-    val onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
-    val onCreateGroupChat: (String, List<String>) -> Unit,
+    val onCreateChat: (String, RoleplayInteractionMode, Boolean, MemoryPurpose) -> Unit,
+    val onCreateGroupChat: (String, List<String>, MemoryPurpose) -> Unit,
     val onUpdatePinned: (String, Boolean) -> Unit,
     val onUpdateMuted: (String, Boolean) -> Unit,
     val onClearChat: (String) -> Unit,
@@ -483,9 +495,9 @@ fun ImmersivePhoneShell(
             assistants = assistants,
             initialAssistant = null,
             onDismiss = { showNewChatSheet = false },
-            onCreateChat = { assistantId, mode, narration ->
+            onCreateChat = { assistantId, mode, narration, purpose ->
                 showNewChatSheet = false
-                callbacks.onCreateChat(assistantId, mode, narration)
+                callbacks.onCreateChat(assistantId, mode, narration, purpose)
             },
         )
     }
@@ -494,9 +506,9 @@ fun ImmersivePhoneShell(
         NewGroupChatSheet(
             assistants = assistants,
             onDismiss = { showNewGroupChatSheet = false },
-            onCreateGroupChat = { title, assistantIds ->
+            onCreateGroupChat = { title, assistantIds, purpose ->
                 showNewGroupChatSheet = false
-                callbacks.onCreateGroupChat(title, assistantIds)
+                callbacks.onCreateGroupChat(title, assistantIds, purpose)
             },
         )
     }
@@ -510,9 +522,9 @@ fun ImmersivePhoneShell(
                 selectedContact = null
                 callbacks.onOpenChat(scenarioId)
             },
-            onCreateChat = { assistantId, mode, narration ->
+            onCreateChat = { assistantId, mode, narration, purpose ->
                 selectedContact = null
-                callbacks.onCreateChat(assistantId, mode, narration)
+                callbacks.onCreateChat(assistantId, mode, narration, purpose)
             },
             onOpenAssistantDetail = { assistantId ->
                 selectedContact = null
@@ -583,6 +595,15 @@ private fun ImmersiveBottomBar(
     currentTab: ImmersiveTab,
     onTabSelected: (ImmersiveTab) -> Unit,
 ) {
+    val tabCount = ImmersiveTab.entries.size
+    val indicatorProgress by animateFloatAsState(
+        targetValue = currentTab.ordinal.toFloat(),
+        animationSpec = spring(
+            dampingRatio = 0.82f,
+            stiffness = 420f,
+        ),
+        label = "phone_bottom_bar_indicator",
+    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -598,54 +619,87 @@ private fun ImmersiveBottomBar(
             color = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 2.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+            shadowElevation = 3.dp,
+            border = BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
-                verticalAlignment = Alignment.CenterVertically,
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
             ) {
-                ImmersiveTab.entries.forEach { tab ->
-                    val selected = currentTab == tab
+                val pillWidth = maxWidth / tabCount
+                val pillOffsetPx = with(LocalDensity.current) {
+                    (pillWidth.toPx() * indicatorProgress).roundToInt()
+                }
+                Box(
+                    modifier = Modifier
+                        .matchParentSize(),
+                ) {
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = NarraMinimumTouchTarget)
+                            .offset { IntOffset(x = pillOffsetPx, y = 0) }
+                            .width(pillWidth)
+                            .fillMaxHeight()
                             .clip(NarraShapes.pill)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primaryContainer
-                                else Color.Transparent,
-                            )
-                            .testTag("phone_tab_${tab.name}")
-                            .semantics(mergeDescendants = true) {}
-                            .selectable(selected = selected, role = Role.Tab) { onTabSelected(tab) }
-                            .padding(vertical = NarraUi.space4),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ImmersiveTab.entries.forEach { tab ->
+                        val selected = currentTab == tab
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (selected) 1.08f else 1f,
+                            animationSpec = spring(dampingRatio = 0.65f, stiffness = 460f),
+                            label = "phone_tab_icon_scale",
+                        )
+                        val itemTint by animateColorAsState(
+                            targetValue = if (selected) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            animationSpec = tween(durationMillis = 180),
+                            label = "phone_tab_item_tint",
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = NarraMinimumTouchTarget)
+                                .clip(NarraShapes.pill)
+                                .background(Color.Transparent)
+                                .testTag("phone_tab_${tab.name}")
+                                .semantics(mergeDescendants = true) {}
+                                .selectable(selected = selected, role = Role.Tab) { onTabSelected(tab) }
+                                .padding(vertical = NarraUi.space4),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                tab.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(22.dp),
-                                tint = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                            Text(
-                                tab.label,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                            ) {
+                                Icon(
+                                    tab.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .graphicsLayer {
+                                            scaleX = iconScale
+                                            scaleY = iconScale
+                                        },
+                                    tint = itemTint,
+                                )
+                                Text(
+                                    tab.label,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = itemTint,
+                                )
+                            }
                         }
                     }
                 }
@@ -738,6 +792,8 @@ private fun ImmersiveMessagesPage(
         return
     }
     var revealedScenarioId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingClearId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = NarraUi.space8, bottom = NarraUi.space8 + bottomPadding),
@@ -745,11 +801,21 @@ private fun ImmersiveMessagesPage(
         items(summaries, key = { it.scenario.id }) { summary ->
             val scenarioId = summary.scenario.id
             val actionWidthPx = with(LocalDensity.current) { ChatSwipeActionWidth.toPx() }
-            var offsetX by remember(summary.scenario.id) { mutableFloatStateOf(0f) }
+            var targetOffsetX by remember(summary.scenario.id) { mutableFloatStateOf(0f) }
             var dragStartOffsetX by remember(summary.scenario.id) { mutableFloatStateOf(0f) }
-            val isRevealed = offsetX < 0f
+            var isDragging by remember(summary.scenario.id) { mutableStateOf(false) }
+            val animatedOffsetX by animateFloatAsState(
+                targetValue = targetOffsetX,
+                animationSpec = if (isDragging) {
+                    snap()
+                } else {
+                    spring(dampingRatio = 0.82f, stiffness = 440f)
+                },
+                label = "chat_swipe_offset",
+            )
+            val isRevealed = targetOffsetX < 0f || animatedOffsetX < -1f
             fun closeSwipe() {
-                offsetX = 0f
+                targetOffsetX = 0f
                 if (revealedScenarioId == scenarioId) {
                     revealedScenarioId = null
                 }
@@ -757,11 +823,11 @@ private fun ImmersiveMessagesPage(
             fun settleSwipe() {
                 val startedRevealed = dragStartOffsetX <= -actionWidthPx * 0.9f
                 val draggedRightFromOpen = startedRevealed &&
-                    offsetX - dragStartOffsetX >= actionWidthPx * 0.12f
+                    targetOffsetX - dragStartOffsetX >= actionWidthPx * 0.12f
                 if (draggedRightFromOpen) {
                     closeSwipe()
-                } else if (offsetX <= -actionWidthPx * 0.35f) {
-                    offsetX = -actionWidthPx
+                } else if (targetOffsetX <= -actionWidthPx * 0.35f) {
+                    targetOffsetX = -actionWidthPx
                     revealedScenarioId = scenarioId
                 } else {
                     closeSwipe()
@@ -772,21 +838,38 @@ private fun ImmersiveMessagesPage(
                 closeSwipe()
             }
             LaunchedEffect(revealedScenarioId) {
-                if (revealedScenarioId != scenarioId && offsetX != 0f) {
-                    offsetX = 0f
+                if (revealedScenarioId != scenarioId && targetOffsetX != 0f) {
+                    targetOffsetX = 0f
                 }
             }
             val dragState = rememberDraggableState { dragAmount ->
-                offsetX = (offsetX + dragAmount).coerceIn(-actionWidthPx, 0f)
+                targetOffsetX = (targetOffsetX + dragAmount).coerceIn(-actionWidthPx, 0f)
             }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .animateItem(
+                        fadeInSpec = tween(200),
+                        placementSpec = spring(
+                            dampingRatio = 0.86f,
+                            stiffness = 380f,
+                            visibilityThreshold = IntOffset.VisibilityThreshold,
+                        ),
+                        fadeOutSpec = tween(160),
+                    )
+                    .testTag("phone_swipe_row_$scenarioId")
                     .draggable(
                         state = dragState,
                         orientation = Orientation.Horizontal,
-                        onDragStarted = { dragStartOffsetX = offsetX },
-                        onDragStopped = { settleSwipe() },
+                        onDragStarted = {
+                            isDragging = true
+                            dragStartOffsetX = animatedOffsetX
+                            targetOffsetX = animatedOffsetX
+                        },
+                        onDragStopped = {
+                            isDragging = false
+                            settleSwipe()
+                        },
                     ),
             ) {
                 SwipeActions(
@@ -804,18 +887,18 @@ private fun ImmersiveMessagesPage(
                     },
                     onClear = {
                         runSwipeAction {
-                            callbacks.onClearChat(summary.scenario.id)
+                            pendingClearId = summary.scenario.id
                         }
                     },
                     onDelete = {
                         runSwipeAction {
-                            callbacks.onDeleteChat(summary.scenario.id)
+                            pendingDeleteId = summary.scenario.id
                         }
                     },
                 )
                 ChatSummaryRow(
                     modifier = Modifier
-                        .offset { IntOffset(offsetX.roundToInt(), 0) },
+                        .offset { IntOffset(animatedOffsetX.roundToInt(), 0) },
                     summary = summary,
                     assistant = assistants.firstOrNull { it.id == summary.scenario.assistantId },
                     onOpen = {
@@ -829,6 +912,35 @@ private fun ImmersiveMessagesPage(
                 )
             }
         }
+    }
+    if (pendingClearId != null) {
+        NarraAlertDialog(
+            title = stringResource(R.string.roleplay_reset_dialog_title),
+            message = stringResource(R.string.roleplay_reset_dialog_body),
+            confirmLabel = stringResource(R.string.roleplay_reset_dialog_confirm),
+            isDestructive = true, shape = NarraShapes.large,
+            actionContentColor = MaterialTheme.colorScheme.onSurface,
+            onDismiss = { pendingClearId = null },
+            onConfirm = {
+                val id = pendingClearId
+                pendingClearId = null
+                if (id != null && summaries.any { it.scenario.id == id }) callbacks.onClearChat(id)
+            },
+        )
+    }
+    if (pendingDeleteId != null) {
+        NarraAlertDialog(
+            title = stringResource(R.string.roleplay_delete_dialog_title),
+            message = stringResource(R.string.roleplay_delete_dialog_body),
+            confirmLabel = "删除会话", isDestructive = true, shape = NarraShapes.large,
+            actionContentColor = MaterialTheme.colorScheme.onSurface,
+            onDismiss = { pendingDeleteId = null },
+            onConfirm = {
+                val id = pendingDeleteId
+                pendingDeleteId = null
+                if (id != null && summaries.any { it.scenario.id == id }) callbacks.onDeleteChat(id)
+            },
+        )
     }
 }
 
@@ -861,24 +973,28 @@ private fun SwipeActions(
         ) {
             SwipeActionButton(
                 label = if (scenario.isPinned) "取消置顶" else "置顶",
+                icon = Lucide.MapPin,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 onClick = { runWithHaptic(onPin) },
             )
             SwipeActionButton(
                 label = if (scenario.isMuted) "取消免扰" else "免打扰",
+                icon = Lucide.EyeOff,
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = MaterialTheme.colorScheme.onTertiary,
                 onClick = { runWithHaptic(onMute) },
             )
             SwipeActionButton(
                 label = "清空",
+                icon = Lucide.RefreshCw,
                 containerColor = MaterialTheme.colorScheme.outline,
                 contentColor = MaterialTheme.colorScheme.surface,
                 onClick = { runWithHaptic(onClear) },
             )
             SwipeActionButton(
                 label = "删除",
+                icon = Lucide.Trash2,
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError,
                 onClick = { runWithHaptic(onDelete) },
@@ -891,6 +1007,7 @@ private fun SwipeActions(
 @Composable
 private fun SwipeActionButton(
     label: String,
+    icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
     onClick: () -> Unit,
@@ -905,14 +1022,25 @@ private fun SwipeActionButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            color = contentColor,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = label,
+                color = contentColor,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -941,17 +1069,31 @@ private fun ChatSummaryRow(
     val latest = if (isGroupChat) "群聊 · $latestContent" else latestContent
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed && !dragged) 0.988f else 1f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 500f),
+        label = "chat_row_press_scale",
+    )
+    val baseRowColor = if (scenario.isPinned) {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
     val rowColor by animateColorAsState(
         targetValue = when {
             dragged -> MaterialTheme.colorScheme.surfaceVariant
-            pressed -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
-            else -> MaterialTheme.colorScheme.surface
+            pressed -> MaterialTheme.colorScheme.surfaceContainer
+            else -> baseRowColor
         },
         label = "chat_row_bg",
     )
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -959,72 +1101,88 @@ private fun ChatSummaryRow(
             ),
         color = rowColor,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (isGroupChat) {
-                Surface(
-                    modifier = Modifier.size(52.dp),
-                    shape = NarraShapes.medium,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Group, contentDescription = null)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isGroupChat) {
+                    Surface(
+                        modifier = Modifier.size(52.dp),
+                        shape = NarraShapes.medium,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Lucide.Users, contentDescription = null)
+                        }
+                    }
+                } else {
+                    AssistantAvatar(
+                        name = name,
+                        iconName = assistant?.iconName.orEmpty(),
+                        avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
+                        size = 52.dp,
+                        cornerRadius = NarraUi.radiusMedium,
+                    )
+                }
+                Spacer(modifier = Modifier.width(NarraUi.space12))
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = formatMessageTime(summary.lastActiveAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                    ) {
+                        Text(
+                            text = latest,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (scenario.isPinned) {
+                            Icon(
+                                Icons.Default.PushPin,
+                                contentDescription = "已置顶",
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                modifier = Modifier.size(15.dp),
+                            )
+                        }
+                        if (scenario.isMuted) {
+                            Icon(
+                                Icons.Default.NotificationsOff,
+                                contentDescription = "免打扰",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                                modifier = Modifier.size(15.dp),
+                            )
+                        }
                     }
                 }
-            } else {
-                AssistantAvatar(
-                    name = name,
-                    iconName = assistant?.iconName.orEmpty(),
-                    avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
-                    size = 52.dp,
-                    cornerRadius = NarraUi.radiusMedium,
-                )
             }
-            Spacer(modifier = Modifier.width(NarraUi.space12))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = formatMessageTime(summary.lastActiveAt),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
-                ) {
-                    Text(
-                        text = latest,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (scenario.isPinned) {
-                        Icon(Icons.Default.PushPin, contentDescription = "已置顶", modifier = Modifier.size(16.dp))
-                    }
-                    if (scenario.isMuted) {
-                        Icon(Icons.Default.NotificationsOff, contentDescription = "免打扰", modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
+            HorizontalDivider(
+                modifier = Modifier.padding(start = NarraUi.space16),
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f),
+            )
         }
     }
-    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }
 
 @Composable
@@ -1857,32 +2015,60 @@ private fun ImmersiveMaskOptionRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun NewChatSheet(
+internal fun NewChatSheet(
     assistants: List<Assistant>,
     initialAssistant: Assistant?,
     onDismiss: () -> Unit,
-    onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
+    onCreateChat: (String, RoleplayInteractionMode, Boolean, MemoryPurpose) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedAssistant by remember { mutableStateOf(initialAssistant) }
+    var selectedAssistantId by rememberSaveable(initialAssistant?.id) { mutableStateOf(initialAssistant?.id) }
+    val selectedAssistant = assistants.firstOrNull { it.id == selectedAssistantId }
+    var memoryPurpose by rememberSaveable { mutableStateOf(MemoryPurpose.CONTINUOUS) }
+    var roleFilter by rememberSaveable { mutableStateOf("") }
+    val filteredAssistants = remember(assistants, roleFilter) {
+        val query = roleFilter.trim()
+        if (query.isEmpty()) assistants else assistants.filter { assistant ->
+            assistant.name.contains(query, ignoreCase = true) ||
+                    assistant.tags.any { it.contains(query, ignoreCase = true) }
+        }
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .testTag("new_chat_sheet_scroll")
                 .padding(NarraUi.space24),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text("新建会话", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (selectedAssistant == null) {
                 Text("选择一个角色", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LazyColumn(modifier = Modifier.height(360.dp)) {
-                    items(assistants, key = { it.id }) { assistant ->
+                OutlinedTextField(
+                    value = roleFilter,
+                    onValueChange = { roleFilter = it },
+                    label = { Text("筛选角色名称或标签") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("new_chat_role_filter"),
+                )
+                if (filteredAssistants.isEmpty()) {
+                    Text(
+                        if (assistants.isEmpty()) "暂无可选角色" else "没有匹配的角色",
+                        modifier = Modifier.testTag("new_chat_role_empty"),
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+                        if (roleFilter.isNotEmpty()) TextButton(onClick = { roleFilter = "" }) { Text("清除筛选") }
+                        TextButton(onClick = onDismiss, modifier = Modifier.testTag("new_chat_empty_back")) { Text("返回") }
+                    }
+                } else LazyColumn(modifier = Modifier.height(360.dp)) {
+                    items(filteredAssistants, key = { it.id }) { assistant ->
                         ContactRow(
                             assistant = assistant,
                             chatCount = 0,
-                            onOpen = { selectedAssistant = it },
+                            onOpen = { selectedAssistantId = it.id },
                         )
                     }
                 }
@@ -1892,7 +2078,7 @@ private fun NewChatSheet(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedAssistant = null },
+                            .clickable { selectedAssistantId = null },
                         shape = NarraShapes.medium,
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -1931,13 +2117,14 @@ private fun NewChatSheet(
                         }
                     }
                 }
+                MemoryPurposeSelector(memoryPurpose, { memoryPurpose = it })
                 Text("选择会话模式", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ModeOptions.forEach { option ->
                     ModeOptionCard(
                         option = option,
                         onClick = {
                             selectedAssistant?.let { assistant ->
-                                onCreateChat(assistant.id, option.interactionMode, option.enableNarration)
+                                onCreateChat(assistant.id, option.interactionMode, option.enableNarration, memoryPurpose)
                             }
                         },
                     )
@@ -1950,14 +2137,15 @@ private fun NewChatSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NewGroupChatSheet(
+internal fun NewGroupChatSheet(
     assistants: List<Assistant>,
     onDismiss: () -> Unit,
-    onCreateGroupChat: (String, List<String>) -> Unit,
+    onCreateGroupChat: (String, List<String>, MemoryPurpose) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var title by rememberSaveable { mutableStateOf("") }
     var selectedAssistantIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var memoryPurpose by rememberSaveable { mutableStateOf(MemoryPurpose.CONTINUOUS) }
     val selectedAssistants = assistants.filter { assistant -> assistant.id in selectedAssistantIds }
     val generatedTitle = selectedAssistants
         .take(3)
@@ -1977,6 +2165,8 @@ private fun NewGroupChatSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .testTag("new_group_sheet_scroll")
                 .padding(NarraUi.space24),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
@@ -1993,6 +2183,7 @@ private fun NewGroupChatSheet(
                 placeholder = { Text(finalTitle) },
                 singleLine = true,
             )
+            MemoryPurposeSelector(memoryPurpose, { memoryPurpose = it })
             Text(
                 text = "群成员（${selectedAssistantIds.size}）",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2002,7 +2193,7 @@ private fun NewGroupChatSheet(
                 Text("还没有角色，先去通讯录创建角色。", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 420.dp),
+                    modifier = Modifier.heightIn(max = 420.dp).testTag("new_group_members"),
                     verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     items(assistants, key = { it.id }) { assistant ->
@@ -2016,9 +2207,9 @@ private fun NewGroupChatSheet(
                 }
             }
             Button(
-                onClick = { onCreateGroupChat(finalTitle, selectedAssistantIds) },
+                onClick = { onCreateGroupChat(finalTitle, selectedAssistantIds, memoryPurpose) },
                 enabled = selectedAssistantIds.size >= 2,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("new_group_create"),
             ) {
                 Text(if (selectedAssistantIds.size >= 2) "创建群聊" else "至少选择 2 位角色")
             }
@@ -2035,6 +2226,7 @@ private fun GroupAssistantPickRow(
 ) {
     ListItem(
         modifier = Modifier
+            .testTag("new_group_member_${assistant.id}")
             .clip(NarraShapes.medium)
             .clickable(onClick = onClick),
         leadingContent = {
@@ -2087,12 +2279,12 @@ private fun GroupAssistantPickRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ContactCardSheet(
+internal fun ContactCardSheet(
     assistant: Assistant,
     summaries: List<RoleplayChatSummary>,
     onDismiss: () -> Unit,
     onOpenChat: (String) -> Unit,
-    onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
+    onCreateChat: (String, RoleplayInteractionMode, Boolean, MemoryPurpose) -> Unit,
     onOpenAssistantDetail: (String) -> Unit,
     onOpenAssistantPrompt: (String) -> Unit,
     onOpenAssistantMemory: (String) -> Unit,
@@ -2105,13 +2297,15 @@ private fun ContactCardSheet(
     onOpenVideoCall: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var showModePicker by remember { mutableStateOf(false) }
+    var showModePicker by rememberSaveable(assistant.id) { mutableStateOf(false) }
+    var memoryPurpose by rememberSaveable(assistant.id) { mutableStateOf(MemoryPurpose.CONTINUOUS) }
     val primarySummary = summaries.firstOrNull()
     val worldBookCount = assistant.linkedWorldBookIds.size + assistant.linkedWorldBookBookIds.size
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("contact_card_list")
                 .heightIn(max = 680.dp),
             contentPadding = PaddingValues(start = NarraUi.space24, end = NarraUi.space24, bottom = NarraUi.space24),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
@@ -2249,10 +2443,13 @@ private fun ContactCardSheet(
             }
 
             if (showModePicker) {
+                item {
+                    MemoryPurposeSelector(memoryPurpose, { memoryPurpose = it })
+                }
                 items(ModeOptions, key = { it.title }) { option ->
                     ModeOptionCard(
                         option = option,
-                        onClick = { onCreateChat(assistant.id, option.interactionMode, option.enableNarration) },
+                        onClick = { onCreateChat(assistant.id, option.interactionMode, option.enableNarration, memoryPurpose) },
                     )
                 }
             }

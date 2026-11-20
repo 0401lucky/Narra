@@ -37,8 +37,14 @@ internal fun UserDialogueBubbleContent(
     fillWidth: Boolean,
     bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
     useGlassBubble: Boolean = backdropState.hasImage,
+    groupedWithPrevious: Boolean = false,
+    groupedWithNext: Boolean = false,
 ) {
-    val shape = bubbleStyle.shape(isUser = true)
+    val shape = bubbleStyle.shape(
+        isUser = true,
+        groupedWithPrevious = groupedWithPrevious,
+        groupedWithNext = groupedWithNext,
+    )
     val bubbleModifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
         .testTag("roleplay_dialogue_bubble_${message.uiItemId}")
     val content: @Composable () -> Unit = {
@@ -66,7 +72,10 @@ internal fun UserDialogueBubbleContent(
                     lineHeightScale = lineHeightScale,
                 )
             } else {
-                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                val parsedCompanion = message.companionBeat != null
+                val paragraphs = remember(message.content, parsedCompanion) {
+                    message.content.toLongformParagraphs(parsedCompanion)
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                     paragraphs.forEach { paragraph ->
                         Text(
@@ -118,8 +127,14 @@ internal fun CharacterDialogueBubbleContent(
     fillWidth: Boolean,
     bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
     useGlassBubble: Boolean = backdropState.hasImage,
+    groupedWithPrevious: Boolean = false,
+    groupedWithNext: Boolean = false,
 ) {
-    val shape = bubbleStyle.shape(isUser = false)
+    val shape = bubbleStyle.shape(
+        isUser = false,
+        groupedWithPrevious = groupedWithPrevious,
+        groupedWithNext = groupedWithNext,
+    )
     val bubbleModifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
         .testTag("roleplay_dialogue_bubble_${message.uiItemId}")
     val bubbleColor = if (isError) colors.errorBackground else colors.characterBubbleBackground
@@ -164,16 +179,27 @@ internal fun CharacterDialogueBubbleContent(
                     lineHeightScale = lineHeightScale,
                 )
             } else {
-                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                val parsedCompanion = message.companionBeat != null
+                val paragraphs = remember(message.content, parsedCompanion) {
+                    message.content.toLongformParagraphs(parsedCompanion)
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                     paragraphs.forEach { paragraph ->
-                        val rendered = remember(paragraph, colors, isError, dialogueHighlightColor) {
-                            buildCharacterDialogueAnnotatedString(
-                                text = paragraph,
-                                narrationColor = if (isError) colors.errorText else colors.textPrimary,
-                                dialogueColor = dialogueHighlightColor,
-                            )
-                        }
+                        val rendered =
+                            remember(
+                                paragraph,
+                                colors,
+                                isError,
+                                dialogueHighlightColor,
+                                parsedCompanion
+                            ) {
+                                buildCharacterDialogueAnnotatedString(
+                                    text = paragraph,
+                                    narrationColor = if (isError) colors.errorText else colors.textPrimary,
+                                    dialogueColor = dialogueHighlightColor,
+                                    parsedCompanion = parsedCompanion,
+                                )
+                            }
                         Text(
                             text = rendered,
                             style = MaterialTheme.typography.bodyLarge.copy(

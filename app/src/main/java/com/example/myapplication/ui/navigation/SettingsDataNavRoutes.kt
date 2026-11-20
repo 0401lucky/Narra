@@ -173,6 +173,9 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             onPreviewImportPayload = contextTransferViewModel::previewImportPayload,
             onConfirmImport = contextTransferViewModel::confirmImport,
             onDismissImportPreview = contextTransferViewModel::dismissImportPreview,
+            onMemoryTargetSelected = contextTransferViewModel::selectMemoryImportTarget,
+            onReplaceMemoryStates = contextTransferViewModel::setReplaceMemoryStates,
+            onResumePendingImport = contextTransferViewModel::resumePendingImport,
             onConsumeMessage = contextTransferViewModel::consumeMessage,
             onNavigateBack = {
                 navController.popBackStack()
@@ -182,29 +185,56 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
 
     composable(AppRoutes.SETTINGS_MEMORY) { backStackEntry ->
         val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+        val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
         val memoryManagementViewModel = rememberMemoryManagementViewModel(
             navController = navController,
             appGraph = appGraph,
             backStackEntry = backStackEntry,
         )
         val memoryManagementState by memoryManagementViewModel.uiState.collectAsStateWithLifecycle()
+        val archiveOverview =
+            rememberMemoryArchiveOverviewViewModel(navController, appGraph, backStackEntry)
+        val archiveOverviewState by archiveOverview.uiState.collectAsStateWithLifecycle()
+        LaunchedEffect(backStackEntry) { archiveOverview.refresh() }
         MemoryManagementScreen(
-            uiState = memoryManagementState,
+            uiState = memoryManagementState.copy(
+                message = memoryManagementState.message ?: settingsState.message,
+            ),
             assistants = storedSettings.resolvedAssistants(),
+            archiveCharacterIds = (storedSettings.resolvedAssistants()
+                .map { it.id } + archiveOverviewState.counts.keys).distinct(),
+            archiveError = archiveOverviewState.error,
+            onOpenArchive = { id ->
+                navController.navigate(AppRoutes.settingsAssistantMemory(id)) {
+                    launchSingleTop = true
+                }
+            },
+            memoryResidentLimits = storedSettings.memoryResidentLimits,
+            onUpdateMemoryResidentLimits = settingsViewModel::updateMemoryResidentLimits,
             memoryAutoSummaryEvery = storedSettings.memoryAutoSummaryEvery,
             memoryCapacity = storedSettings.memoryCapacity,
+            memoryRecallTokenBudget = storedSettings.memoryRecallTokenBudget,
             memoryExtractionPrompt = storedSettings.memoryExtractionPrompt,
             memoryInjectionPrompt = storedSettings.memoryInjectionPrompt,
             memoryInjectionPosition = storedSettings.memoryInjectionPosition,
             onUpdateMemoryAutoSummaryEvery = settingsViewModel::updateMemoryAutoSummaryEvery,
             onUpdateMemoryCapacity = settingsViewModel::updateMemoryCapacity,
+            onUpdateMemoryRecallTokenBudget = settingsViewModel::updateMemoryRecallTokenBudget,
             onUpdateMemoryExtractionPrompt = settingsViewModel::updateMemoryExtractionPrompt,
             onUpdateMemoryInjectionPrompt = settingsViewModel::updateMemoryInjectionPrompt,
             onUpdateMemoryInjectionPosition = settingsViewModel::updateMemoryInjectionPosition,
             onTogglePinned = memoryManagementViewModel::togglePinned,
             onDeleteMemory = memoryManagementViewModel::deleteMemory,
+            onTogglePinnedEntry = memoryManagementViewModel::togglePinned,
+            onDeleteMemoryEntry = memoryManagementViewModel::deleteMemory,
             onDeleteSummary = memoryManagementViewModel::deleteSummary,
-            onConsumeMessage = memoryManagementViewModel::consumeMessage,
+            onConsumeMessage = {
+                if (memoryManagementState.message != null) {
+                    memoryManagementViewModel.consumeMessage()
+                } else {
+                    settingsViewModel.consumeMessage()
+                }
+            },
             onNavigateBack = {
                 navController.popBackStack()
             },

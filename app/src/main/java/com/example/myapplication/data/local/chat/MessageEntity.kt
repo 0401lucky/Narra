@@ -1,6 +1,7 @@
 package com.example.myapplication.data.local.chat
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -43,4 +44,8 @@ data class MessageEntity(
     val citationsJson: String = "[]",
     val roleplayOutputFormat: String = "UNSPECIFIED",
     val roleplayInteractionMode: String = "",
+    @ColumnInfo(defaultValue = "1") val memoryRevision: Long = 1L,
+    @ColumnInfo(defaultValue = "''") val memoryRecallRequestId: String = "",
+    @ColumnInfo(defaultValue = "''") val companionTurnId: String = "",
+    @ColumnInfo(defaultValue = "'legacy'") val companionMemoryState: String = "legacy",
 )

@@ -65,6 +65,8 @@ try {
   安全映射。
 - API Key、Authorization、Bearer、Base64、SQL、本地路径、堆栈和完整
   请求/响应体不能进入 UI。
+- Android私有目录别名 `/data/data`、`/data/user/<编号>`、`/data/user_de/<编号>`
+  同样返回安全fallback；不能只匹配主用户的 `/data/user/0`。
 - HTTP 错误可保留状态码、request-id、retry-after 等安全上下文。
 - DNS、超时、配置缺失、协议不支持应映射为不同的可行动文案。
 - 用户可见文案使用简体中文，避免直接显示异常类名。

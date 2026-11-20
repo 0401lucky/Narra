@@ -9,4 +9,6 @@ data class ContextDataBundle(
     val conversationSummaries: List<ConversationSummary> = emptyList(),
     val conversationSummarySegments: List<ConversationSummarySegment> = emptyList(),
     val presets: List<Preset> = emptyList(),
+    val memoryArchive: MemoryArchiveTransferData? = null,
+    val companions: List<CompanionContextTransferEntry>? = null,
 )

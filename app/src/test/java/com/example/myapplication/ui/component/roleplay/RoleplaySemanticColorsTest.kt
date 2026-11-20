@@ -2,12 +2,15 @@ package com.example.myapplication.ui.component.roleplay
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.theme.readableRoleplayText
 import com.example.myapplication.ui.theme.resolveAppColorScheme
 import com.example.myapplication.ui.theme.roleplayBrandSkinPalette
@@ -103,6 +106,38 @@ class RoleplaySemanticColorsTest {
         assertNotEquals(preferred, adjusted)
         assertReadable(adjusted, surface, backing)
         assertEquals(adjusted, readableRoleplayText(adjusted, surface, backing))
+    }
+
+    @Test
+    fun dialogueBubbleShape_tightensInnerCornersWhenGrouped_andPreservesOuterRadius() {
+        val density = Density(1f)
+        val size = Size(200f, 80f)
+        val style = RoleplayDialogueBubbleStyle(
+            maxWidthFraction = 0.82f,
+            radius = 22.dp,
+            paddingHorizontal = 16.dp,
+            paddingVertical = 12.dp,
+            showTail = false,
+        )
+        val middleUserShape = style.shape(
+            isUser = true,
+            groupedWithPrevious = true,
+            groupedWithNext = true,
+        )
+        assertEquals(22f, middleUserShape.topStart.toPx(size, density), 0.01f)
+        assertEquals(22f, middleUserShape.bottomStart.toPx(size, density), 0.01f)
+        assertEquals(NarraUi.radiusSmall.value, middleUserShape.topEnd.toPx(size, density), 0.01f)
+        assertEquals(NarraUi.radiusSmall.value, middleUserShape.bottomEnd.toPx(size, density), 0.01f)
+
+        val middleCharacterShape = style.shape(
+            isUser = false,
+            groupedWithPrevious = true,
+            groupedWithNext = true,
+        )
+        assertEquals(NarraUi.radiusSmall.value, middleCharacterShape.topStart.toPx(size, density), 0.01f)
+        assertEquals(NarraUi.radiusSmall.value, middleCharacterShape.bottomStart.toPx(size, density), 0.01f)
+        assertEquals(22f, middleCharacterShape.topEnd.toPx(size, density), 0.01f)
+        assertEquals(22f, middleCharacterShape.bottomEnd.toPx(size, density), 0.01f)
     }
 
     private fun assertReadable(text: Color, surface: Color, backing: Color) {

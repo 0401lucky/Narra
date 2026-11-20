@@ -60,6 +60,7 @@ import com.example.myapplication.testutil.TestOpenAiCompatibleApi
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -119,7 +120,12 @@ class AiGatewayTest {
         val reply = gateway.sendMessage(
             listOf(
                 ChatMessage(id = "1", role = MessageRole.USER, content = "你好"),
-                ChatMessage(id = "2", role = MessageRole.ASSISTANT, content = "", status = MessageStatus.LOADING),
+                ChatMessage(
+                    id = "2",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    status = MessageStatus.LOADING
+                ),
                 ChatMessage(id = "3", role = MessageRole.ASSISTANT, content = "上一条回复"),
             ),
         )
@@ -290,9 +296,13 @@ class AiGatewayTest {
         assertEquals(1, reply.citations.size)
         val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertTrue(firstRequest.getAsJsonArray("tools").size() > 0)
-        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val secondRequest =
+            JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertEquals("resp_tool_1", secondRequest["previous_response_id"].asString)
-        assertEquals("function_call_output", secondRequest.getAsJsonArray("input")[0].asJsonObject["type"].asString)
+        assertEquals(
+            "function_call_output",
+            secondRequest.getAsJsonArray("input")[0].asJsonObject["type"].asString
+        )
     }
 
     @Test
@@ -1021,7 +1031,8 @@ class AiGatewayTest {
         assertEquals(1, reply.citations.size)
         val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertTrue(firstRequest.getAsJsonArray("tools").size() > 0)
-        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val secondRequest =
+            JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val toolResult = secondRequest.getAsJsonArray("messages")
             .last().asJsonObject
             .getAsJsonArray("content")[0].asJsonObject
@@ -1574,9 +1585,15 @@ class AiGatewayTest {
                         )
                     }
 
-                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest
+                    ): Response<ChatCompletionResponse> = createChatCompletion(request)
 
-                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> {
                         error("不应调用 responses 接口")
                     }
 
@@ -1641,7 +1658,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1685,7 +1702,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1732,7 +1749,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1782,7 +1799,7 @@ class AiGatewayTest {
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
             promptMode = PromptMode.ROLEPLAY,
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1833,7 +1850,7 @@ class AiGatewayTest {
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
             promptMode = PromptMode.ROLEPLAY,
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(5, deltas.size)
         assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
@@ -1875,7 +1892,7 @@ class AiGatewayTest {
                 gateway.sendMessageStream(
                     listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
                     promptMode = PromptMode.ROLEPLAY,
-                ).toList()
+                ).legacyPresentationEvents()
             }
         }
 
@@ -1904,7 +1921,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1950,7 +1967,7 @@ class AiGatewayTest {
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
             promptMode = PromptMode.ROLEPLAY,
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -1998,7 +2015,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -2040,7 +2057,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -2088,7 +2105,7 @@ class AiGatewayTest {
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "查一下资料")),
             toolingOptions = GatewayToolingOptions.searchOnly(true),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(
             listOf(
@@ -2099,7 +2116,8 @@ class AiGatewayTest {
         )
         val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertTrue(firstRequest.has("tools"))
-        val fallbackRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val fallbackRequest =
+            JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertFalse(fallbackRequest.has("tools"))
     }
 
@@ -2133,7 +2151,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(5, deltas.size)
         assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
@@ -2228,7 +2246,8 @@ class AiGatewayTest {
         assertEquals(0.62, firstRequest["temperature"].asDouble, 0.0001)
         assertEquals(0.88, firstRequest["top_p"].asDouble, 0.0001)
         assertEquals("</status>", firstRequest.getAsJsonArray("stop")[0].asString)
-        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val secondRequest =
+            JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val messages = secondRequest.getAsJsonArray("messages")
         val assistantToolMessage = messages[messages.size() - 2].asJsonObject
         assertEquals("assistant", assistantToolMessage["role"].asString)
@@ -2407,7 +2426,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(5, deltas.size)
         assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
@@ -2443,7 +2462,7 @@ class AiGatewayTest {
 
         val deltas = gateway.sendMessageStream(
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-        ).toList()
+        ).legacyPresentationEvents()
 
         assertEquals(6, deltas.size)
         assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
@@ -2479,7 +2498,7 @@ class AiGatewayTest {
             runBlocking {
                 gateway.sendMessageStream(
                     listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-                ).toList()
+                ).legacyPresentationEvents()
             }
         }
 
@@ -2505,7 +2524,7 @@ class AiGatewayTest {
             runBlocking {
                 gateway.sendMessageStream(
                     listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-                ).toList()
+                ).legacyPresentationEvents()
             }
         }
 
@@ -2542,7 +2561,7 @@ class AiGatewayTest {
             runBlocking {
                 gateway.sendMessageStream(
                     listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-                ).toList()
+                ).legacyPresentationEvents()
             }
         }
 
@@ -2586,7 +2605,7 @@ class AiGatewayTest {
             runBlocking {
                 gateway.sendMessageStream(
                     listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
-                ).toList()
+                ).legacyPresentationEvents()
             }
         }
 
@@ -2686,61 +2705,62 @@ class AiGatewayTest {
     }
 
     @Test
-    fun generateImageWithProvider_usesProvidedProviderAndOmitsLegacyResponseFormatForGptImage() = runBlocking {
-        val activeProvider = ProviderSettings(
-            id = "provider-chat",
-            name = "Chat",
-            baseUrl = "https://chat.example.com/v1/",
-            apiKey = "chat-key",
-            selectedModel = "chat-model",
-        )
-        val imageProvider = ProviderSettings(
-            id = "provider-image",
-            name = "Image",
-            baseUrl = "https://image.example.com/v1/",
-            apiKey = "image-key",
-            selectedModel = "gpt-image-1",
-        )
-        val providerCalls = mutableListOf<Pair<String, String>>()
-        val gateway = createGateway(
-            settings = AppSettings(
-                providers = listOf(activeProvider, imageProvider),
-                selectedProviderId = activeProvider.id,
-            ),
-            imageApiServiceProvider = { baseUrl, apiKey ->
-                providerCalls += baseUrl to apiKey
-                object : TestOpenAiCompatibleApi() {
-                    override suspend fun generateImage(
-                        request: ImageGenerationRequest,
-                    ): Response<ImageGenerationResponse> {
-                        assertEquals("gpt-image-1", request.model)
-                        assertEquals("角色头像", request.prompt)
-                        assertEquals(null, request.responseFormat)
-                        return Response.success(
-                            ImageGenerationResponse(
-                                data = listOf(
-                                    ImageGenerationDataDto(
-                                        b64Json = "character-art",
-                                        revisedPrompt = "角色头像修订",
+    fun generateImageWithProvider_usesProvidedProviderAndOmitsLegacyResponseFormatForGptImage() =
+        runBlocking {
+            val activeProvider = ProviderSettings(
+                id = "provider-chat",
+                name = "Chat",
+                baseUrl = "https://chat.example.com/v1/",
+                apiKey = "chat-key",
+                selectedModel = "chat-model",
+            )
+            val imageProvider = ProviderSettings(
+                id = "provider-image",
+                name = "Image",
+                baseUrl = "https://image.example.com/v1/",
+                apiKey = "image-key",
+                selectedModel = "gpt-image-1",
+            )
+            val providerCalls = mutableListOf<Pair<String, String>>()
+            val gateway = createGateway(
+                settings = AppSettings(
+                    providers = listOf(activeProvider, imageProvider),
+                    selectedProviderId = activeProvider.id,
+                ),
+                imageApiServiceProvider = { baseUrl, apiKey ->
+                    providerCalls += baseUrl to apiKey
+                    object : TestOpenAiCompatibleApi() {
+                        override suspend fun generateImage(
+                            request: ImageGenerationRequest,
+                        ): Response<ImageGenerationResponse> {
+                            assertEquals("gpt-image-1", request.model)
+                            assertEquals("角色头像", request.prompt)
+                            assertEquals(null, request.responseFormat)
+                            return Response.success(
+                                ImageGenerationResponse(
+                                    data = listOf(
+                                        ImageGenerationDataDto(
+                                            b64Json = "character-art",
+                                            revisedPrompt = "角色头像修订",
+                                        ),
                                     ),
                                 ),
-                            ),
-                        )
+                            )
+                        }
                     }
-                }
-            },
-        )
+                },
+            )
 
-        val results = gateway.generateImageWithProvider(
-            prompt = "角色头像",
-            provider = imageProvider,
-            modelId = "gpt-image-1",
-        )
+            val results = gateway.generateImageWithProvider(
+                prompt = "角色头像",
+                provider = imageProvider,
+                modelId = "gpt-image-1",
+            )
 
-        assertEquals(listOf("https://image.example.com/v1/" to "image-key"), providerCalls)
-        assertEquals("character-art", results.single().b64Data)
-        assertEquals("角色头像修订", results.single().revisedPrompt)
-    }
+            assertEquals(listOf("https://image.example.com/v1/" to "image-key"), providerCalls)
+            assertEquals("character-art", results.single().b64Data)
+            assertEquals("角色头像修订", results.single().revisedPrompt)
+        }
 
     @Test
     fun editImage_postsImagesEditsRequestAndReturnsImageGenerationResult() = runBlocking {
@@ -2801,12 +2821,17 @@ class AiGatewayTest {
         assertEquals("把这张图改成复古海报", requestBody["prompt"].asString)
         val images = requestBody.getAsJsonArray("images")
         assertEquals(1, images.size())
-        assertEquals("data:image/png;base64,ref-image", images[0].asJsonObject["image_url"].asString)
+        assertEquals(
+            "data:image/png;base64,ref-image",
+            images[0].asJsonObject["image_url"].asString
+        )
     }
 
     @Test
     fun editImage_fallsBackToMultipartForCustomProviderAfterJsonFailure() = runBlocking {
-        server.enqueue(MockResponse().setResponseCode(500).setBody("""{"error":"json edits unsupported"}"""))
+        server.enqueue(
+            MockResponse().setResponseCode(500).setBody("""{"error":"json edits unsupported"}""")
+        )
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
                 """
@@ -2862,7 +2887,10 @@ class AiGatewayTest {
 
         val multipartRequest = server.takeRequest()
         assertEquals("/v1/images/edits", multipartRequest.path)
-        assertTrue(multipartRequest.getHeader("Content-Type").orEmpty().startsWith("multipart/form-data; boundary="))
+        assertTrue(
+            multipartRequest.getHeader("Content-Type").orEmpty()
+                .startsWith("multipart/form-data; boundary=")
+        )
         val multipartBody = multipartRequest.body.readUtf8()
         assertTrue(multipartBody.contains("name=\"model\""))
         assertTrue(multipartBody.contains("gpt-image-1"))
@@ -2952,7 +2980,10 @@ class AiGatewayTest {
         assertEquals("task", parsed.parts.last().specialType?.protocolValue)
         assertEquals("task_lunch_99", parsed.parts.last().specialId)
         assertEquals("牛骨汤令", parsed.parts.last().specialMetadataValue("title"))
-        assertEquals("帮园汇报午餐内容，不许胡嗦。", parsed.parts.last().specialMetadataValue("objective"))
+        assertEquals(
+            "帮园汇报午餐内容，不许胡嗦。",
+            parsed.parts.last().specialMetadataValue("objective")
+        )
         assertEquals("晚上的惩罚豁免令", parsed.parts.last().specialMetadataValue("reward"))
         assertEquals("13:00", parsed.parts.last().specialMetadataValue("deadline"))
     }
@@ -3109,10 +3140,11 @@ class AiGatewayTest {
     }
 
     @Test
-    fun sendMessage_withModelBuiltinSearchAndLocalTools_keepsSearchGroundingInToolLoop() = runBlocking {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """
+    fun sendMessage_withModelBuiltinSearchAndLocalTools_keepsSearchGroundingInToolLoop() =
+        runBlocking {
+            server.enqueue(
+                MockResponse().setResponseCode(200).setBody(
+                    """
                 {
                   "choices": [
                     {
@@ -3125,58 +3157,60 @@ class AiGatewayTest {
                   ]
                 }
                 """.trimIndent(),
-            ),
-        )
-        val conversationId = "conversation-with-summary"
-        val gateway = createGateway(
-            settings = modelBuiltinSearchSettings(),
-            conversationSummaryRepository = fakeConversationSummaryRepository(
-                ConversationSummary(
-                    conversationId = conversationId,
-                    summary = "这是一段已缓存的对话摘要。",
                 ),
-            ),
-        )
-
-        val reply = gateway.sendMessage(
-            messages = listOf(
-                ChatMessage(id = "1", role = MessageRole.USER, content = "继续回答并联网确认。"),
-            ),
-            toolingOptions = GatewayToolingOptions.chat(
-                searchEnabled = true,
-                runtimeContext = GatewayToolRuntimeContext(
-                    promptMode = PromptMode.CHAT,
-                    conversation = Conversation(
-                        id = conversationId,
-                        createdAt = 1L,
-                        updatedAt = 1L,
+            )
+            val conversationId = "conversation-with-summary"
+            val gateway = createGateway(
+                settings = modelBuiltinSearchSettings(),
+                conversationSummaryRepository = fakeConversationSummaryRepository(
+                    ConversationSummary(
+                        conversationId = conversationId,
+                        summary = "这是一段已缓存的对话摘要。",
                     ),
                 ),
-            ),
-        )
+            )
 
-        assertEquals("我结合上下文和内置搜索回答。", reply.content)
-        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
-        assertFalse(requestBody.has("google_search_retrieval"))
-        val tools = requestBody.getAsJsonArray("tools")
-        assertTrue(
-            tools.any { tool ->
-                tool.asJsonObject["type"].asString == "google_search"
-            },
-        )
-        assertTrue(
-            tools.any { tool ->
-                val function = tool.asJsonObject.getAsJsonObject("function")
-                function != null && function["name"].asString == GetConversationSummaryTool.NAME
-            },
-        )
-    }
+            val reply = gateway.sendMessage(
+                messages = listOf(
+                    ChatMessage(id = "1", role = MessageRole.USER, content = "继续回答并联网确认。"),
+                ),
+                toolingOptions = GatewayToolingOptions.chat(
+                    searchEnabled = true,
+                    runtimeContext = GatewayToolRuntimeContext(
+                        promptMode = PromptMode.CHAT,
+                        conversation = Conversation(
+                            id = conversationId,
+                            createdAt = 1L,
+                            updatedAt = 1L,
+                        ),
+                    ),
+                ),
+            )
+
+            assertEquals("我结合上下文和内置搜索回答。", reply.content)
+            val requestBody =
+                JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+            assertFalse(requestBody.has("google_search_retrieval"))
+            val tools = requestBody.getAsJsonArray("tools")
+            assertTrue(
+                tools.any { tool ->
+                    tool.asJsonObject["type"].asString == "google_search"
+                },
+            )
+            assertTrue(
+                tools.any { tool ->
+                    val function = tool.asJsonObject.getAsJsonObject("function")
+                    function != null && function["name"].asString == GetConversationSummaryTool.NAME
+                },
+            )
+        }
 
     @Test
-    fun sendMessage_withModelBuiltinSearchAndResponsesMode_doesNotInjectUnsupportedSearchFields() = runBlocking {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """
+    fun sendMessage_withModelBuiltinSearchAndResponsesMode_doesNotInjectUnsupportedSearchFields() =
+        runBlocking {
+            server.enqueue(
+                MockResponse().setResponseCode(200).setBody(
+                    """
                 {
                   "id": "resp_plain_1",
                   "output": [
@@ -3189,31 +3223,36 @@ class AiGatewayTest {
                   ]
                 }
                 """.trimIndent(),
-            ),
-        )
-        val gateway = createGateway(
-            settings = modelBuiltinSearchSettings(
-                openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
-            ),
-        )
-
-        val reply = gateway.sendMessage(
-            messages = listOf(
-                ChatMessage(id = "1", role = MessageRole.USER, content = "今天天气怎么样？"),
-            ),
-            toolingOptions = GatewayToolingOptions.chat(
-                searchEnabled = true,
-                runtimeContext = GatewayToolRuntimeContext(
-                    promptMode = PromptMode.CHAT,
                 ),
-            ),
-        )
+            )
+            val gateway = createGateway(
+                settings = modelBuiltinSearchSettings(
+                    openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+                ),
+            )
 
-        assertEquals("Responses 普通回复", reply.content)
-        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
-        assertFalse(requestBody.has("google_search_retrieval"))
-        assertEquals(0, requestBody.getAsJsonArray("tools").size())
-    }
+            val reply = gateway.sendMessage(
+                messages = listOf(
+                    ChatMessage(id = "1", role = MessageRole.USER, content = "今天天气怎么样？"),
+                ),
+                toolingOptions = GatewayToolingOptions.chat(
+                    searchEnabled = true,
+                    runtimeContext = GatewayToolRuntimeContext(
+                        promptMode = PromptMode.CHAT,
+                    ),
+                ),
+            )
+
+            assertEquals("Responses 普通回复", reply.content)
+            val requestBody =
+                JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+            assertFalse(requestBody.has("google_search_retrieval"))
+            assertEquals(0, requestBody.getAsJsonArray("tools").size())
+        }
+
+    // 旧用例继续验证原内容/推理/图片事件；结束证据由专门的网关协议测试覆盖。
+    private suspend fun Flow<ChatStreamEvent>.legacyPresentationEvents(): List<ChatStreamEvent> =
+        toList().filterNot { it is ChatStreamEvent.CompletionEvidence }
 
     private fun createGateway(
         settings: AppSettings,
@@ -3392,9 +3431,9 @@ class AiGatewayTest {
                             snippet = "这是搜索摘要",
                             sourceLabel = source.name,
                         ),
-            ),
-        )
-    }
+                    ),
+                )
+            }
         }
     }
 }

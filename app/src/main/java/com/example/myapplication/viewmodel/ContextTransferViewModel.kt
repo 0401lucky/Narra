@@ -6,9 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.context.ContextTransferCodec
+import com.example.myapplication.data.repository.context.ContextTransferRecoveryRepository
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.EmptyPresetRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.MemoryArchiveTransferRepository
+import com.example.myapplication.data.repository.context.MemoryTransferLegacyConversion
 import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.TavernCharacterAdapter
 import com.example.myapplication.data.repository.context.TavernCharacterImageAdapter
@@ -20,11 +23,24 @@ import com.example.myapplication.model.BUILTIN_ASSISTANTS
 import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANTS
 import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
 import com.example.myapplication.model.ContextDataBundle
+import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.ContextTransferOperationSummary
+import com.example.myapplication.model.ContextTransferOperationKind
+import com.example.myapplication.model.ContextTransferStage
+import com.example.myapplication.model.ContextTransferAvatarInput
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.HIDDEN_BUILTIN_ASSISTANT_IDS
 import com.example.myapplication.model.Preset
+import com.example.myapplication.model.MemoryArchiveImportResult
+import com.example.myapplication.model.MemoryImportPlan
+import com.example.myapplication.model.MemoryImportSourceGroup
+import com.example.myapplication.model.MemoryImportStateConflict
+import com.example.myapplication.model.MemoryImportTarget
+import com.example.myapplication.model.MemoryImportTargetOption
 import com.example.myapplication.model.normalizedForContextImport
 import com.example.myapplication.system.security.SensitiveTextRedactor
+import com.google.gson.JsonParser
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +76,14 @@ data class ContextImportPreview(
     val presetCount: Int,
     val conflicts: List<ContextImportConflict>,
     val noticeMessages: List<String> = emptyList(),
+    val memoryGroups: List<MemoryImportSourceGroup> = emptyList(),
+    val memoryTargetOptions: List<MemoryImportTargetOption> = emptyList(),
+    val memoryTargets: Map<String, MemoryImportTarget> = emptyMap(),
+    val memoryStateConflicts: List<MemoryImportStateConflict> = emptyList(),
+    val replaceExistingStates: Boolean = false,
+    val canConfirmMemory: Boolean = true,
+    val memorySourceCount: Int = 0,
+    val companionCount: Int = 0,
 )
 
 data class ContextImportPayload(
@@ -85,6 +109,8 @@ data class ContextTransferUiState(
     val isBusy: Boolean = false,
     val importPreview: ContextImportPreview? = null,
     val message: String? = null,
+    val companionCount: Int = 0,
+    val pendingOperations: List<ContextTransferOperationSummary> = emptyList(),
 )
 
 class ContextTransferViewModel(
@@ -102,6 +128,8 @@ class ContextTransferViewModel(
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
     private val dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
     private val existingConversationIdsProvider: suspend () -> Set<String>? = { null },
+    private val memoryTransferRepository: MemoryArchiveTransferRepository? = null,
+    private val contextTransferRecoveryRepository: ContextTransferRecoveryRepository? = null,
 ) : ViewModel() {
     val settings = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -113,6 +141,10 @@ class ContextTransferViewModel(
     val uiState: StateFlow<ContextTransferUiState> = _uiState.asStateFlow()
     private var pendingImportBundle: ContextDataBundle? = null
     private var pendingAssistantAvatarImport: AssistantAvatarImport? = null
+    private var pendingMemoryPlan: MemoryImportPlan? = null
+    private var pendingImportSettings: AppSettings? = null
+    private var pendingRecoveryOperationId: String? = null
+    private var lastVectorsNeedingRebuild: Int = 0
 
     init {
         viewModelScope.launch {
@@ -124,17 +156,21 @@ class ContextTransferViewModel(
         section: ContextTransferSection,
         onSuccess: (String, String) -> Unit,
     ) {
+        if (_uiState.value.isBusy) return
+        _uiState.update { it.copy(isBusy = true, message = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, message = null) }
-            val bundle = filterBundleBySection(
-                section = section,
-                bundle = buildCurrentBundle(),
-            )
-            onSuccess(codec.encode(bundle), section.exportFileName)
-            _uiState.update {
-                it.copy(
-                    isBusy = false,
+            try {
+                val bundle = filterBundleBySection(
+                    section = section,
+                    bundle = buildCurrentBundle(),
                 )
+                onSuccess(codec.encode(bundle), section.exportFileName)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _uiState.update { it.copy(message = failure.toContextTransferUiError("导出失败")) }
+            } finally {
+                _uiState.update { it.copy(isBusy = false) }
             }
         }
     }
@@ -157,9 +193,12 @@ class ContextTransferViewModel(
         payload: ContextImportPayload,
         section: ContextTransferSection,
     ) {
+        if (_uiState.value.isBusy) return
+        _uiState.update { it.copy(isBusy = true, message = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, message = null) }
             runCatching {
+                val expectedSettings = settings.value
+                lastVectorsNeedingRebuild = 0
                 val decodedImport = decodeImportBundle(payload, section)
                 val filteredBundle = filterBundleBySection(
                     section = section,
@@ -182,9 +221,12 @@ class ContextTransferViewModel(
                         bundle = filteredBundle,
                     ),
                 )
+                    .also { pendingImportSettings = expectedSettings }
             }.onSuccess { (bundle, preview, assistantAvatarImport) ->
                 pendingImportBundle = bundle
                 pendingAssistantAvatarImport = assistantAvatarImport
+                pendingMemoryPlan = null
+                pendingRecoveryOperationId = null
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -192,8 +234,15 @@ class ContextTransferViewModel(
                     )
                 }
             }.onFailure { throwable ->
+                if (throwable is CancellationException) {
+                    _uiState.update { it.copy(isBusy = false) }
+                    throw throwable
+                }
                 pendingImportBundle = null
                 pendingAssistantAvatarImport = null
+                pendingMemoryPlan = null
+                pendingImportSettings = null
+                pendingRecoveryOperationId = null
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -207,78 +256,213 @@ class ContextTransferViewModel(
 
     fun confirmImport() {
         val bundle = pendingImportBundle ?: return
+        if (_uiState.value.isBusy || _uiState.value.importPreview?.canConfirmMemory == false) return
+        _uiState.update { it.copy(isBusy = true, message = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, message = null) }
             runCatching {
-                mergeImportedData(applyImportedAssistantAvatar(bundle))
-            }.onSuccess {
+                val preparedBundle = if (contextTransferRecoveryRepository == null) applyImportedAssistantAvatar(bundle) else bundle
+                mergeImportedData(preparedBundle).also { refreshCounts() }
+            }.onSuccess { memoryResult ->
                 pendingImportBundle = null
                 pendingAssistantAvatarImport = null
-                refreshCounts()
+                pendingMemoryPlan = null
+                pendingImportSettings = null
+                pendingRecoveryOperationId = null
                 _uiState.update {
                     it.copy(
                         isBusy = false,
                         importPreview = null,
-                        message = "上下文数据已合并导入",
+                        message = if (maxOf(memoryResult?.vectorsNeedingRebuild ?: 0, lastVectorsNeedingRebuild) > 0)
+                            "上下文数据已合并导入；${maxOf(memoryResult?.vectorsNeedingRebuild ?: 0, lastVectorsNeedingRebuild)} 组向量暂不可用，需手动重建" else "上下文数据已合并导入",
                     )
                 }
             }.onFailure { throwable ->
+                if (throwable is CancellationException) {
+                    _uiState.update { it.copy(isBusy = false) }
+                    throw throwable
+                }
                 _uiState.update {
                     it.copy(
                         isBusy = false,
                         message = throwable.toContextTransferUiError("导入失败"),
                     )
                 }
+                refreshPendingOperationsSafely()
             }
         }
     }
 
     fun dismissImportPreview() {
+        if (_uiState.value.isBusy) return
         pendingImportBundle = null
         pendingAssistantAvatarImport = null
+        pendingMemoryPlan = null
+        pendingImportSettings = null
+        pendingRecoveryOperationId = null
         _uiState.update { it.copy(importPreview = null) }
+    }
+
+    fun selectMemoryImportTarget(sourceKey: String, target: MemoryImportTarget?) {
+        if (_uiState.value.isBusy) return
+        if (pendingRecoveryOperationId != null) { _uiState.update { it.copy(message = "导入计划已冻结，请继续同一计划或重新预览") }; return }
+        val preview = _uiState.value.importPreview ?: return
+        val bundle = pendingImportBundle ?: return
+        if (preview.memoryGroups.none { it.key == sourceKey } || target != null && preview.memoryTargetOptions.none { it.target == target }) return
+        val targets = preview.memoryTargets.toMutableMap().apply {
+            if (target == null) remove(sourceKey) else put(sourceKey, target)
+        }.toMap()
+        pendingMemoryPlan = null
+        _uiState.update {
+            it.copy(
+                isBusy = true, message = null, importPreview = preview.copy(
+                    memoryTargets = targets,
+                    memoryStateConflicts = emptyList(),
+                    replaceExistingStates = false,
+                    canConfirmMemory = false
+                )
+            )
+        }
+        viewModelScope.launch {
+            try {
+                if (targets.size == preview.memoryGroups.size) {
+                    val repository =
+                        requireNotNull(memoryTransferRepository) { "记忆恢复服务不可用" }
+                    val plan = repository.prepareImport(bundle, targets)
+                    pendingMemoryPlan = plan
+                    _uiState.update { state ->
+                        state.copy(
+                            importPreview = state.importPreview?.copy(
+                                memoryStateConflicts = plan.stateConflicts,
+                                canConfirmMemory = plan.stateConflicts.isEmpty()
+                            )
+                        )
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _uiState.update { it.copy(message = failure.toContextTransferUiError("目标已改变，请重新预览")) }
+            } finally {
+                _uiState.update { it.copy(isBusy = false) }
+            }
+        }
+    }
+
+    fun setReplaceMemoryStates(replace: Boolean) {
+        if (_uiState.value.isBusy) return
+        if (pendingRecoveryOperationId != null) return
+        val plan = pendingMemoryPlan ?: return
+        if (plan.stateConflicts.any { it.multipleImportedHeads }) return
+        pendingMemoryPlan = plan.copy(replaceExistingStates = replace)
+        _uiState.update { state ->
+            state.copy(
+                importPreview = state.importPreview?.copy(
+                    replaceExistingStates = replace,
+                    canConfirmMemory = plan.stateConflicts.isEmpty() || replace
+                )
+            )
+        }
     }
 
     fun consumeMessage() {
         _uiState.update { it.copy(message = null) }
     }
 
+    fun resumePendingImport(operationId: String) {
+        val recovery = contextTransferRecoveryRepository ?: return
+        if (_uiState.value.isBusy || _uiState.value.pendingOperations.none { it.operationId == operationId && it.kind == ContextTransferOperationKind.PRIVATE_LIBRARY }) return
+        _uiState.update { it.copy(isBusy = true, message = null) }
+        viewModelScope.launch {
+            try {
+                val result = recovery.resumeOperation(operationId)
+                check(result.stage == ContextTransferStage.COMPLETE) { "资料导入尚未完成" }
+                if (pendingRecoveryOperationId == operationId) {
+                    pendingImportBundle = null
+                    pendingAssistantAvatarImport = null
+                    pendingMemoryPlan = null
+                    pendingImportSettings = null
+                    pendingRecoveryOperationId = null
+                    _uiState.update { it.copy(importPreview = null) }
+                }
+                refreshCounts()
+                _uiState.update { it.copy(message = if (result.vectorsNeedingRebuild > 0) "已继续完成资料导入；${result.vectorsNeedingRebuild} 组向量需手动重建" else "已继续完成资料导入") }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                _uiState.update { it.copy(message = failure.toContextTransferUiError("资料导入未完成，已完成阶段保留")) }
+                refreshPendingOperationsSafely()
+            } finally { _uiState.update { it.copy(isBusy = false) } }
+        }
+    }
+
+    private suspend fun refreshPendingOperations() {
+        val operations = contextTransferRecoveryRepository?.listPendingOperations(ContextTransferOperationKind.PRIVATE_LIBRARY).orEmpty()
+        _uiState.update { it.copy(pendingOperations = operations) }
+    }
+
+    private suspend fun refreshPendingOperationsSafely() {
+        try { refreshPendingOperations() } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { /* 原失败仍在页面；无法读取回执时不伪造成功或清空待恢复状态。 */ }
+    }
+
     private suspend fun buildCurrentBundle(): ContextDataBundle {
         val currentSettings = settings.value
+        val archive = memoryTransferRepository?.exportArchive()
+        val archiveIds = archive?.records?.map { it.id }?.toSet().orEmpty()
         return ContextDataBundle(
+            version = if (contextTransferRecoveryRepository != null) 3 else 2,
             assistants = currentSettings.assistants,
             worldBookEntries = worldBookRepository.listEntries(),
-            memoryEntries = memoryRepository.listEntries(),
+            memoryEntries = memoryRepository.listEntries().filterNot { it.id in archiveIds },
             conversationSummaries = conversationSummaryRepository.listSummaries(),
             conversationSummarySegments = conversationSummaryRepository.listAllSummarySegments(),
             presets = presetRepository.listPresets().filterNot { preset -> preset.builtIn },
+            memoryArchive = archive,
+            companions = contextTransferRecoveryRepository?.exportPrivateCompanionData(currentSettings.assistants.map { it.id }.toSet()),
         )
     }
 
-    private suspend fun mergeImportedData(bundle: ContextDataBundle) {
-        val normalizedBundle = dropOrphanSummarySegments(bundle.normalizedForContextImport())
+    private suspend fun mergeImportedData(bundle: ContextDataBundle): MemoryArchiveImportResult.Imported? {
+        contextTransferRecoveryRepository?.let { recovery ->
+            val id = pendingRecoveryOperationId ?: (pendingAssistantAvatarImport?.let { avatar ->
+                recovery.preparePrivateImportWithAvatar(bundle, pendingMemoryPlan, pendingImportSettings ?: settings.value, ContextTransferAvatarInput(avatar.assistantId, avatar.bytes))
+            } ?: recovery.preparePrivateImport(bundle, pendingMemoryPlan, pendingImportSettings ?: settings.value)).operationId.also { pendingRecoveryOperationId = it }
+            val result = recovery.resumeOperation(id)
+            check(result.stage == ContextTransferStage.COMPLETE) { "资料导入尚未完成" }
+            lastVectorsNeedingRebuild = result.vectorsNeedingRebuild
+            return null
+        }
+        val normalizedBundle = bundle.normalizedForContextImport()
         val currentSettings = settings.value
         val mergedAssistants = mergeAssistants(
             currentAssistants = currentSettings.assistants,
             importedAssistants = normalizedBundle.assistants,
         )
+        val hasMemory = hasMemoryData(normalizedBundle)
+        var memoryResult: MemoryArchiveImportResult.Imported? = null
         dataImportTransaction {
+            if (hasMemory) {
+                val repository = requireNotNull(memoryTransferRepository) { "记忆恢复服务不可用" }
+                val plan = requireNotNull(pendingMemoryPlan) { "请先选择每个记忆空间的目标" }
+                memoryResult =
+                    when (val result = repository.importArchive(normalizedBundle, plan)) {
+                        is MemoryArchiveImportResult.Imported -> result
+                        is MemoryArchiveImportResult.Conflict -> error(result.reason)
+                    }
+            }
             normalizedBundle.worldBookEntries.forEach { entry ->
                 worldBookRepository.upsertEntry(entry)
-            }
-            normalizedBundle.memoryEntries.forEach { entry ->
-                memoryRepository.upsertEntry(entry)
-            }
-            normalizedBundle.conversationSummaries.forEach { summary ->
-                conversationSummaryRepository.upsertSummary(summary)
-            }
-            normalizedBundle.conversationSummarySegments.forEach { segment ->
-                conversationSummaryRepository.upsertSummarySegment(segment)
             }
             normalizedBundle.presets.forEach { preset ->
                 presetRepository.upsertPreset(preset.asImportedCustomPreset())
             }
         }
+
+        // 外层 Room 事务已提交后才发布本地缓存失效；设置失败仍保留同计划幂等回执。
+        if (hasMemory) memoryTransferRepository?.notifyImportCommitted(
+            requireNotNull(
+                pendingMemoryPlan
+            )
+        )
 
         settingsEditor.saveAssistants(
             assistants = mergedAssistants,
@@ -287,36 +471,19 @@ class ContextTransferViewModel(
                 assistants = mergedAssistants,
             ),
         )
-    }
-
-    /**
-     * 摘要分段表对 conversations 有外键约束，而数据包不携带会话本身。
-     * 若分段所属会话在本机不存在（换设备、清过数据、会话已删除），直接写入会触发
-     * FOREIGN KEY constraint failed 并回滚整个导入事务，因此这里先剔除这些孤儿分段。
-     */
-    private suspend fun dropOrphanSummarySegments(bundle: ContextDataBundle): ContextDataBundle {
-        if (bundle.conversationSummarySegments.isEmpty()) {
-            return bundle
-        }
-        val existingConversationIds = existingConversationIdsProvider() ?: return bundle
-        return bundle.copy(
-            conversationSummarySegments = bundle.conversationSummarySegments.filter { segment ->
-                segment.conversationId in existingConversationIds
-            },
-        )
-    }
-
-    private suspend fun countOrphanSummarySegments(bundle: ContextDataBundle): Int {
-        return bundle.conversationSummarySegments.size -
-            dropOrphanSummarySegments(bundle).conversationSummarySegments.size
+        return memoryResult
     }
 
     private suspend fun refreshCounts() {
         val customAssistantCount = settings.value.assistants.size
         val worldBookCount = worldBookRepository.listEntries().size
-        val memoryCount = memoryRepository.listEntries().size
+        val archive = memoryTransferRepository?.exportArchive(includeVectors = false)
+        val archiveIds = archive?.records?.map { it.id }?.toSet().orEmpty()
+        val memoryCount =
+            memoryRepository.listEntries().count { it.id !in archiveIds } + (archive?.itemCount
+                ?: 0)
         val summaryCount = conversationSummaryRepository.listSummaries().size +
-            conversationSummaryRepository.listAllSummarySegments().size
+                conversationSummaryRepository.listAllSummarySegments().size
         val presetCount = presetRepository.listPresets().count { preset -> !preset.builtIn }
         _uiState.update {
             it.copy(
@@ -325,8 +492,10 @@ class ContextTransferViewModel(
                 memoryCount = memoryCount,
                 summaryCount = summaryCount,
                 presetCount = presetCount,
+                companionCount = settings.value.companionCharacterSettings.keys.count { id -> settings.value.assistants.any { it.id == id } },
             )
         }
+        refreshPendingOperations()
     }
 
     private suspend fun applyImportedAssistantAvatar(bundle: ContextDataBundle): ContextDataBundle {
@@ -383,36 +552,34 @@ class ContextTransferViewModel(
         val currentSettings = settings.value
         val currentAssistantIds = currentSettings.assistants.map { it.id }.toSet()
         val currentWorldBookIds = worldBookRepository.listEntries().map { it.id }.toSet()
-        val currentMemoryIds = memoryRepository.listEntries().map { it.id }.toSet()
-        val currentSummaryIds = conversationSummaryRepository.listSummaries().map { it.conversationId }.toSet()
-        val currentSummarySegmentIds = conversationSummaryRepository.listAllSummarySegments().map { it.id }.toSet()
         val currentPresetIds = presetRepository.listPresets().map { it.id }.toSet()
+        val archive =
+            if (hasMemoryData(bundle)) MemoryTransferLegacyConversion.materialize(bundle) else null
+        val memoryGroups = archive?.let(MemoryTransferLegacyConversion::sourceGroups).orEmpty()
+        val targetOptions = if (memoryGroups.isEmpty()) emptyList() else {
+            val repository = requireNotNull(memoryTransferRepository) { "记忆恢复服务不可用" }
+            currentSettings.assistants.flatMap { assistant ->
+                repository.listTargetOptions(assistant.id)
+                    .map { it.copy(label = "${assistant.name} · ${it.label}") }
+            }
+        }
 
         val conflicts = buildList {
             bundle.assistants
                 .filter { it.id in currentAssistantIds }
                 .forEach { assistant ->
-                    add(ContextImportConflict("角色卡", assistant.name.ifBlank { assistant.id }, assistant.id))
+                    add(
+                        ContextImportConflict(
+                            "角色卡",
+                            assistant.name.ifBlank { assistant.id },
+                            assistant.id
+                        )
+                    )
                 }
             bundle.worldBookEntries
                 .filter { it.id in currentWorldBookIds }
                 .forEach { entry ->
                     add(ContextImportConflict("世界书", entry.title.ifBlank { entry.id }, entry.id))
-                }
-            bundle.memoryEntries
-                .filter { it.id in currentMemoryIds }
-                .forEach { entry ->
-                    add(ContextImportConflict("记忆", entry.content.take(30).ifBlank { entry.id }, entry.id))
-                }
-            bundle.conversationSummaries
-                .filter { it.conversationId in currentSummaryIds }
-                .forEach { summary ->
-                    add(ContextImportConflict("摘要", summary.conversationId, summary.conversationId))
-                }
-            bundle.conversationSummarySegments
-                .filter { it.id in currentSummarySegmentIds }
-                .forEach { segment ->
-                    add(ContextImportConflict("摘要分段", segment.conversationId, segment.id))
                 }
             bundle.presets
                 .filter { it.id in currentPresetIds }
@@ -426,25 +593,36 @@ class ContextTransferViewModel(
             section = section,
             assistantCount = bundle.assistants.size,
             worldBookCount = bundle.worldBookEntries.size,
-            memoryCount = bundle.memoryEntries.size,
+            memoryCount = (archive?.itemCount
+                ?: 0) - bundle.conversationSummaries.size - bundle.conversationSummarySegments.size,
             summaryCount = bundle.conversationSummaries.size + bundle.conversationSummarySegments.size,
             presetCount = bundle.presets.size,
             conflicts = conflicts,
             noticeMessages = buildImportNoticeMessages(bundle),
+            memoryGroups = memoryGroups,
+            memoryTargetOptions = targetOptions,
+            canConfirmMemory = memoryGroups.isEmpty(),
+            memorySourceCount = archive?.sources?.size ?: 0,
+            companionCount = bundle.companions?.size ?: 0,
         )
     }
 
     private suspend fun buildImportNoticeMessages(bundle: ContextDataBundle): List<String> {
         return buildList {
+            if (bundle.companions != null) add("陪伴偏好按角色恢复，装扮素材随资料带入。资料包不包含全聊天、音频或声音收藏；失败可继续尚未完成的部分。")
             if (bundle.assistants.size >= CONTEXT_IMPORT_MAX_ASSISTANTS) {
                 add("角色卡数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_ASSISTANTS} 条），超出部分不会导入。")
             }
             if (bundle.worldBookEntries.size >= CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES) {
                 add("世界书数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES} 条），超出部分不会导入。")
             }
-            val orphanSegmentCount = countOrphanSummarySegments(bundle)
-            if (orphanSegmentCount > 0) {
-                add("有 $orphanSegmentCount 条摘要分段所属的会话在本机不存在，将跳过这部分内容。")
+            if (hasMemoryData(bundle)) {
+                add("记忆将复制到你选择的本机角色、空间和身份，保留版本与导入出处。原始聊天不在资料包中，导入材料不会冒充本机原话。")
+                val summaryCount =
+                    bundle.conversationSummaries.size + bundle.conversationSummarySegments.size
+                if (summaryCount > 0) add("$summaryCount 条摘要及分段会保存为可查看的导入档案材料，原会话不存在时也会保留；不作为当前会话的摘要覆盖依据。")
+                if (settings.value.assistants.isEmpty()) add("请先使用角色包入口恢复或创建本机角色，再选择记忆目标。")
+                if (bundle.memoryArchive?.vectors?.isNotEmpty() == true) add("匹配本机配置的完整向量缓存可直接恢复；不兼容时保留正文并提示手动重建，不自动调用模型。")
             }
         }
     }
@@ -471,6 +649,23 @@ class ContextTransferViewModel(
         section: ContextTransferSection,
     ): DecodedImportBundle {
         payload.textContent?.let { rawJson ->
+            val root = runCatching { JsonParser.parseString(rawJson) }.getOrNull()
+                ?.takeIf { it.isJsonObject }?.asJsonObject
+            if (root != null && root.keySet().any {
+                    it in setOf(
+                        "memoryArchive",
+                        "memoryEntries",
+                        "conversationSummaries",
+                        "conversationSummarySegments",
+                        "assistants",
+                        "worldBookEntries",
+                        "presets",
+                        "exportedAt",
+                        "companions"
+                    )
+                }) {
+                return DecodedImportBundle(ImportSourceType.CONTEXT_BUNDLE, codec.decode(rawJson))
+            }
             val decodedBundle = runCatching {
                 codec.decode(rawJson)
             }.getOrNull()?.let { bundle ->
@@ -527,8 +722,10 @@ class ContextTransferViewModel(
                 when {
                     looksLikePngImage(bytes, payload.fileName, payload.mimeType) ->
                         "未在 PNG 图片中识别到 Tavern 角色卡数据"
+
                     looksLikeImageFile(payload.fileName, payload.mimeType) ->
                         "暂仅支持 PNG Tavern 图片角色卡"
+
                     else -> "导入文件格式无效"
                 },
             )
@@ -549,7 +746,7 @@ class ContextTransferViewModel(
             return true
         }
         return bytes.size >= PNG_SIGNATURE.size &&
-            bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
+                bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
     }
 
     private fun looksLikeImageFile(
@@ -579,40 +776,53 @@ class ContextTransferViewModel(
                 conversationSummaries = emptyList(),
                 conversationSummarySegments = emptyList(),
                 presets = emptyList(),
+                memoryArchive = null,
+                companions = bundle.companions?.filter { entry -> bundle.assistants.any { it.id == entry.assistantId } },
             )
 
             ContextTransferSection.WORLD_BOOK -> bundle.copy(
+                companions = null,
                 assistants = emptyList(),
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
                 conversationSummarySegments = emptyList(),
                 presets = emptyList(),
+                memoryArchive = null,
             )
 
             ContextTransferSection.MEMORY -> bundle.copy(
+                companions = null,
                 assistants = emptyList(),
                 worldBookEntries = emptyList(),
                 presets = emptyList(),
             )
 
             ContextTransferSection.PRESETS -> bundle.copy(
+                companions = null,
                 assistants = emptyList(),
                 worldBookEntries = emptyList(),
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
                 conversationSummarySegments = emptyList(),
+                memoryArchive = null,
             )
         }
     }
 
     private fun isBundleEmpty(bundle: ContextDataBundle): Boolean {
         return bundle.assistants.isEmpty() &&
-            bundle.worldBookEntries.isEmpty() &&
-            bundle.memoryEntries.isEmpty() &&
-            bundle.conversationSummaries.isEmpty() &&
-            bundle.conversationSummarySegments.isEmpty() &&
-            bundle.presets.isEmpty()
+                bundle.worldBookEntries.isEmpty() &&
+                bundle.memoryEntries.isEmpty() &&
+                bundle.conversationSummaries.isEmpty() &&
+                bundle.conversationSummarySegments.isEmpty() &&
+                bundle.presets.isEmpty() &&
+                bundle.memoryArchive?.isEmpty != false
+                && bundle.companions.isNullOrEmpty()
     }
+
+    private fun hasMemoryData(bundle: ContextDataBundle): Boolean =
+        bundle.memoryEntries.isNotEmpty() ||
+                bundle.conversationSummaries.isNotEmpty() || bundle.conversationSummarySegments.isNotEmpty() || bundle.memoryArchive?.isEmpty == false
 
     private fun Preset.asImportedCustomPreset(): Preset {
         return normalized().copy(
@@ -642,16 +852,16 @@ class ContextTransferViewModel(
                     assistant.copy(
                         linkedWorldBookIds = (assistant.linkedWorldBookIds + scopedEntryIds).distinct(),
                         linkedWorldBookBookIds = (
-                            assistant.linkedWorldBookBookIds +
-                                bundle.worldBookEntries
-                                    .filter { entry ->
-                                        entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
-                                            entry.scopeId == assistant.id
-                                    }
-                                    .mapNotNull { entry ->
-                                        entry.resolvedBookId().takeIf { it.isNotBlank() }
-                                    }
-                        ).distinct(),
+                                assistant.linkedWorldBookBookIds +
+                                        bundle.worldBookEntries
+                                            .filter { entry ->
+                                                entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
+                                                        entry.scopeId == assistant.id
+                                            }
+                                            .mapNotNull { entry ->
+                                                entry.resolvedBookId().takeIf { it.isNotBlank() }
+                                            }
+                                ).distinct(),
                     )
                 }
             },
@@ -665,7 +875,7 @@ class ContextTransferViewModel(
         }
         return bundle.worldBookEntries.filter { entry ->
             entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
-                entry.scopeId in assistantIds
+                    entry.scopeId in assistantIds
         }
     }
 
@@ -677,7 +887,8 @@ class ContextTransferViewModel(
     }
 
     companion object {
-        private val IMAGE_FILE_REGEX = Regex("""\.(png|apng|jpg|jpeg|webp|gif|bmp)$""", RegexOption.IGNORE_CASE)
+        private val IMAGE_FILE_REGEX =
+            Regex("""\.(png|apng|jpg|jpeg|webp|gif|bmp)$""", RegexOption.IGNORE_CASE)
         private val PNG_SIGNATURE = byteArrayOf(
             0x89.toByte(),
             0x50,
@@ -699,6 +910,8 @@ class ContextTransferViewModel(
             importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
             dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
             existingConversationIdsProvider: suspend () -> Set<String>? = { null },
+            memoryTransferRepository: MemoryArchiveTransferRepository? = null,
+            contextTransferRecoveryRepository: ContextTransferRecoveryRepository? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 ContextTransferViewModel(
@@ -711,6 +924,8 @@ class ContextTransferViewModel(
                     importedAssistantAvatarSaver = importedAssistantAvatarSaver,
                     dataImportTransaction = dataImportTransaction,
                     existingConversationIdsProvider = existingConversationIdsProvider,
+                    memoryTransferRepository = memoryTransferRepository,
+                    contextTransferRecoveryRepository = contextTransferRecoveryRepository,
                 )
             }
         }

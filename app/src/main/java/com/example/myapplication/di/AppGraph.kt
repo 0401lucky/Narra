@@ -25,6 +25,8 @@ import com.example.myapplication.data.repository.VoiceCloneSampleStorage
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.ContextLogStore
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
+import com.example.myapplication.data.repository.context.RoomMemoryArchiveRepository
 import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.RoomPresetRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
@@ -48,6 +50,7 @@ import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
+import com.example.myapplication.data.repository.ai.SnapshotAiTranslationService
 import com.example.myapplication.data.repository.ai.ImagePromptPolishService
 import com.example.myapplication.data.repository.ai.MemoryProposalPromptService
 import com.example.myapplication.data.repository.ai.MailboxPromptService
@@ -88,10 +91,16 @@ import com.example.myapplication.data.repository.moments.MomentsGenerationCoordi
 import com.example.myapplication.data.repository.moments.RoomMomentsRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoomRoleplayRepository
+import com.example.myapplication.data.repository.roleplay.CompanionVoiceRepository
+import com.example.myapplication.data.repository.roleplay.RoomCompanionVoiceRepository
+import com.example.myapplication.data.repository.voice.PrivateCompanionVoiceFilePublisher
 import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
 import com.example.myapplication.data.repository.roleplay.script.RoomRoleplayScriptRepository
 import com.example.myapplication.roleplay.script.AndroidRoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEngine
+import com.example.myapplication.model.CompanionVoiceSession
+import com.example.myapplication.roleplay.companion.CompanionVoiceController
+import com.example.myapplication.system.audio.AndroidCompanionVoicePlayerFactory
 import com.example.myapplication.system.logging.AppLogger
 import com.example.myapplication.system.performance.PerformanceTraceContract
 import com.example.myapplication.system.performance.traceAsync
@@ -103,8 +112,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.File
 
 internal enum class AppStartupTask(
     val taskName: String,
@@ -176,14 +187,15 @@ internal class AppStartupTaskScheduler(
 
 private const val APP_STARTUP_LOG_TAG = "AppGraph"
 
-class AppGraph(
+class AppGraph @JvmOverloads constructor(
     private val application: Application,
+    private val storageOverrides: AppGraphStorageOverrides = AppGraphStorageOverrides(),
 ) {
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startupTaskScheduler = AppStartupTaskScheduler(startupScope)
 
     val database: ChatDatabase by lazy {
-        Room.databaseBuilder(
+        storageOverrides.database ?: Room.databaseBuilder(
             application,
             ChatDatabase::class.java,
             CHAT_DATABASE_NAME,
@@ -191,7 +203,7 @@ class AppGraph(
     }
 
     val settingsStore: AppSettingsStore by lazy {
-        AppSettingsStore(application)
+        storageOverrides.settingsStore ?: AppSettingsStore(application)
     }
 
     val appUpdateStore: AppUpdateStore by lazy {
@@ -199,7 +211,7 @@ class AppGraph(
     }
 
     val complianceConsentStore: ComplianceConsentRepository by lazy {
-        ComplianceConsentStore(application)
+        storageOverrides.complianceConsentStore ?: ComplianceConsentStore(application)
     }
 
     val apiServiceFactory: ApiServiceFactory by lazy {
@@ -295,8 +307,14 @@ class AppGraph(
     val toolRegistry: ToolRegistry by lazy {
         ToolRegistry(
             listOf(
-                ReadMemoryTool(),
-                GetConversationSummaryTool(),
+                ReadMemoryTool(
+                    memoryArchiveRepository = memoryArchiveRepository,
+                    canReadMemory = { characterId ->
+                        settingsStore.settingsFlow.first().resolvedAssistants()
+                            .any { it.id == characterId && it.memoryEnabled }
+                    },
+                ),
+                GetConversationSummaryTool(memoryArchiveRepository = memoryArchiveRepository),
                 SearchWorldBookTool(),
                 SaveMemoryTool(),
                 SearchWebTool(),
@@ -305,7 +323,9 @@ class AppGraph(
     }
 
     val pendingMemoryProposalRepository: PendingMemoryProposalRepository by lazy {
-        InMemoryPendingMemoryProposalRepository()
+        com.example.myapplication.data.repository.context.ArchivePendingMemoryProposalRepository(
+            memoryArchiveRepository
+        )
     }
 
     val memoryWriteService: MemoryWriteService by lazy {
@@ -314,6 +334,7 @@ class AppGraph(
             memoryRepository = memoryRepository,
             pendingMemoryProposalRepository = pendingMemoryProposalRepository,
             aiPromptExtrasService = aiPromptExtrasService,
+            memoryArchiveRepository = memoryArchiveRepository,
         )
     }
 
@@ -324,6 +345,7 @@ class AppGraph(
             worldBookRepository = worldBookRepository,
             conversationSummaryRepository = conversationSummaryRepository,
             memoryWriteService = memoryWriteService,
+            memoryArchiveRepository = memoryArchiveRepository,
         )
     }
 
@@ -340,6 +362,7 @@ class AppGraph(
             memoryWriteService = memoryWriteService,
             toolAvailabilityResolver = toolAvailabilityResolver,
             toolRegistry = toolRegistry,
+            memoryArchiveRepository = memoryArchiveRepository,
         )
     }
 
@@ -404,19 +427,49 @@ class AppGraph(
             characterArtService = characterArtPromptService,
             imagePromptPolishService = imagePromptPolishService,
             roleplayShopPromptService = roleplayShopPromptService,
+            eventService = com.example.myapplication.data.repository.ai.MemoryEventPromptService(
+                promptExtrasCore
+            ),
         )
     }
 
-    val aiTranslationService: AiTranslationService by lazy {
+    private val defaultAiTranslationService: DefaultAiTranslationService by lazy {
         DefaultAiTranslationService(
             settingsStore = settingsStore,
             apiServiceFactory = apiServiceFactory,
         )
     }
 
+    val aiTranslationService: AiTranslationService get() = defaultAiTranslationService
+
+    val snapshotAiTranslationService: SnapshotAiTranslationService get() = defaultAiTranslationService
+
     val mimoTtsClient: MimoTtsClient by lazy {
         MimoTtsClient()
     }
+
+    val companionVoiceRepository: CompanionVoiceRepository by lazy {
+        RoomCompanionVoiceRepository(
+            database = database,
+            publisher = PrivateCompanionVoiceFilePublisher(File(application.filesDir, "companion_voice")),
+        )
+    }
+
+    private val companionVoicePlayerFactory by lazy {
+        AndroidCompanionVoicePlayerFactory(application)
+    }
+
+    fun createCompanionVoiceSession(scope: CoroutineScope): CompanionVoiceSession =
+        CompanionVoiceController(
+            scope = scope,
+            repository = companionVoiceRepository,
+            translationService = snapshotAiTranslationService,
+            playerFactory = companionVoicePlayerFactory,
+            getTurn = companionRepository::getTurn,
+            synthesize = { apiKey, request, baseUrl ->
+                mimoTtsClient.synthesize(apiKey, request, baseUrl)
+            },
+        )
 
     val voiceSynthesisCoordinator: VoiceSynthesisCoordinator by lazy {
         VoiceSynthesisCoordinator(
@@ -437,15 +490,246 @@ class AppGraph(
     }
 
     private val roomMemoryRepository: RoomMemoryRepository by lazy {
-        RoomMemoryRepository(database.memoryDao())
+        RoomMemoryRepository(database.memoryDao(), database.companionDao())
     }
 
     val memoryRepository: MemoryRepository by lazy {
-        roomMemoryRepository
+        com.example.myapplication.data.repository.context.ArchiveMemoryRepository(
+            database,
+            roomMemoryRepository,
+            memoryArchiveRepository
+        )
+    }
+
+    val memoryArchiveRepository: MemoryArchiveRepository by lazy {
+        RoomMemoryArchiveRepository(
+            database = database,
+            isCharacterAvailable = { characterId ->
+                settingsStore.settingsFlow.first().resolvedAssistants().any { it.id == characterId }
+            },
+            observeCharacterAvailability = { characterId ->
+                settingsStore.settingsFlow.map { settings ->
+                    settings.resolvedAssistants().any { it.id == characterId }
+                }.distinctUntilChanged()
+            },
+            onRecordsChanged = ::scheduleMemoryMaintenance,
+            usesLegacyGlobalMemory = { characterId ->
+                settingsStore.settingsFlow.first().resolvedAssistants()
+                    .firstOrNull { it.id == characterId }?.useGlobalMemory == true
+            },
+            onRecallReceiptChanged = { contextLogStore.attachMemoryReceipt(it) },
+            residentLimits = { settingsStore.settingsFlow.first().memoryResidentLimits },
+        )
+    }
+
+    val memoryVectorRepository by lazy {
+        com.example.myapplication.data.repository.context.RoomMemoryVectorRepository(
+            database = database,
+            archiveRepository = memoryArchiveRepository,
+            embeddingClient = com.example.myapplication.data.repository.embedding.OpenAiMemoryEmbeddingClient(
+                apiServiceFactory
+            ),
+            apiServiceFactory = apiServiceFactory,
+            provider = { settingsStore.settingsFlow.first().resolveEmbeddingProvider() },
+            isAllowed = { context ->
+                complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION) &&
+                        memoryArchiveRepository.getEngineVersion() >= com.example.myapplication.model.MEMORY_ENGINE_CURRENT &&
+                        settingsStore.settingsFlow.first().resolvedAssistants()
+                            .any { it.id == context.characterId && it.memoryEnabled }
+            },
+        )
+    }
+
+    val memoryArchiveTransferRepository by lazy {
+        com.example.myapplication.data.repository.context.RoomMemoryArchiveTransferRepository(
+            database = database,
+            archiveRepository = memoryArchiveRepository,
+            vectorRepository = memoryVectorRepository,
+            isCharacterAvailable = { characterId ->
+                settingsStore.settingsFlow.first().resolvedAssistants().any { it.id == characterId }
+            },
+        )
+    }
+
+    private fun scheduleMemoryVectorIndex(context: com.example.myapplication.model.MemoryRuntimeContext) {
+        startupScope.launch {
+            try {
+                memoryVectorRepository.rebuild(context)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                AppLogger.w(APP_STARTUP_LOG_TAG, "记忆索引暂未完成", failure)
+            }
+        }
+    }
+
+    private val memoryMaintenanceConcurrency = kotlinx.coroutines.sync.Semaphore(2)
+
+    private fun scheduleMemoryMaintenance(context: com.example.myapplication.model.MemoryRuntimeContext) {
+        startupScope.launch {
+            try {
+                val contexts = if (context.conversationId.isNotBlank()) {
+                    listOf(context)
+                } else {
+                    memoryArchiveRepository.listActiveRecallContexts(context.characterId).filter {
+                        it.spaceId == context.spaceId && it.personaKey == context.personaKey
+                    }
+                }
+                contexts.distinctBy { it.spaceId to it.personaKey }
+                    .forEach {
+                        scheduleMemoryVectorIndex(it)
+                        scheduleMemoryEventWork(it, resumeOnly = false)
+                    }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                AppLogger.w(APP_STARTUP_LOG_TAG, "事件整理暂未完成", failure)
+            }
+        }
+    }
+
+    private fun scheduleMemoryEventWork(
+        context: com.example.myapplication.model.MemoryRuntimeContext,
+        resumeOnly: Boolean,
+    ) {
+        startupScope.launch {
+            try {
+                memoryKnowledgeCoordinator.resume(context)
+                if (!resumeOnly) memoryEventCoordinator.processAutomatic(context)
+                memoryEventCoordinator.resumePlannedOnStartup(context)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                AppLogger.w(APP_STARTUP_LOG_TAG, "事件整理暂未完成", failure)
+            }
+        }
+    }
+
+    val memoryEventCoordinator by lazy {
+        com.example.myapplication.conversation.MemoryEventCoordinator(
+            archive = memoryArchiveRepository,
+            ai = aiPromptExtrasService,
+            currentSettings = { settingsStore.settingsFlow.first() },
+            hasCurrentConsent = {
+                complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION)
+            },
+            concurrency = memoryMaintenanceConcurrency,
+        )
+    }
+
+    val memoryKnowledgeCoordinator by lazy {
+        com.example.myapplication.conversation.MemoryKnowledgeCoordinator(
+            archive = memoryArchiveRepository,
+            currentSettings = { settingsStore.settingsFlow.first() },
+            hasCurrentConsent = {
+                complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION)
+            },
+        )
+    }
+
+    val durableMemoryExtractionCoordinator by lazy {
+        com.example.myapplication.conversation.DurableMemoryExtractionCoordinator(
+            archive = memoryArchiveRepository,
+            ai = aiPromptExtrasService,
+            currentSettings = { settingsStore.settingsFlow.first() },
+            hasCurrentConsent = { complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION) },
+            concurrency = memoryMaintenanceConcurrency,
+        )
     }
 
     val conversationSummaryRepository: ConversationSummaryRepository by lazy {
         roomMemoryRepository
+    }
+
+    val companionRepository: com.example.myapplication.data.repository.roleplay.CompanionRepository by lazy {
+        com.example.myapplication.data.repository.roleplay.RoomCompanionRepository(
+            database = database,
+            archive = memoryArchiveRepository,
+            historyAllowed = companionHistoryRepository::validate,
+            requestsAllowed = {
+                complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION)
+            },
+        )
+    }
+
+    val companionHistoryRepository: com.example.myapplication.data.repository.roleplay.CompanionHistoryRepository by lazy {
+        com.example.myapplication.data.repository.roleplay.RoomCompanionHistoryRepository(
+            database,
+            memoryArchiveRepository
+        )
+    }
+
+    val companionRequestCoordinator by lazy {
+        com.example.myapplication.conversation.CompanionRequestCoordinator(
+            companionRepository,
+            companionTurnCoordinator,
+            companionHistoryRepository,
+            roleplayRepository,
+            conversationRepository,
+            memoryArchiveRepository,
+            settingsStore,
+            promptContextAssembler,
+            aiGateway,
+        )
+    }
+
+    private val companionImageReferences by lazy {
+        com.example.myapplication.data.repository.roleplay.CompanionImageReferences(database, settingsStore)
+    }
+
+    val companionResourcesRepository: com.example.myapplication.data.repository.roleplay.CompanionResourcesRepository by lazy {
+        com.example.myapplication.data.repository.roleplay.AndroidCompanionResourcesRepository(
+            application, localImageStore, settingsStore, companionImageReferences::read
+        )
+    }
+
+    val companionReadingRepository: com.example.myapplication.data.repository.roleplay.CompanionReadingRepository by lazy {
+        com.example.myapplication.data.repository.roleplay.RoomCompanionReadingRepository(database, memoryArchiveRepository, roleplayRepository)
+    }
+
+    val companionHistoryManagementRepository: com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepository by lazy {
+        com.example.myapplication.data.repository.roleplay.RoomCompanionHistoryManagementRepository(
+            database, companionReadingRepository, companionRepository,
+        )
+    }
+
+    val companionTextExporter by lazy {
+        com.example.myapplication.data.repository.roleplay.CompanionTextExporter(
+            companionHistoryManagementRepository,
+            com.example.myapplication.data.repository.roleplay.AndroidCompanionTextDocumentWriter(application.contentResolver),
+        )
+    }
+
+    val companionAppearanceDocumentStore by lazy {
+        com.example.myapplication.data.repository.roleplay.CompanionAppearanceDocumentStore(application.contentResolver)
+    }
+
+    val contextTransferRecoveryRepository: com.example.myapplication.data.repository.context.ContextTransferRecoveryRepository by lazy {
+        com.example.myapplication.data.repository.context.RoomContextTransferRecoveryRepository(
+            database = database,
+            settingsStore = settingsStore,
+            worldBookRepository = worldBookRepository,
+            presetRepository = presetRepository,
+            memoryTransferRepository = memoryArchiveTransferRepository,
+            files = com.example.myapplication.data.repository.context.PrivateCompanionTransferFileStore(application),
+        )
+    }
+
+    val companionTurnCoordinator by lazy {
+        com.example.myapplication.conversation.CompanionTurnCoordinator(
+            repository = companionRepository,
+            onCommitted = { receipt ->
+                startupScope.launch {
+                    val context =
+                        companionRepository.getEncounter(receipt.turn.encounterId)?.context
+                            ?: return@launch
+                    durableMemoryExtractionCoordinator.processAutomatic(
+                        context.conversationId,
+                        context.characterId
+                    )
+                }
+            },
+        )
     }
 
     val presetRepository: PresetRepository by lazy {
@@ -456,9 +740,12 @@ class AppGraph(
         RoomRoleplayRepository(
             roleplayDao = database.roleplayDao(),
             conversationRepository = conversationRepository,
-            imageFileCleaner = localImageStore::deleteIfLocalAsync,
+            imageFileCleaner = { path -> companionImageReferences.deleteIfUnreferenced(path, localImageStore) },
             mailboxCleanup = mailboxRepository::deleteScenarioData,
             economyCleanup = roleplayEconomyRepository::deleteScenarioData,
+            database = database,
+            memoryArchiveRepository = memoryArchiveRepository,
+            companionRepository = companionRepository,
         )
     }
 
@@ -476,9 +763,15 @@ class AppGraph(
             worldBookMatcher = WorldBookMatcher(),
             memoryRepository = memoryRepository,
             memorySelector = MemorySelector(),
+            memoryArchiveRepository = memoryArchiveRepository,
             conversationSummaryRepository = conversationSummaryRepository,
             phoneSnapshotRepository = phoneSnapshotRepository,
             presetRepository = presetRepository,
+            memoryRecallEngine = com.example.myapplication.context.MemoryRecallEngine(
+                memoryArchiveRepository,
+                vectorSearch = memoryVectorRepository
+            ),
+            onRecallContext = ::scheduleMemoryVectorIndex,
         )
     }
 
@@ -538,6 +831,77 @@ class AppGraph(
 
     fun scheduleConsentDependentTasks() {
         com.example.myapplication.system.moments.MomentsAutoGenerationWorker.schedule(application)
+        startupScope.launch {
+            try {
+                if (memoryArchiveRepository.getEngineVersion() < com.example.myapplication.model.MEMORY_ENGINE_CURRENT ||
+                    !complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION)
+                ) return@launch
+                settingsStore.settingsFlow.first().resolvedAssistants().filter { it.memoryEnabled }
+                    .forEach { assistant ->
+                        memoryArchiveRepository.listSpaces(assistant.id).forEach { space ->
+                            memoryArchiveRepository.listRecoverableJobs(space.id).filter {
+                                it.purpose in setOf(
+                                    com.example.myapplication.model.MemoryJobPurpose.EVENT_SUMMARY,
+                                    com.example.myapplication.model.MemoryJobPurpose.EVENT_REBUILD,
+                                )
+                            }.map { it.context }.distinct()
+                                .forEach { scheduleMemoryEventWork(it, resumeOnly = true) }
+                        }
+                        memoryArchiveRepository.listActiveRecallContexts(assistant.id)
+                            .distinctBy { it.spaceId to it.personaKey }
+                            .forEach { scheduleMemoryEventWork(it, resumeOnly = false) }
+                    }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                AppLogger.w(APP_STARTUP_LOG_TAG, "恢复事件整理失败", failure)
+            }
+        }
+        startupScope.launch {
+            if (memoryArchiveRepository.getEngineVersion() < com.example.myapplication.model.MEMORY_ENGINE_CURRENT ||
+                !complianceConsentStore.isAccepted(com.example.myapplication.compliance.CompliancePolicy.CURRENT_VERSION)
+            ) return@launch
+            val settings = settingsStore.settingsFlow.first()
+            if (settings.resolveEmbeddingProvider() == null) return@launch
+            settings.resolvedAssistants().filter { it.memoryEnabled }.forEach { assistant ->
+                memoryArchiveRepository.listActiveRecallContexts(assistant.id)
+                    .distinctBy { it.spaceId to it.personaKey }.forEach(::scheduleMemoryVectorIndex)
+            }
+        }
+        startupScope.launch {
+            try {
+                if (!durableMemoryExtractionCoordinator.isEnabled()) return@launch
+                val settings = settingsStore.settingsFlow.first()
+                if (settings.memoryAutoSummaryEvery <= 0) return@launch
+                settings.resolvedAssistants().filter { it.memoryEnabled }.forEach { assistant ->
+                    memoryArchiveRepository.listSpaces(assistant.id).forEach { space ->
+                        memoryArchiveRepository.listRecoverableJobs(space.id)
+                            .filter { it.purpose == com.example.myapplication.model.MemoryJobPurpose.AUTOMATIC_EXTRACTION }
+                            .map { it.context }.distinct().forEach { context ->
+                                launch {
+                                    try {
+                                        durableMemoryExtractionCoordinator.resumePlannedOnStartup(
+                                            context
+                                        )
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (failure: Exception) {
+                                        AppLogger.w(
+                                            APP_STARTUP_LOG_TAG,
+                                            "恢复记忆整理失败",
+                                            failure
+                                        )
+                                    }
+                                }
+                            }
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                AppLogger.w(APP_STARTUP_LOG_TAG, "恢复记忆整理失败", failure)
+            }
+        }
     }
 
     private companion object {

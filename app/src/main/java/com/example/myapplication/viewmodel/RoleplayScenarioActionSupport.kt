@@ -48,7 +48,9 @@ internal class RoleplayScenarioActionSupport(
             try {
                 val scenario = roleplayRepository.getScenario(scenarioId)
                     ?: error("场景不存在")
-                val scenarioForStart = scenario.withAssistantGreetingOpeningIfNeeded()
+                val scenarioForStart =
+                    if (roleplayRepository.hasCompanionHistory(scenarioId)) scenario
+                    else scenario.withAssistantGreetingOpeningIfNeeded()
                 if (scenarioForStart != scenario) {
                     roleplayRepository.upsertScenario(scenarioForStart)
                 }
@@ -176,14 +178,16 @@ internal class RoleplayScenarioActionSupport(
         }
 
         scope.launch {
-            val currentMessages = com.example.myapplication.roleplay.RoleplayRoundTripSupport.currentConversationMessages(
-                messages = currentRawMessagesFlow.value,
-                conversationId = session.conversationId,
-            )
-            val preparedEdit = com.example.myapplication.roleplay.RoleplayRoundTripSupport.prepareUserEdit(
-                currentMessages = currentMessages,
-                sourceMessageId = sourceMessageId,
-            ) ?: return@launch
+            val currentMessages =
+                com.example.myapplication.roleplay.RoleplayRoundTripSupport.currentConversationMessages(
+                    messages = currentRawMessagesFlow.value,
+                    conversationId = session.conversationId,
+                )
+            val preparedEdit =
+                com.example.myapplication.roleplay.RoleplayRoundTripSupport.prepareUserEdit(
+                    currentMessages = currentMessages,
+                    sourceMessageId = sourceMessageId,
+                ) ?: return@launch
 
             conversationRepository.replaceConversationSnapshot(
                 conversationId = session.conversationId,
@@ -225,12 +229,15 @@ internal class RoleplayScenarioActionSupport(
                 roleplayRepository.deleteDiaryEntriesForConversation(session.conversationId)
                 clearConversationScopedContext(session.conversationId)
             }.onSuccess {
+                if (!isCurrentSession(session.scenarioId, session.conversationId)) return@onSuccess
                 currentRawMessagesFlow.value = emptyList()
                 updateUiState { current ->
                     RoleplayStateSupport.applyResetSessionSuccess(current)
                 }
                 onSuccess()
             }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+                if (!isCurrentSession(session.scenarioId, session.conversationId)) return@onFailure
                 updateUiState { current ->
                     RoleplayStateSupport.applyErrorMessage(
                         current,
@@ -253,12 +260,17 @@ internal class RoleplayScenarioActionSupport(
         }
         cancelActiveGeneration()
         scope.launch {
+            var restartedConversationId: String? = null
             runCatching {
-                val oldConversationId = session.conversationId
                 val startResult = roleplayRepository.restartScenario(scenario.id)
-                roleplayRepository.deleteOnlineMeta(oldConversationId)
-                roleplayRepository.deleteDiaryEntriesForConversation(oldConversationId)
-                clearConversationScopedContext(oldConversationId)
+                restartedConversationId = startResult.session.conversationId
+                if (!isCurrentSession(
+                        scenario.id,
+                        session.conversationId,
+                        restartedConversationId
+                    )
+                ) return@runCatching
+                // 仓储已经切换运行并重置活跃玩法；旧原文、日记和档案不再额外清理。
                 applySessionStartResult(
                     startResult = startResult,
                     scenario = scenario,
@@ -268,6 +280,13 @@ internal class RoleplayScenarioActionSupport(
                 }
                 onSuccess()
             }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+                if (!isCurrentSession(
+                        scenario.id,
+                        session.conversationId,
+                        restartedConversationId
+                    )
+                ) return@onFailure
                 updateUiState { current ->
                     RoleplayStateSupport.applyErrorMessage(
                         current,
@@ -281,6 +300,12 @@ internal class RoleplayScenarioActionSupport(
         }
     }
 
+    private fun isCurrentSession(scenarioId: String, vararg conversationIds: String?): Boolean {
+        val current = uiState().currentSession ?: return false
+        return currentScenarioIdFlow.value == scenarioId && current.scenarioId == scenarioId &&
+                current.conversationId in conversationIds
+    }
+
     fun applySessionStartResult(
         startResult: RoleplaySessionStartResult,
         scenario: RoleplayScenario,
@@ -288,7 +313,10 @@ internal class RoleplayScenarioActionSupport(
         val state = uiState()
         val currentAssistantName = RoleplayConversationSupport.resolveRoleplayNames(
             scenario = scenario,
-            assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId),
+            assistant = RoleplayConversationSupport.resolveAssistant(
+                state.settings,
+                scenario.assistantId
+            ),
             settings = state.settings,
         ).second
         val previousAssistantName = state.settings.resolvedAssistants()

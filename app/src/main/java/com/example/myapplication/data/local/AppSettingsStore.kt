@@ -19,6 +19,7 @@ import com.example.myapplication.model.DEFAULT_CONTEXT_LOG_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_AUTO_SUMMARY_EVERY
 import com.example.myapplication.model.DEFAULT_MEMORY_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
+import com.example.myapplication.model.DEFAULT_MEMORY_RECALL_TOKEN_BUDGET
 import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
@@ -28,11 +29,14 @@ import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
 import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
 import com.example.myapplication.model.MEMORY_CAPACITY_MAX
 import com.example.myapplication.model.MEMORY_CAPACITY_MIN
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MAX
+import com.example.myapplication.model.MEMORY_RECALL_TOKEN_BUDGET_MIN
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MomentAutoPostFrequency
 import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.MomentsSettings
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -70,6 +74,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
@@ -77,6 +82,28 @@ import kotlinx.coroutines.flow.shareIn
 private val Context.dataStore by preferencesDataStore(name = "app_settings")
 
 interface SettingsStore {
+    suspend fun applyContextTransferTarget(
+        operationId: String,
+        planHash: String,
+        target: com.example.myapplication.model.ContextTransferSettingsTarget,
+    ): com.example.myapplication.model.ContextTransferSettingsResult = error("当前设置存储不支持资料恢复回执")
+
+    /** null 表示无法核对完整原始引用，物理清理必须保守跳过。 */
+    suspend fun companionImageReferences(): Set<String>? = null
+    suspend fun saveAssistantsWithCompanionCopy(
+        assistants: List<Assistant>,
+        selectedAssistantId: String,
+        sourceAssistantId: String,
+        targetAssistantId: String,
+    ) = saveAssistants(assistants, selectedAssistantId)
+
+    suspend fun updateCompanionSettings(
+        assistantId: String,
+        expectedRevision: Long,
+        patch: com.example.myapplication.model.CompanionSettingsPatch,
+    ): com.example.myapplication.model.CompanionSettingsWriteResult =
+        error("当前设置存储不支持陪伴设置")
+
     val settingsFlow: Flow<AppSettings>
 
     suspend fun saveSettings(
@@ -153,6 +180,10 @@ interface SettingsStore {
 
     suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int)
 
+    suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int)
+
+    suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits)
+
     suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String)
 
     suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition)
@@ -223,7 +254,8 @@ class AppSettingsStore internal constructor(
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val voiceSynthesisSettingsType = object : TypeToken<VoiceSynthesisSettings>() {}.type
-    private val voiceRecognitionSettingsType = object : TypeToken<VoiceRecognitionSettings>() {}.type
+    private val voiceRecognitionSettingsType =
+        object : TypeToken<VoiceRecognitionSettings>() {}.type
     private val momentsSettingsType = object : TypeToken<MomentsSettings>() {}.type
     override val settingsFlow: Flow<AppSettings> = recoverablePreferencesFlow()
         .map { preferences ->
@@ -245,61 +277,62 @@ class AppSettingsStore internal constructor(
                 val secureSearchApiKeys = secureSettings.searchApiKeys
                 val secureVoiceApiKey = secureSettings.voiceApiKey
                 val secureVoiceRecognitionApiKey = secureSettings.voiceRecognitionApiKey
-        val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
-            .map { provider ->
-                normalizeProviderFields(provider).copy(
-                    apiKey = secureProviderApiKeys[provider.id]
-                        .orEmpty()
-                        .ifBlank { provider.apiKey.trim() },
+                val storedProviders =
+                    decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+                        .map { provider ->
+                            normalizeProviderFields(provider).copy(
+                                apiKey = secureProviderApiKeys[provider.id]
+                                    .orEmpty()
+                                    .ifBlank { provider.apiKey.trim() },
+                            )
+                        }
+                val resolvedProviders = if (storedProviders.isNotEmpty()) {
+                    storedProviders
+                } else {
+                    buildLegacyProviders(
+                        baseUrl = legacyBaseUrl,
+                        apiKey = legacyApiKey,
+                        selectedModel = legacySelectedModel,
+                    )
+                }
+                val resolvedSelectedProviderId = preferences[PreferencesKeys.selectedProviderId]
+                    .orEmpty()
+                    .ifBlank { resolvedProviders.firstOrNull()?.id.orEmpty() }
+                val functionModelProviderIds = decodeFunctionModelProviderIds(
+                    preferences[PreferencesKeys.functionModelProviderIdsJson].orEmpty(),
+                ).normalized(resolvedProviders.map(ProviderSettings::id).toSet())
+                val effectiveActiveProvider = resolveEffectiveProvider(
+                    providers = resolvedProviders,
+                    selectedProviderId = resolvedSelectedProviderId,
                 )
-            }
-        val resolvedProviders = if (storedProviders.isNotEmpty()) {
-            storedProviders
-        } else {
-            buildLegacyProviders(
-                baseUrl = legacyBaseUrl,
-                apiKey = legacyApiKey,
-                selectedModel = legacySelectedModel,
-            )
-        }
-        val resolvedSelectedProviderId = preferences[PreferencesKeys.selectedProviderId]
-            .orEmpty()
-            .ifBlank { resolvedProviders.firstOrNull()?.id.orEmpty() }
-        val functionModelProviderIds = decodeFunctionModelProviderIds(
-            preferences[PreferencesKeys.functionModelProviderIdsJson].orEmpty(),
-        ).normalized(resolvedProviders.map(ProviderSettings::id).toSet())
-        val effectiveActiveProvider = resolveEffectiveProvider(
-            providers = resolvedProviders,
-            selectedProviderId = resolvedSelectedProviderId,
-        )
-        val storedSearchSettings = decodeSearchSettings(
-            preferences[PreferencesKeys.searchSettingsJson].orEmpty(),
-        )
-        val searchSettings = storedSearchSettings.copy(
-            sources = storedSearchSettings.sources.map { source ->
-                source.copy(
-                    apiKey = secureSearchApiKeys[source.id]
-                        .orEmpty()
-                        .ifBlank { source.apiKey.trim() },
+                val storedSearchSettings = decodeSearchSettings(
+                    preferences[PreferencesKeys.searchSettingsJson].orEmpty(),
                 )
-            },
-        ).normalized()
-        val storedVoiceSynthesisSettings = decodeVoiceSynthesisSettings(
-            preferences[PreferencesKeys.voiceSynthesisSettingsJson].orEmpty(),
-        )
-        val voiceSynthesisSettings = storedVoiceSynthesisSettings.copy(
-            apiKey = secureVoiceApiKey.ifBlank {
-                storedVoiceSynthesisSettings.apiKey
-            },
-        ).normalized()
-        val storedVoiceRecognitionSettings = decodeVoiceRecognitionSettings(
-            preferences[PreferencesKeys.voiceRecognitionSettingsJson].orEmpty(),
-        )
-        val voiceRecognitionSettings = storedVoiceRecognitionSettings.copy(
-            apiKey = secureVoiceRecognitionApiKey.ifBlank {
-                storedVoiceRecognitionSettings.apiKey
-            },
-        ).normalized()
+                val searchSettings = storedSearchSettings.copy(
+                    sources = storedSearchSettings.sources.map { source ->
+                        source.copy(
+                            apiKey = secureSearchApiKeys[source.id]
+                                .orEmpty()
+                                .ifBlank { source.apiKey.trim() },
+                        )
+                    },
+                ).normalized()
+                val storedVoiceSynthesisSettings = decodeVoiceSynthesisSettings(
+                    preferences[PreferencesKeys.voiceSynthesisSettingsJson].orEmpty(),
+                )
+                val voiceSynthesisSettings = storedVoiceSynthesisSettings.copy(
+                    apiKey = secureVoiceApiKey.ifBlank {
+                        storedVoiceSynthesisSettings.apiKey
+                    },
+                ).normalized()
+                val storedVoiceRecognitionSettings = decodeVoiceRecognitionSettings(
+                    preferences[PreferencesKeys.voiceRecognitionSettingsJson].orEmpty(),
+                )
+                val voiceRecognitionSettings = storedVoiceRecognitionSettings.copy(
+                    apiKey = secureVoiceRecognitionApiKey.ifBlank {
+                        storedVoiceRecognitionSettings.apiKey
+                    },
+                ).normalized()
 
                 val settings = AppSettings(
                     baseUrl = effectiveActiveProvider?.baseUrl ?: legacyBaseUrl,
@@ -314,83 +347,113 @@ class AppSettingsStore internal constructor(
                     appColorTheme = AppColorTheme.fromStorageValue(
                         preferences[PreferencesKeys.appColorTheme].orEmpty(),
                     ),
-            messageTextScale = preferences[PreferencesKeys.messageTextScale] ?: 1f,
-            reasoningExpandedByDefault = preferences[PreferencesKeys.reasoningExpandedByDefault] ?: true,
-            showThinkingContent = preferences[PreferencesKeys.showThinkingContent] ?: true,
-            autoCollapseThinking = preferences[PreferencesKeys.autoCollapseThinking] ?: true,
-            autoPreviewImages = preferences[PreferencesKeys.autoPreviewImages] ?: true,
-            codeBlockAutoWrap = preferences[PreferencesKeys.codeBlockAutoWrap] ?: false,
-            codeBlockAutoCollapse = preferences[PreferencesKeys.codeBlockAutoCollapse] ?: false,
-            showRoleplayAiHelper = preferences[PreferencesKeys.showRoleplayAiHelper] ?: true,
-            roleplayLongformTargetChars = (preferences[PreferencesKeys.roleplayLongformTargetChars]
-                ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS).coerceIn(300, 2000),
-            showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip] ?: true,
-            showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip] ?: false,
-            showOnlineRoleplayNarration = preferences[PreferencesKeys.showOnlineRoleplayNarration] ?: true,
-            enableRoleplayNetMeme = preferences[PreferencesKeys.enableRoleplayNetMeme] ?: false,
-            roleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.fromStorageValue(
-                preferences[PreferencesKeys.roleplayImmersiveMode].orEmpty(),
-            ),
-            roleplayHighContrast = preferences[PreferencesKeys.roleplayHighContrast] ?: false,
-            roleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.fromStorageValue(
-                preferences[PreferencesKeys.roleplayLineHeightScale].orEmpty(),
-            ),
-            roleplayNoBackgroundSkin = decodeRoleplayNoBackgroundSkin(
-                preferences[PreferencesKeys.roleplayNoBackgroundSkinJson].orEmpty(),
-            ),
-            suppressRoleplayAssistantMismatchDialog = preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] ?: false,
-            userDisplayName = preferences[PreferencesKeys.userDisplayName]
-                .orEmpty()
-                .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
-            userPersonaPrompt = preferences[PreferencesKeys.userPersonaPrompt].orEmpty(),
-            userAvatarUri = preferences[PreferencesKeys.userAvatarUri].orEmpty(),
-            userAvatarUrl = preferences[PreferencesKeys.userAvatarUrl].orEmpty(),
-            userPersonaMasks = decodeUserPersonaMasks(
-                preferences[PreferencesKeys.userPersonaMasksJson].orEmpty(),
-            ),
-            defaultUserPersonaMaskId = preferences[PreferencesKeys.defaultUserPersonaMaskId].orEmpty(),
-            translationHistory = decodeTranslationHistory(
-                preferences[PreferencesKeys.translationHistoryJson].orEmpty(),
-            ),
-            assistants = decodeAssistants(preferences[PreferencesKeys.assistantsJson].orEmpty()),
-            selectedAssistantId = preferences[PreferencesKeys.selectedAssistantId]
-                .orEmpty()
-                .ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
-            defaultPresetId = preferences[PreferencesKeys.defaultPresetId]
-                .orEmpty()
-                .ifBlank { DEFAULT_PRESET_ID },
-            screenTranslationSettings = ScreenTranslationSettings(
-                serviceEnabled = preferences[PreferencesKeys.screenTranslationServiceEnabled] ?: false,
-                overlayEnabled = preferences[PreferencesKeys.screenTranslationOverlayEnabled] ?: true,
-                overlayOffsetX = preferences[PreferencesKeys.screenTranslationOverlayOffsetX] ?: 0.85f,
-                overlayOffsetY = preferences[PreferencesKeys.screenTranslationOverlayOffsetY] ?: 0.42f,
-                targetLanguage = preferences[PreferencesKeys.screenTranslationTargetLanguage]
-                    .orEmpty()
-                    .ifBlank { "简体中文" },
-                selectedTextEnabled = preferences[PreferencesKeys.screenTranslationSelectedTextEnabled] ?: true,
-                showSourceText = preferences[PreferencesKeys.screenTranslationShowSourceText] ?: true,
-                vendorGuideDismissed = preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] ?: false,
-            ),
-            searchSettings = searchSettings,
-            voiceSynthesisSettings = voiceSynthesisSettings,
-            voiceRecognitionSettings = voiceRecognitionSettings,
-            momentsSettings = decodeMomentsSettings(
-                preferences[PreferencesKeys.momentsSettingsJson].orEmpty(),
-            ),
-            memoryAutoSummaryEvery = (preferences[PreferencesKeys.memoryAutoSummaryEvery]
-                ?: DEFAULT_MEMORY_AUTO_SUMMARY_EVERY)
-                .coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX),
-            memoryCapacity = (preferences[PreferencesKeys.memoryCapacity] ?: DEFAULT_MEMORY_CAPACITY)
-                .coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX),
-            memoryExtractionPrompt = preferences[PreferencesKeys.memoryExtractionPrompt].orEmpty(),
-            memoryInjectionPrompt = preferences[PreferencesKeys.memoryInjectionPrompt].orEmpty(),
-            memoryInjectionPosition = MemoryInjectionPosition.fromStorageValue(
-                preferences[PreferencesKeys.memoryInjectionPosition].orEmpty(),
-            ),
-            contextLogEnabled = preferences[PreferencesKeys.contextLogEnabled] ?: true,
-            contextLogCapacity = (preferences[PreferencesKeys.contextLogCapacity]
-                ?: DEFAULT_CONTEXT_LOG_CAPACITY)
-                .coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX),
+                    messageTextScale = preferences[PreferencesKeys.messageTextScale] ?: 1f,
+                    reasoningExpandedByDefault = preferences[PreferencesKeys.reasoningExpandedByDefault]
+                        ?: true,
+                    showThinkingContent = preferences[PreferencesKeys.showThinkingContent] ?: true,
+                    autoCollapseThinking = preferences[PreferencesKeys.autoCollapseThinking]
+                        ?: true,
+                    autoPreviewImages = preferences[PreferencesKeys.autoPreviewImages] ?: true,
+                    codeBlockAutoWrap = preferences[PreferencesKeys.codeBlockAutoWrap] ?: false,
+                    codeBlockAutoCollapse = preferences[PreferencesKeys.codeBlockAutoCollapse]
+                        ?: false,
+                    showRoleplayAiHelper = preferences[PreferencesKeys.showRoleplayAiHelper]
+                        ?: true,
+                    roleplayLongformTargetChars = (preferences[PreferencesKeys.roleplayLongformTargetChars]
+                        ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS).coerceIn(300, 2000),
+                    showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip]
+                        ?: true,
+                    showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip]
+                        ?: false,
+                    showOnlineRoleplayNarration = preferences[PreferencesKeys.showOnlineRoleplayNarration]
+                        ?: true,
+                    enableRoleplayNetMeme = preferences[PreferencesKeys.enableRoleplayNetMeme]
+                        ?: false,
+                    roleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.fromStorageValue(
+                        preferences[PreferencesKeys.roleplayImmersiveMode].orEmpty(),
+                    ),
+                    roleplayHighContrast = preferences[PreferencesKeys.roleplayHighContrast]
+                        ?: false,
+                    roleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.fromStorageValue(
+                        preferences[PreferencesKeys.roleplayLineHeightScale].orEmpty(),
+                    ),
+                    roleplayNoBackgroundSkin = decodeRoleplayNoBackgroundSkin(
+                        preferences[PreferencesKeys.roleplayNoBackgroundSkinJson].orEmpty(),
+                    ),
+                    suppressRoleplayAssistantMismatchDialog = preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog]
+                        ?: false,
+                    userDisplayName = preferences[PreferencesKeys.userDisplayName]
+                        .orEmpty()
+                        .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
+                    userPersonaPrompt = preferences[PreferencesKeys.userPersonaPrompt].orEmpty(),
+                    userAvatarUri = preferences[PreferencesKeys.userAvatarUri].orEmpty(),
+                    userAvatarUrl = preferences[PreferencesKeys.userAvatarUrl].orEmpty(),
+                    userPersonaMasks = decodeUserPersonaMasks(
+                        preferences[PreferencesKeys.userPersonaMasksJson].orEmpty(),
+                    ),
+                    defaultUserPersonaMaskId = preferences[PreferencesKeys.defaultUserPersonaMaskId].orEmpty(),
+                    translationHistory = decodeTranslationHistory(
+                        preferences[PreferencesKeys.translationHistoryJson].orEmpty(),
+                    ),
+                    assistants = decodeAssistants(preferences[PreferencesKeys.assistantsJson].orEmpty()),
+                    companionCharacterSettings = CompanionSettingsCodec.decode(
+                        preferences[PreferencesKeys.companionCharacterSettingsJson].orEmpty(),
+                    ),
+                    selectedAssistantId = preferences[PreferencesKeys.selectedAssistantId]
+                        .orEmpty()
+                        .ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
+                    defaultPresetId = preferences[PreferencesKeys.defaultPresetId]
+                        .orEmpty()
+                        .ifBlank { DEFAULT_PRESET_ID },
+                    screenTranslationSettings = ScreenTranslationSettings(
+                        serviceEnabled = preferences[PreferencesKeys.screenTranslationServiceEnabled]
+                            ?: false,
+                        overlayEnabled = preferences[PreferencesKeys.screenTranslationOverlayEnabled]
+                            ?: true,
+                        overlayOffsetX = preferences[PreferencesKeys.screenTranslationOverlayOffsetX]
+                            ?: 0.85f,
+                        overlayOffsetY = preferences[PreferencesKeys.screenTranslationOverlayOffsetY]
+                            ?: 0.42f,
+                        targetLanguage = preferences[PreferencesKeys.screenTranslationTargetLanguage]
+                            .orEmpty()
+                            .ifBlank { "简体中文" },
+                        selectedTextEnabled = preferences[PreferencesKeys.screenTranslationSelectedTextEnabled]
+                            ?: true,
+                        showSourceText = preferences[PreferencesKeys.screenTranslationShowSourceText]
+                            ?: true,
+                        vendorGuideDismissed = preferences[PreferencesKeys.screenTranslationVendorGuideDismissed]
+                            ?: false,
+                    ),
+                    searchSettings = searchSettings,
+                    voiceSynthesisSettings = voiceSynthesisSettings,
+                    voiceRecognitionSettings = voiceRecognitionSettings,
+                    momentsSettings = decodeMomentsSettings(
+                        preferences[PreferencesKeys.momentsSettingsJson].orEmpty(),
+                    ),
+                    memoryAutoSummaryEvery = (preferences[PreferencesKeys.memoryAutoSummaryEvery]
+                        ?: DEFAULT_MEMORY_AUTO_SUMMARY_EVERY)
+                        .coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX),
+                    memoryCapacity = (preferences[PreferencesKeys.memoryCapacity]
+                        ?: DEFAULT_MEMORY_CAPACITY)
+                        .coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX),
+                    memoryRecallTokenBudget = (preferences[PreferencesKeys.memoryRecallTokenBudget]
+                        ?: DEFAULT_MEMORY_RECALL_TOKEN_BUDGET)
+                        .coerceIn(MEMORY_RECALL_TOKEN_BUDGET_MIN, MEMORY_RECALL_TOKEN_BUDGET_MAX),
+                    memoryResidentLimits = com.example.myapplication.model.MemoryResidentLimits(
+                        preferences[PreferencesKeys.memoryResidentUser] ?: 12,
+                        preferences[PreferencesKeys.memoryResidentCharacter] ?: 10,
+                        preferences[PreferencesKeys.memoryResidentRelationship] ?: 10,
+                        preferences[PreferencesKeys.memoryResidentShared] ?: 8,
+                    ).normalized(),
+                    memoryExtractionPrompt = preferences[PreferencesKeys.memoryExtractionPrompt].orEmpty(),
+                    memoryInjectionPrompt = preferences[PreferencesKeys.memoryInjectionPrompt].orEmpty(),
+                    memoryInjectionPosition = MemoryInjectionPosition.fromStorageValue(
+                        preferences[PreferencesKeys.memoryInjectionPosition].orEmpty(),
+                    ),
+                    contextLogEnabled = preferences[PreferencesKeys.contextLogEnabled] ?: true,
+                    contextLogCapacity = (preferences[PreferencesKeys.contextLogCapacity]
+                        ?: DEFAULT_CONTEXT_LOG_CAPACITY)
+                        .coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX),
                 )
                 parseObserver?.invoke(Thread.currentThread().name)
                 settings
@@ -488,7 +551,8 @@ class AppSettingsStore internal constructor(
 
             preferences[PreferencesKeys.baseUrl] = effectiveActiveProvider?.baseUrl.orEmpty()
             preferences[PreferencesKeys.apiKey] = ""
-            preferences[PreferencesKeys.selectedModel] = effectiveActiveProvider?.selectedModel.orEmpty()
+            preferences[PreferencesKeys.selectedModel] =
+                effectiveActiveProvider?.selectedModel.orEmpty()
             preferences[PreferencesKeys.providersJson] = gson.toJson(
                 normalizedProviders.map(::stripSensitiveProviderFields),
                 providerListType,
@@ -518,7 +582,8 @@ class AppSettingsStore internal constructor(
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.baseUrl] = effectiveActiveProvider?.baseUrl.orEmpty()
             preferences[PreferencesKeys.apiKey] = ""
-            preferences[PreferencesKeys.selectedModel] = effectiveActiveProvider?.selectedModel.orEmpty()
+            preferences[PreferencesKeys.selectedModel] =
+                effectiveActiveProvider?.selectedModel.orEmpty()
             preferences[PreferencesKeys.providersJson] = gson.toJson(
                 normalizedProviders.map(::stripSensitiveProviderFields),
                 providerListType,
@@ -531,13 +596,17 @@ class AppSettingsStore internal constructor(
         functionModelProviderIds: FunctionModelProviderIds,
     ) {
         dataStore.edit { preferences ->
-            val currentProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+            val currentProviders =
+                decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             preferences[PreferencesKeys.functionModelProviderIdsJson] = gson.toJson(
-                functionModelProviderIds.normalized(currentProviders.map(ProviderSettings::id).toSet()),
+                functionModelProviderIds.normalized(
+                    currentProviders.map(ProviderSettings::id).toSet()
+                ),
                 FunctionModelProviderIds::class.java,
             )
         }
     }
+
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
         appColorTheme: AppColorTheme,
@@ -578,9 +647,13 @@ class AppSettingsStore internal constructor(
             preferences[PreferencesKeys.enableRoleplayNetMeme] = enableRoleplayNetMeme
             preferences[PreferencesKeys.roleplayImmersiveMode] = roleplayImmersiveMode.storageValue
             preferences[PreferencesKeys.roleplayHighContrast] = roleplayHighContrast
-            preferences[PreferencesKeys.roleplayLineHeightScale] = roleplayLineHeightScale.storageValue
+            preferences[PreferencesKeys.roleplayLineHeightScale] =
+                roleplayLineHeightScale.storageValue
             preferences[PreferencesKeys.roleplayNoBackgroundSkinJson] =
-                gson.toJson(roleplayNoBackgroundSkin.normalized(), RoleplayNoBackgroundSkinSettings::class.java)
+                gson.toJson(
+                    roleplayNoBackgroundSkin.normalized(),
+                    RoleplayNoBackgroundSkinSettings::class.java
+                )
         }
     }
 
@@ -593,9 +666,11 @@ class AppSettingsStore internal constructor(
             preferences[PreferencesKeys.screenTranslationOverlayOffsetX] = settings.overlayOffsetX
             preferences[PreferencesKeys.screenTranslationOverlayOffsetY] = settings.overlayOffsetY
             preferences[PreferencesKeys.screenTranslationTargetLanguage] = settings.targetLanguage
-            preferences[PreferencesKeys.screenTranslationSelectedTextEnabled] = settings.selectedTextEnabled
+            preferences[PreferencesKeys.screenTranslationSelectedTextEnabled] =
+                settings.selectedTextEnabled
             preferences[PreferencesKeys.screenTranslationShowSourceText] = settings.showSourceText
-            preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] = settings.vendorGuideDismissed
+            preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] =
+                settings.vendorGuideDismissed
         }
     }
 
@@ -696,19 +771,129 @@ class AppSettingsStore internal constructor(
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.assistantsJson] = gson.toJson(assistants, assistantListType)
             preferences[PreferencesKeys.selectedAssistantId] = selectedAssistantId
+            preferences[PreferencesKeys.companionCharacterSettingsJson] =
+                CompanionSettingsCodec.retainCharacters(
+                    preferences[PreferencesKeys.companionCharacterSettingsJson].orEmpty(),
+                    AppSettings(assistants = assistants).resolvedAssistants().map { it.id }.toSet(),
+                )
+        }
+    }
+
+    override suspend fun updateCompanionSettings(
+        assistantId: String,
+        expectedRevision: Long,
+        patch: com.example.myapplication.model.CompanionSettingsPatch,
+    ): com.example.myapplication.model.CompanionSettingsWriteResult {
+        var result: com.example.myapplication.model.CompanionSettingsWriteResult =
+            com.example.myapplication.model.CompanionSettingsWriteResult.CharacterMissing
+        dataStore.edit { preferences ->
+            val assistants = decodeAssistants(preferences[PreferencesKeys.assistantsJson].orEmpty())
+            if (AppSettings(assistants = assistants).resolvedAssistants()
+                    .none { it.id == assistantId }
+            ) return@edit
+            val (json, updated) = CompanionSettingsCodec.update(
+                preferences[PreferencesKeys.companionCharacterSettingsJson].orEmpty(), assistantId,
+                expectedRevision, patch,
+            )
+            result = updated
+            if (updated is com.example.myapplication.model.CompanionSettingsWriteResult.Saved) {
+                preferences[PreferencesKeys.companionCharacterSettingsJson] = json
+            }
+        }
+        return result
+    }
+
+    override suspend fun applyContextTransferTarget(
+        operationId: String, planHash: String,
+        target: com.example.myapplication.model.ContextTransferSettingsTarget,
+    ): com.example.myapplication.model.ContextTransferSettingsResult {
+        var result: com.example.myapplication.model.ContextTransferSettingsResult =
+            com.example.myapplication.model.ContextTransferSettingsResult.Conflict
+        dataStore.edit { preferences ->
+            val rawAssistants = preferences[PreferencesKeys.assistantsJson].orEmpty()
+            val write = ContextTransferSettingsCodec.apply(
+                rawAssistants, preferences[PreferencesKeys.companionCharacterSettingsJson].orEmpty(),
+                preferences[PreferencesKeys.contextTransferSettingsReceiptsJson].orEmpty(),
+                decodeAssistants(rawAssistants), operationId, planHash, target,
+            )
+            result = write.result
+            if (write.result == com.example.myapplication.model.ContextTransferSettingsResult.Applied) {
+                preferences[PreferencesKeys.assistantsJson] = write.assistantsJson
+                preferences[PreferencesKeys.companionCharacterSettingsJson] = write.companionJson
+                preferences[PreferencesKeys.contextTransferSettingsReceiptsJson] = write.receiptsJson
+            }
+        }
+        return result
+    }
+
+    override suspend fun companionImageReferences(): Set<String>? = try {
+        val raw = dataStore.data.first()[PreferencesKeys.companionCharacterSettingsJson].orEmpty()
+        val root = if (raw.isBlank()) com.google.gson.JsonObject() else com.google.gson.JsonParser.parseString(raw)
+        require(root.isJsonObject)
+        buildSet {
+            fun collect(value: com.google.gson.JsonElement) {
+                when {
+                    value.isJsonPrimitive && value.asJsonPrimitive.isString -> add(value.asString)
+                    value.isJsonArray -> value.asJsonArray.forEach(::collect)
+                    value.isJsonObject -> value.asJsonObject.entrySet().forEach { collect(it.value) }
+                }
+            }
+            collect(root)
+        }
+    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+        throw cancelled
+    } catch (_: Exception) { null }
+
+    override suspend fun saveAssistantsWithCompanionCopy(
+        assistants: List<Assistant>,
+        selectedAssistantId: String,
+        sourceAssistantId: String,
+        targetAssistantId: String,
+    ) {
+        require(sourceAssistantId != targetAssistantId && targetAssistantId.isNotBlank()) { "复制角色的标识无效" }
+        require(assistants.any { it.id == targetAssistantId }) { "复制目标不存在" }
+        dataStore.edit { preferences ->
+            val current = decodeAssistants(preferences[PreferencesKeys.assistantsJson].orEmpty())
+            val resolved = AppSettings(assistants = current).resolvedAssistants()
+            val source =
+                requireNotNull(resolved.firstOrNull { it.id == sourceAssistantId }) { "原角色已不存在，未创建副本" }
+            require(resolved.none { it.id == targetAssistantId }) { "目标角色已存在，未覆盖已有角色" }
+            val copiedJson = CompanionSettingsCodec.copyCharacter(
+                preferences[PreferencesKeys.companionCharacterSettingsJson].orEmpty(),
+                sourceAssistantId,
+                targetAssistantId,
+            )
+            val copied = source.copy(
+                id = targetAssistantId, name = "${source.name} (副本)", isBuiltin = false,
+                defaultPresetId = source.defaultPresetId.ifBlank {
+                    preferences[PreferencesKeys.defaultPresetId] ?: DEFAULT_PRESET_ID
+                },
+            )
+            val next = current + copied
+            preferences[PreferencesKeys.assistantsJson] = gson.toJson(next, assistantListType)
+            if (preferences[PreferencesKeys.selectedAssistantId].isNullOrBlank()) {
+                preferences[PreferencesKeys.selectedAssistantId] = selectedAssistantId
+            }
+            preferences[PreferencesKeys.companionCharacterSettingsJson] =
+                CompanionSettingsCodec.retainCharacters(
+                    copiedJson,
+                    AppSettings(assistants = next).resolvedAssistants().map { it.id }.toSet(),
+                )
         }
     }
 
     override suspend fun saveDefaultPresetId(presetId: String) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.defaultPresetId] = presetId.trim().ifBlank { DEFAULT_PRESET_ID }
+            preferences[PreferencesKeys.defaultPresetId] =
+                presetId.trim().ifBlank { DEFAULT_PRESET_ID }
         }
     }
 
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.translationHistoryJson] = gson.toJson(
-                history.sortedByDescending(TranslationHistoryEntry::createdAt).take(MAX_TRANSLATION_HISTORY),
+                history.sortedByDescending(TranslationHistoryEntry::createdAt)
+                    .take(MAX_TRANSLATION_HISTORY),
                 translationHistoryType,
             )
         }
@@ -723,13 +908,36 @@ class AppSettingsStore internal constructor(
     override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.memoryAutoSummaryEvery] =
-                autoSummaryEvery.coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX)
+                autoSummaryEvery.coerceIn(
+                    MEMORY_AUTO_SUMMARY_EVERY_MIN,
+                    MEMORY_AUTO_SUMMARY_EVERY_MAX
+                )
             preferences[PreferencesKeys.memoryCapacity] =
                 capacity.coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX)
         }
     }
 
-    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+    override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.memoryRecallTokenBudget] =
+                tokenBudget.coerceIn(MEMORY_RECALL_TOKEN_BUDGET_MIN, MEMORY_RECALL_TOKEN_BUDGET_MAX)
+        }
+    }
+
+    override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) {
+        val normalized = limits.normalized()
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.memoryResidentUser] = normalized.user
+            preferences[PreferencesKeys.memoryResidentCharacter] = normalized.character
+            preferences[PreferencesKeys.memoryResidentRelationship] = normalized.relationship
+            preferences[PreferencesKeys.memoryResidentShared] = normalized.shared
+        }
+    }
+
+    override suspend fun saveMemoryPromptSettings(
+        extractionPrompt: String,
+        injectionPrompt: String
+    ) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.memoryExtractionPrompt] = extractionPrompt
             preferences[PreferencesKeys.memoryInjectionPrompt] = injectionPrompt
@@ -752,10 +960,13 @@ class AppSettingsStore internal constructor(
 
     suspend fun migrateSensitiveData() {
         dataStore.edit { preferences ->
-            val currentSecureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys).toMutableMap()
-            val currentSecureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
+            val currentSecureProviderApiKeys =
+                secureValueStore.getStringMap(SecureKeys.providerApiKeys).toMutableMap()
+            val currentSecureSearchApiKeys =
+                secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
             val legacyPlainApiKey = preferences[PreferencesKeys.apiKey].orEmpty()
-            val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+            val storedProviders =
+                decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             val storedVoiceSettings = decodeVoiceSynthesisSettings(
                 preferences[PreferencesKeys.voiceSynthesisSettingsJson].orEmpty(),
             )
@@ -790,7 +1001,10 @@ class AppSettingsStore internal constructor(
             if (storedVoiceSettings.apiKey.isNotBlank() &&
                 secureValueStore.getString(SecureKeys.voiceSynthesisApiKey).isBlank()
             ) {
-                secureValueStore.putString(SecureKeys.voiceSynthesisApiKey, storedVoiceSettings.apiKey)
+                secureValueStore.putString(
+                    SecureKeys.voiceSynthesisApiKey,
+                    storedVoiceSettings.apiKey
+                )
                 updated = true
             }
             val sanitizedVoiceSettings = storedVoiceSettings.stripSensitiveFields()
@@ -806,12 +1020,14 @@ class AppSettingsStore internal constructor(
                     SecureKeys.searchSourceApiKeys,
                     migratedSearchSettings.mergedSecureApiKeys,
                 )
-                preferences[PreferencesKeys.searchSettingsJson] = migratedSearchSettings.sanitizedJson
+                preferences[PreferencesKeys.searchSettingsJson] =
+                    migratedSearchSettings.sanitizedJson
             }
 
             secureValueStore.putStringMap(SecureKeys.providerApiKeys, currentSecureProviderApiKeys)
             preferences[PreferencesKeys.apiKey] = ""
-            preferences[PreferencesKeys.providersJson] = gson.toJson(sanitizedProviders, providerListType)
+            preferences[PreferencesKeys.providersJson] =
+                gson.toJson(sanitizedProviders, providerListType)
             preferences[PreferencesKeys.voiceSynthesisSettingsJson] = gson.toJson(
                 sanitizedVoiceSettings,
                 voiceSynthesisSettingsType,
@@ -824,7 +1040,8 @@ class AppSettingsStore internal constructor(
             return emptyList()
         }
         return runCatching {
-            gson.fromJson<List<ProviderSettings>>(rawJson, providerListType).orEmpty()
+            val providerJson = ProviderEmbeddingSettingsCodec.normalizeProvidersJson(rawJson)
+            gson.fromJson<List<ProviderSettings>>(providerJson, providerListType).orEmpty()
         }.logFailure(TAG) { "decodeProviders fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(emptyList())
     }
@@ -889,7 +1106,8 @@ class AppSettingsStore internal constructor(
             return FunctionModelProviderIds()
         }
         return runCatching {
-            gson.fromJson(rawJson, FunctionModelProviderIds::class.java)
+            val assignments = ProviderEmbeddingSettingsCodec.normalizeAssignmentsJson(rawJson)
+            gson.fromJson(assignments, FunctionModelProviderIds::class.java)
                 ?.normalized()
                 ?: FunctionModelProviderIds()
         }.logFailure(TAG) { "decodeFunctionModelProviderIds fromJson failed, raw.len=${rawJson.length}" }
@@ -938,13 +1156,16 @@ class AppSettingsStore internal constructor(
         val resolvedTextApiMode = provider.openAiTextApiMode ?: OpenAiTextApiMode.CHAT_COMPLETIONS
         val resolvedModels = provider.models ?: provider.availableModels.map(::inferredModelInfo)
         val normalizedTitleSummaryModel = (provider.titleSummaryModel as String?).orEmpty().trim()
-        val normalizedChatSuggestionModel = (provider.chatSuggestionModel as String?).orEmpty().trim()
+        val normalizedChatSuggestionModel =
+            (provider.chatSuggestionModel as String?).orEmpty().trim()
         val normalizedMemoryModel = (provider.memoryModel as String?).orEmpty().trim()
         val normalizedTranslationModel = (provider.translationModel as String?).orEmpty().trim()
         val normalizedPhoneSnapshotModel = (provider.phoneSnapshotModel as String?).orEmpty().trim()
         val normalizedMomentsModel = (provider.momentsModel as String?).orEmpty().trim()
         val normalizedSearchModel = (provider.searchModel as String?).orEmpty().trim()
         val normalizedGiftImageModel = (provider.giftImageModel as String?).orEmpty().trim()
+        val normalizedEmbeddingModel =
+            provider.resolveExplicitFunctionModel(ProviderFunction.EMBEDDING)
         return provider.copy(
             baseUrl = normalizeProviderBaseUrl(provider.baseUrl, resolvedType, resolvedProtocol),
             type = resolvedType,
@@ -1000,6 +1221,8 @@ class AppSettingsStore internal constructor(
                 rawModel = normalizedGiftImageModel,
                 blankMode = ProviderFunctionModelMode.DISABLED,
             ),
+            embeddingModel = normalizedEmbeddingModel,
+            embeddingModelMode = provider.resolveFunctionModelMode(ProviderFunction.EMBEDDING),
         )
     }
 
@@ -1009,7 +1232,8 @@ class AppSettingsStore internal constructor(
         blankMode: ProviderFunctionModelMode,
     ): ProviderFunctionModelMode {
         val normalizedModel = rawModel.trim()
-        return when (rawMode ?: if (normalizedModel.isNotBlank()) ProviderFunctionModelMode.CUSTOM else blankMode) {
+        return when (rawMode
+            ?: if (normalizedModel.isNotBlank()) ProviderFunctionModelMode.CUSTOM else blankMode) {
             ProviderFunctionModelMode.CUSTOM -> {
                 if (normalizedModel.isBlank()) {
                     blankMode
@@ -1057,7 +1281,8 @@ class AppSettingsStore internal constructor(
     }
 
     private fun normalizeChatCompletionsPath(path: String): String {
-        val trimmed = path.trim().ifBlank { com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH }
+        val trimmed =
+            path.trim().ifBlank { com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH }
         val prefixed = if (trimmed.startsWith('/')) trimmed else "/$trimmed"
         return prefixed.replace(Regex("/{2,}"), "/")
     }
@@ -1144,7 +1369,8 @@ class AppSettingsStore internal constructor(
             com.google.gson.JsonParser.parseString(rawJson)
                 .asJsonArray
                 .mapNotNull { element ->
-                    val assistant = gson.fromJson(element, Assistant::class.java) ?: return@mapNotNull null
+                    val assistant =
+                        gson.fromJson(element, Assistant::class.java) ?: return@mapNotNull null
                     normalizeAssistant(
                         assistant = assistant,
                         hasMomentAutoCommentEnabled = element.asJsonObject
@@ -1283,7 +1509,8 @@ class AppSettingsStore internal constructor(
         val codeBlockAutoWrap = booleanPreferencesKey("code_block_auto_wrap")
         val codeBlockAutoCollapse = booleanPreferencesKey("code_block_auto_collapse")
         val showRoleplayAiHelper = booleanPreferencesKey("show_roleplay_ai_helper")
-        val roleplayLongformTargetChars = PreferencesKeysCompat.intPreferencesKey("roleplay_longform_target_chars")
+        val roleplayLongformTargetChars =
+            PreferencesKeysCompat.intPreferencesKey("roleplay_longform_target_chars")
         val showRoleplayPresenceStrip = booleanPreferencesKey("show_roleplay_presence_strip")
         val showRoleplayStatusStrip = booleanPreferencesKey("show_roleplay_status_strip")
         val showOnlineRoleplayNarration = booleanPreferencesKey("show_online_roleplay_narration")
@@ -1292,7 +1519,8 @@ class AppSettingsStore internal constructor(
         val roleplayHighContrast = booleanPreferencesKey("roleplay_high_contrast")
         val roleplayLineHeightScale = stringPreferencesKey("roleplay_line_height_scale")
         val roleplayNoBackgroundSkinJson = stringPreferencesKey("roleplay_no_background_skin_json")
-        val suppressRoleplayAssistantMismatchDialog = booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
+        val suppressRoleplayAssistantMismatchDialog =
+            booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userPersonaPrompt = stringPreferencesKey("user_persona_prompt")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
@@ -1301,22 +1529,43 @@ class AppSettingsStore internal constructor(
         val defaultUserPersonaMaskId = stringPreferencesKey("default_user_persona_mask_id")
         val translationHistoryJson = stringPreferencesKey("translation_history_json")
         val assistantsJson = stringPreferencesKey("assistants_json")
+        val companionCharacterSettingsJson =
+            stringPreferencesKey("companion_character_settings_json")
+        val contextTransferSettingsReceiptsJson =
+            stringPreferencesKey("context_transfer_settings_receipts_json")
         val selectedAssistantId = stringPreferencesKey("selected_assistant_id")
         val defaultPresetId = stringPreferencesKey("default_preset_id")
-        val screenTranslationServiceEnabled = booleanPreferencesKey("screen_translation_service_enabled")
-        val screenTranslationOverlayEnabled = booleanPreferencesKey("screen_translation_overlay_enabled")
-        val screenTranslationOverlayOffsetX = floatPreferencesKey("screen_translation_overlay_offset_x")
-        val screenTranslationOverlayOffsetY = floatPreferencesKey("screen_translation_overlay_offset_y")
-        val screenTranslationTargetLanguage = stringPreferencesKey("screen_translation_target_language")
-        val screenTranslationSelectedTextEnabled = booleanPreferencesKey("screen_translation_selected_text_enabled")
-        val screenTranslationShowSourceText = booleanPreferencesKey("screen_translation_show_source_text")
-        val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
+        val screenTranslationServiceEnabled =
+            booleanPreferencesKey("screen_translation_service_enabled")
+        val screenTranslationOverlayEnabled =
+            booleanPreferencesKey("screen_translation_overlay_enabled")
+        val screenTranslationOverlayOffsetX =
+            floatPreferencesKey("screen_translation_overlay_offset_x")
+        val screenTranslationOverlayOffsetY =
+            floatPreferencesKey("screen_translation_overlay_offset_y")
+        val screenTranslationTargetLanguage =
+            stringPreferencesKey("screen_translation_target_language")
+        val screenTranslationSelectedTextEnabled =
+            booleanPreferencesKey("screen_translation_selected_text_enabled")
+        val screenTranslationShowSourceText =
+            booleanPreferencesKey("screen_translation_show_source_text")
+        val screenTranslationVendorGuideDismissed =
+            booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
         val searchSettingsJson = stringPreferencesKey("search_settings_json")
         val voiceSynthesisSettingsJson = stringPreferencesKey("voice_synthesis_settings_json")
         val voiceRecognitionSettingsJson = stringPreferencesKey("voice_recognition_settings_json")
         val momentsSettingsJson = stringPreferencesKey("moments_settings_json")
-        val memoryAutoSummaryEvery = PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
+        val memoryAutoSummaryEvery =
+            PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
         val memoryCapacity = PreferencesKeysCompat.intPreferencesKey("memory_capacity")
+        val memoryRecallTokenBudget =
+            PreferencesKeysCompat.intPreferencesKey("memory_recall_token_budget")
+        val memoryResidentUser = PreferencesKeysCompat.intPreferencesKey("memory_resident_user")
+        val memoryResidentCharacter =
+            PreferencesKeysCompat.intPreferencesKey("memory_resident_character")
+        val memoryResidentRelationship =
+            PreferencesKeysCompat.intPreferencesKey("memory_resident_relationship")
+        val memoryResidentShared = PreferencesKeysCompat.intPreferencesKey("memory_resident_shared")
         val memoryExtractionPrompt = stringPreferencesKey("memory_extraction_prompt")
         val memoryInjectionPrompt = stringPreferencesKey("memory_injection_prompt")
         val memoryInjectionPosition = stringPreferencesKey("memory_injection_position")
@@ -1338,7 +1587,8 @@ class AppSettingsStore internal constructor(
 }
 
 private object PreferencesKeysCompat {
-    fun intPreferencesKey(name: String) = androidx.datastore.preferences.core.intPreferencesKey(name)
+    fun intPreferencesKey(name: String) =
+        androidx.datastore.preferences.core.intPreferencesKey(name)
 }
 
 internal data class SearchSettingsSensitiveMigrationResult(

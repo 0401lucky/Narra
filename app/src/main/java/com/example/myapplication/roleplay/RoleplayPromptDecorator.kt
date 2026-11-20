@@ -20,6 +20,11 @@ object RoleplayPromptDecorator {
         isVideoCallActive: Boolean = false,
         directorNote: String = "",
         modelId: String = "",
+        companionMode: Boolean = false,
+        companionZoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+        companionPresentation: com.example.myapplication.model.CompanionPresentationSnapshot? = null,
+        companionTurnKind: com.example.myapplication.model.CompanionTurnKind = com.example.myapplication.model.CompanionTurnKind.INPUT,
+        nowProvider: () -> Long = System::currentTimeMillis,
     ): String {
         val (playerName, characterName) = resolveDisplayNames(
             scenario = scenario,
@@ -27,8 +32,32 @@ object RoleplayPromptDecorator {
             settings = settings,
         )
         val isGroupChat = scenario.isGroupChat
-        val useVideoCallMode = scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
-        val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
+        if (companionMode) {
+            require(!isGroupChat && scenario.interactionMode == RoleplayInteractionMode.OFFLINE_DIALOGUE && !scenario.longformModeEnabled)
+            return listOf(
+                baseSystemPrompt.trim(),
+                scenario.description.takeIf { scenario.shouldInjectDescriptionPrompt() }?.let {
+                    ContextPlaceholderResolver.resolve(it, playerName, characterName)
+                }.orEmpty(),
+                com.example.myapplication.roleplay.companion.CompanionPromptSupport.interactionRules(
+                    characterName,
+                    playerName
+                ),
+                companionPresentation?.let {
+                    com.example.myapplication.roleplay.companion.CompanionPresentationSupport.prompt(
+                        it,
+                        companionTurnKind
+                    )
+                }.orEmpty(),
+                if (scenario.enableTimeAwareness) RoleplayTimeAwarenessSupport.buildPromptSection(
+                    scenario.interactionMode, nowProvider, companionZoneId,
+                ) else "",
+            ).filter(String::isNotBlank).joinToString("\n\n")
+        }
+        val useVideoCallMode =
+            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
+        val allowOnlineThoughtHints =
+            scenario.enableNarration && settings.showOnlineRoleplayNarration
         val onlineReplyRange = scenario.normalizedOnlineReplyRange()
         val onlineReplyRangeLabel = if (onlineReplyRange.first == onlineReplyRange.last) {
             "${onlineReplyRange.first} 条"
@@ -79,8 +108,10 @@ object RoleplayPromptDecorator {
             settings = settings,
         )
         val isGroupChat = scenario.isGroupChat
-        val useVideoCallMode = scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
-        val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
+        val useVideoCallMode =
+            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
+        val allowOnlineThoughtHints =
+            scenario.enableNarration && settings.showOnlineRoleplayNarration
         val onlineReplyRange = scenario.normalizedOnlineReplyRange()
         val onlineReplyRangeLabel = if (onlineReplyRange.first == onlineReplyRange.last) {
             "${onlineReplyRange.first} 条"
@@ -628,6 +659,7 @@ object RoleplayPromptDecorator {
             scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE -> "ONLINE_SINGLE_CHAT"
             scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM ->
                 "OFFLINE_LONGFORM_NOVEL"
+
             scenario.enableRoleplayProtocol -> "OFFLINE_DIALOGUE_PROTOCOL"
             else -> "OFFLINE_FREE_DIALOGUE"
         }

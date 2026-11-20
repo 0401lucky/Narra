@@ -2,6 +2,8 @@ package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
+import com.example.myapplication.model.PromptCompletionResult
+import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 
@@ -10,7 +12,7 @@ import com.example.myapplication.model.ProviderSettings
  * T6.3 从 DefaultAiPromptExtrasService 抽离。
  *
  * - 普通摘要走常规采样，风格简洁、控制在 300 字。
- * - 剧情摘要使用 [PromptExtrasCore.buildRequestWithRoleplaySampling]，按 5 小节模板输出，
+ * - 剧情摘要使用 [PromptExtrasCore.buildRequestWithRoleplaySampling]，按 6 小节模板输出，
  *   允许 roleplay 采样回退。
  */
 internal class ConversationSummaryPromptService(
@@ -24,12 +26,30 @@ internal class ConversationSummaryPromptService(
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
     ): String {
+        return generateConversationSummaryResult(
+            conversationText,
+            baseUrl,
+            apiKey,
+            modelId,
+            apiProtocol,
+            provider
+        ).content
+    }
+
+    suspend fun generateConversationSummaryResult(
+        conversationText: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PromptCompletionResult {
         val prompt = buildString {
             append("请把下面的对话压缩成一段简洁摘要，保留关键事实、人物关系、目标、进度和未完成事项。")
             append("输出使用简体中文，控制在 300 字以内，不要添加标题：\n")
             append(conversationText)
         }
-        val content = core.requestCompletionContent(
+        val result = core.requestCompletionResult(
             baseUrl = baseUrl,
             apiKey = apiKey,
             operation = "摘要生成失败",
@@ -44,11 +64,8 @@ internal class ConversationSummaryPromptService(
             ),
             apiProtocol = apiProtocol,
             provider = provider,
-        ).trim()
-        if (content.isBlank()) {
-            throw IllegalStateException("摘要模型未返回有效内容")
-        }
-        return content.take(500)
+        )
+        return requireUsableSummary(result)
     }
 
     suspend fun generateRoleplayConversationSummary(
@@ -59,6 +76,24 @@ internal class ConversationSummaryPromptService(
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
     ): String {
+        return generateRoleplayConversationSummaryResult(
+            conversationText,
+            baseUrl,
+            apiKey,
+            modelId,
+            apiProtocol,
+            provider
+        ).content
+    }
+
+    suspend fun generateRoleplayConversationSummaryResult(
+        conversationText: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PromptCompletionResult {
         val prompt = buildString {
             append("你是沉浸式剧情摘要整理器。")
             append("请根据下面的剧情记录输出结构化摘要，帮助下一轮扮演保持连续性。")
@@ -79,7 +114,7 @@ internal class ConversationSummaryPromptService(
             append("不要输出 XML、不要解释规则、不要省略小节标题：\n")
             append(conversationText)
         }
-        val content = core.requestCompletionContent(
+        val result = core.requestCompletionResult(
             baseUrl = baseUrl,
             apiKey = apiKey,
             operation = "RP 摘要生成失败",
@@ -97,10 +132,17 @@ internal class ConversationSummaryPromptService(
             apiProtocol = apiProtocol,
             provider = provider,
             allowRoleplaySamplingFallback = true,
-        ).trim()
-        if (content.isBlank()) {
-            throw IllegalStateException("RP 摘要模型未返回有效内容")
+        )
+        return requireUsableSummary(result)
+    }
+
+    private fun requireUsableSummary(result: PromptCompletionResult): PromptCompletionResult {
+        if (result.status != PromptCompletionStatus.COMPLETED && result.status != PromptCompletionStatus.UNKNOWN) {
+            throw IllegalStateException("摘要响应未完整结束，已保留原摘要与消息")
         }
-        return content.take(1_800)
+        val content = result.content.trim()
+        if (content.isBlank()) throw IllegalStateException("摘要模型未返回有效内容")
+        // 保存完整产物；输出限长只约束提示词，不能在本地剪掉正文后继续声称完整覆盖。
+        return result.copy(content = content)
     }
 }

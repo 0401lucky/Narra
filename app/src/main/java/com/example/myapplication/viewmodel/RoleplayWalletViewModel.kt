@@ -44,6 +44,8 @@ import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.model.formatMoneyLabel
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.model.isGroupChat
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +80,7 @@ class RoleplayWalletViewModel(
     private val settingsRepository: AiSettingsRepository,
     private val aiPromptExtrasService: AiPromptExtrasService,
     private val aiGateway: AiGateway,
+    private val memoryArchiveRepository: MemoryArchiveRepository? = null,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val economyEventBus: RoleplayEconomyEventBus,
@@ -295,8 +298,15 @@ class RoleplayWalletViewModel(
         val assistant = resolveAssistant(settings, scenario)
         val userPersona = RoleplayConversationSupport.resolveUserPersona(scenario, settings)
         val messages = roleplayRepository.observeConversationMessages(scenarioId).first()
-        val conversationExcerpt = buildConversationExcerpt(messages)
-        val summary = conversationSummaryRepository.getSummary(session.conversationId)?.summary.orEmpty()
+        val conversationExcerpt = buildConversationExcerpt(messages.mapNotNull {
+            com.example.myapplication.roleplay.RoleplayTranscriptFormatter.visibleMessageForCharacter(it, assistant?.id.orEmpty(), scenario.isGroupChat)
+        })
+        val summaryRuntime = memoryArchiveRepository?.getRuntimeContext(session.conversationId, assistant?.id.orEmpty())
+        val summary = summaryRuntime?.let { runtime ->
+            com.example.myapplication.conversation.ConversationSummaryCoverageSupport.usableSummary(
+                conversationSummaryRepository.getSummaryForContext(runtime), messages, runtime,
+            )?.summary
+        }.orEmpty()
         val memoryContext = buildMemoryContext(
             assistant = assistant,
             conversationId = session.conversationId,
@@ -699,6 +709,7 @@ class RoleplayWalletViewModel(
             conversationSummaryRepository: ConversationSummaryRepository,
             economyEventBus: RoleplayEconomyEventBus,
             imageSaver: suspend (String) -> SavedImageFile,
+            memoryArchiveRepository: MemoryArchiveRepository? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 RoleplayWalletViewModel(
@@ -712,6 +723,7 @@ class RoleplayWalletViewModel(
                     conversationSummaryRepository = conversationSummaryRepository,
                     economyEventBus = economyEventBus,
                     imageSaver = imageSaver,
+                    memoryArchiveRepository = memoryArchiveRepository,
                 )
             }
         }

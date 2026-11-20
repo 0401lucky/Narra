@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
@@ -66,7 +67,8 @@ object SettingsProviderDraftSupport {
     ): ProviderSettings {
         val currentModels = provider.models.orEmpty()
         val existingModel = currentModels.firstOrNull { it.modelId == modelId }
-        val updatedModel = (existingModel ?: inferredModelInfo(modelId)).withAbilityOverride(abilities)
+        val updatedModel =
+            (existingModel ?: inferredModelInfo(modelId)).withAbilityOverride(abilities)
         return provider.copy(
             availableModels = mergeModels(
                 currentModels = provider.availableModels,
@@ -119,6 +121,12 @@ object SettingsProviderDraftSupport {
                     availableModels = finalIds,
                     models = finalModels.ifEmpty { null },
                     selectedModel = resolvedSelected,
+                    embeddingModel = provider.embeddingModel.takeIf { it in finalIds }.orEmpty(),
+                    embeddingModelMode = if (provider.embeddingModel in finalIds) {
+                        provider.embeddingModelMode
+                    } else {
+                        ProviderFunctionModelMode.DISABLED
+                    },
                 )
             } else {
                 provider
@@ -194,6 +202,12 @@ object SettingsProviderDraftSupport {
                     availableModels = updatedAvailable,
                     models = updatedModels.ifEmpty { null },
                     selectedModel = resolvedSelected,
+                    embeddingModel = provider.embeddingModel.takeUnless { it == modelId }.orEmpty(),
+                    embeddingModelMode = if (provider.embeddingModel == modelId) {
+                        ProviderFunctionModelMode.DISABLED
+                    } else {
+                        provider.embeddingModelMode
+                    },
                 )
             } else {
                 provider
@@ -211,6 +225,8 @@ object SettingsProviderDraftSupport {
                     availableModels = emptyList(),
                     models = null,
                     selectedModel = "",
+                    embeddingModel = "",
+                    embeddingModelMode = ProviderFunctionModelMode.DISABLED,
                 )
             } else {
                 provider
@@ -230,7 +246,8 @@ object SettingsProviderDraftSupport {
                 if (cleanedModelId.isBlank()) return@map provider
 
                 val existingModels = provider.models.orEmpty()
-                val isDuplicate = existingModels.any { it.modelId.lowercase() == cleanedModelId.lowercase() }
+                val isDuplicate =
+                    existingModels.any { it.modelId.lowercase() == cleanedModelId.lowercase() }
                 if (isDuplicate) return@map provider
 
                 val newModel = inferredModelInfo(

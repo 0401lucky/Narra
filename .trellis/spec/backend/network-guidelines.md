@@ -61,6 +61,11 @@ SettingsStore / ProviderSettings
 - 网络 `IOException` 通过 `GatewayNetworkSupport` 转换为可读异常，但不能把
   DNS、取消或协议错误混成同一文案。
 
+主流 `CompletionEvidence` 与 `Completed` 分开：前者记录供应商完成状态，缺失时
+为 UNKNOWN；后者保持旧传输终止语义。新陪伴不得由 EOF、HTTP 200 或非空正文
+推定成功；三协议、回退和工具最终答案契约见
+[陪伴场次与可靠回合](./companion-foundation-guidelines.md)。
+
 ## 兼容降级
 
 - 已有兼容策略包括：400 时移除不支持的 reasoning/采样参数重试、图片编辑
@@ -183,6 +188,10 @@ playback.prepareAndPlay(
 ```
 
 ## 参考文件
+
+陪伴点播的独立开关、旧翻译ABI与同源配置冻结、MiMo实际样本字节键及唯一音频owner
+见 [陪伴声音](./companion-voice-guidelines.md)。不得用旧VOICE_MESSAGE enabled或仅路径
+profile hash作为陪伴播音授权/缓存身份，不宣称现有完整响应具备PCM增量时钟。
 
 - `data/remote/ApiServiceFactory.kt`
 - `data/remote/OpenAiCompatibleApi.kt`

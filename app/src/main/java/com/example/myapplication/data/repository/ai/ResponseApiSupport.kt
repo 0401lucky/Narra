@@ -94,15 +94,20 @@ internal object ResponseApiSupport {
     }
 
     fun parseStreamEvent(rawData: String): ResponseApiStreamEvent? {
-        val json = runCatching { JsonParser.parseString(rawData).asJsonObject }.getOrNull() ?: return null
+        val json =
+            runCatching { JsonParser.parseString(rawData).asJsonObject }.getOrNull() ?: return null
         return when (json.getString("type")) {
             "response.output_text.delta" -> ResponseApiStreamEvent.ContentDelta(
                 json.getString("delta"),
             )
+
             "response.reasoning_summary_text.delta", "response.reasoning_text.delta" -> ResponseApiStreamEvent.ReasoningDelta(
                 json.getString("delta"),
             )
-            "response.completed" -> ResponseApiStreamEvent.Completed
+
+            "response.completed", "response.incomplete", "response.cancelled", "response.canceled" ->
+                ResponseApiStreamEvent.Completed
+
             else -> null
         }
     }
@@ -123,15 +128,18 @@ internal object ResponseApiSupport {
                         "type" to if (role == "assistant") "output_text" else "input_text",
                         "text" to part.text,
                     )
+
                     is ImageUrlContentPartDto -> mapOf(
                         "type" to if (role == "assistant") "output_image" else "input_image",
                         "image_url" to part.imageUrl.url,
                     )
+
                     is Map<*, *> -> when (part["type"]?.toString().orEmpty()) {
                         "text" -> mapOf(
                             "type" to if (role == "assistant") "output_text" else "input_text",
                             "text" to part["text"]?.toString().orEmpty(),
                         )
+
                         "image_url" -> {
                             val imageUrl = part["image_url"] as? Map<*, *>
                             mapOf(
@@ -139,11 +147,14 @@ internal object ResponseApiSupport {
                                 "image_url" to imageUrl?.get("url")?.toString().orEmpty(),
                             )
                         }
+
                         else -> null
                     }
+
                     else -> null
                 }
             }.takeIf { it.isNotEmpty() } ?: return null
+
             else -> return null
         }
         return ResponseApiInputItemDto(
@@ -162,6 +173,7 @@ internal object ResponseApiSupport {
                     else -> ""
                 }
             }.trim()
+
             is Map<*, *> -> content["text"]?.toString().orEmpty()
             else -> ""
         }

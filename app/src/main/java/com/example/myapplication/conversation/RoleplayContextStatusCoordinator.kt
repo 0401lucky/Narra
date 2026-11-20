@@ -14,6 +14,7 @@ class RoleplayContextStatusCoordinator(
         isContinuingSession: Boolean,
         worldBookHitCount: Int,
         memoryInjectionCount: Int,
+        memoryContext: com.example.myapplication.model.MemoryRuntimeContext? = null,
     ): RoleplayContextStatus {
         if (conversationId.isNullOrBlank()) {
             return RoleplayContextStatus(
@@ -22,7 +23,16 @@ class RoleplayContextStatusCoordinator(
                 memoryInjectionCount = memoryInjectionCount,
             )
         }
-        val summary = conversationSummaryRepository.getSummary(conversationId)
+        val stored =
+            if (memoryContext == null) conversationSummaryRepository.getSummary(conversationId)
+            else conversationSummaryRepository.getSummaryForContext(memoryContext)
+        val sourceMessages = conversationSummaryRepository.getSummarySourceMessages(conversationId)
+        val summary =
+            if (sourceMessages == null) stored else ConversationSummaryCoverageSupport.usableSummary(
+                stored,
+                sourceMessages,
+                memoryContext
+            )
         return RoleplayContextStatus(
             hasSummary = summary?.summary?.isNotBlank() == true,
             summaryCoveredMessageCount = summary?.coveredMessageCount ?: 0,
@@ -37,9 +47,10 @@ class RoleplayContextStatusCoordinator(
         memoryRepository.listEntries()
             .filter { entry ->
                 entry.scopeType == MemoryScopeType.CONVERSATION &&
-                    entry.resolvedScopeId() == conversationId
+                        entry.resolvedScopeId() == conversationId && entry.archiveRevision == null
             }
             .forEach { entry ->
+                // 新档案已经由原文清理事务按来源失效；保留其独立人工版本。
                 memoryRepository.deleteEntry(entry.id)
             }
     }

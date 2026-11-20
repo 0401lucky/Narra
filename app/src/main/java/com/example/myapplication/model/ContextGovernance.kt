@@ -43,6 +43,7 @@ data class ContextLogSection(
 data class ContextGovernanceItem(
     val title: String,
     val content: String,
+    val memoryRef: MemoryMaterialRef? = null,
 )
 
 data class ContextGovernanceSnapshot(
@@ -70,7 +71,26 @@ data class ContextGovernanceSnapshot(
     val estimatedContextTokens: Int = 0,
     val contextSections: List<ContextLogSection> = emptyList(),
     val id: String = java.util.UUID.randomUUID().toString(),
+    val memoryRecallRequestId: String = "",
+    val hasMemoryRecallPlan: Boolean = false,
+    val memoryRecallReceipt: MemoryRecallReceipt? = null,
 ) {
+    val memoryRecallSummary: String
+        get() {
+            if (memoryRecallRequestId.isBlank()) return "预览材料，尚无本轮发送回执"
+            val receipt = memoryRecallReceipt?.takeIf { it.requestId == memoryRecallRequestId }
+                ?: return "本轮发送回执缺失"
+            return when (receipt.status) {
+                MemoryRecallStatus.PREPARED -> "已准备，尚未确认发送"
+                MemoryRecallStatus.SENT -> "已确认发送 ${receipt.sent.size} 项记忆材料"
+                MemoryRecallStatus.FAILED -> when {
+                    receipt.transmissions.lastOrNull()?.status == MemoryRecallStatus.SENT -> "请求失败；本轮材料已发出"
+                    receipt.transmissions.isNotEmpty() -> "请求失败；是否发出尚未确认"
+                    else -> "请求未发起"
+                }
+            }
+        }
+
     val hasActionableSummaryRefresh: Boolean
         get() = summaryRefreshAvailable
 

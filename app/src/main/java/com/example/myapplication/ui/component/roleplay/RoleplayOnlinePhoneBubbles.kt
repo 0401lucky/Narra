@@ -2,6 +2,13 @@ package com.example.myapplication.ui.component.roleplay
 
 import com.example.myapplication.ui.theme.NarraShapes
 import com.example.myapplication.ui.theme.NarraUi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Sparkles
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,7 +127,7 @@ internal fun OnlinePhoneThoughtBubble(
                 horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Star,
+                    imageVector = Lucide.Sparkles,
                     contentDescription = null,
                     tint = colors.systemText,
                     modifier = Modifier.size(14.dp),
@@ -132,7 +139,15 @@ internal fun OnlinePhoneThoughtBubble(
                 )
             }
         }
-        if (expanded) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 380f),
+            ) + fadeIn(animationSpec = tween(180)),
+            exit = shrinkVertically(
+                animationSpec = tween(180),
+            ) + fadeOut(animationSpec = tween(140)),
+        ) {
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,

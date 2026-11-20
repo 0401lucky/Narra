@@ -35,6 +35,8 @@ data class ProviderSettings(
     val searchModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val giftImageModel: String = "",
     val giftImageModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.DISABLED,
+    val embeddingModel: String = "",
+    val embeddingModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.DISABLED,
 ) {
     fun hasBaseCredentials(): Boolean {
         return baseUrl.isNotBlank() && apiKey.isNotBlank()
@@ -79,7 +81,8 @@ data class ProviderSettings(
 
     /** 返回 non-null 的模型信息列表，null 时从 availableModels 字符串列表转换。 */
     fun resolvedModels(): List<ModelInfo> {
-        return models?.map(ModelInfo::withResolvedAbilities) ?: availableModels.map(::inferredModelInfo)
+        return models?.map(ModelInfo::withResolvedAbilities)
+            ?: availableModels.map(::inferredModelInfo)
     }
 
     /** 优先读取 provider 已保存的模型能力，再回退到本地 registry 推断。 */
@@ -108,6 +111,18 @@ data class ProviderSettings(
         if (function == ProviderFunction.CHAT) {
             return ProviderFunctionModelMode.CUSTOM
         }
+        if (function == ProviderFunction.EMBEDDING) {
+            // 旧 JSON 的 null、未知模式及 FOLLOW_DEFAULT 都不能启用付费向量请求。
+            return if (
+                embeddingModelMode == ProviderFunctionModelMode.CUSTOM &&
+                resolveExplicitFunctionModel(function).isNotBlank() &&
+                resolvedApiProtocol() == ProviderApiProtocol.OPENAI_COMPATIBLE
+            ) {
+                ProviderFunctionModelMode.CUSTOM
+            } else {
+                ProviderFunctionModelMode.DISABLED
+            }
+        }
         val explicitModel = resolveExplicitFunctionModel(function)
         val storedMode = when (function) {
             ProviderFunction.CHAT -> ProviderFunctionModelMode.CUSTOM
@@ -119,6 +134,7 @@ data class ProviderSettings(
             ProviderFunction.MOMENTS -> momentsModelMode
             ProviderFunction.SEARCH -> searchModelMode
             ProviderFunction.GIFT_IMAGE -> giftImageModelMode
+            ProviderFunction.EMBEDDING -> ProviderFunctionModelMode.DISABLED
         }
         return when {
             explicitModel.isNotBlank() && storedMode != ProviderFunctionModelMode.CUSTOM -> {
@@ -144,6 +160,7 @@ data class ProviderSettings(
             ProviderFunction.MOMENTS -> momentsModel
             ProviderFunction.SEARCH -> searchModel
             ProviderFunction.GIFT_IMAGE -> giftImageModel
+            ProviderFunction.EMBEDDING -> (embeddingModel as String?).orEmpty()
         }.trim()
     }
 
@@ -161,7 +178,7 @@ data class ProviderSettings(
             ProviderApiProtocol.ANTHROPIC -> true
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
                 resolvedType() != ProviderType.GOOGLE &&
-                    resolvedOpenAiTextApiMode() == OpenAiTextApiMode.RESPONSES
+                        resolvedOpenAiTextApiMode() == OpenAiTextApiMode.RESPONSES
             }
         }
     }
@@ -185,7 +202,7 @@ data class ProviderSettings(
 
     private fun defaultFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
         return when (function) {
-            ProviderFunction.GIFT_IMAGE -> ProviderFunctionModelMode.DISABLED
+            ProviderFunction.GIFT_IMAGE, ProviderFunction.EMBEDDING -> ProviderFunctionModelMode.DISABLED
             ProviderFunction.CHAT -> ProviderFunctionModelMode.CUSTOM
             else -> ProviderFunctionModelMode.FOLLOW_DEFAULT
         }
@@ -208,6 +225,7 @@ enum class ProviderFunction {
     MOMENTS,
     SEARCH,
     GIFT_IMAGE,
+    EMBEDDING,
 }
 
 fun createDefaultProvider(

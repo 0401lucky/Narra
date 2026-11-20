@@ -18,7 +18,7 @@ object SensitiveTextRedactor {
         pattern = """(?i)data:(audio|image)/[^;,\s]+;base64,[A-Za-z0-9+/=\r\n]+""",
     )
     private val localPathPattern = Regex(
-        pattern = """(?i)([A-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\?)+|/(?:data/user/0|storage/emulated|Users|home|var|tmp)/[^\s,;"]+)""",
+        pattern = """(?i)([A-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\?)+|/(?:data/(?:data|user(?:_de)?/\d+)|storage/emulated|Users|home|var|tmp)/[^\s,;"]+)""",
     )
     private val sqlPattern = Regex(
         pattern = """(?is)\b(?:select|insert|update|delete|create|drop|alter)\b.{0,120}\b(?:from|into|set|table|where|values)\b""",
@@ -80,7 +80,7 @@ object SensitiveTextRedactor {
 
     private fun containsInternalDetails(text: String): Boolean {
         return localPathPattern.containsMatchIn(text) ||
-            sqlPattern.containsMatchIn(text) ||
-            stackTracePattern.containsMatchIn(text)
+                sqlPattern.containsMatchIn(text) ||
+                stackTracePattern.containsMatchIn(text)
     }
 }

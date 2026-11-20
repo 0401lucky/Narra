@@ -14,6 +14,8 @@ import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateProviderChatSuggestionModel
 import com.example.myapplication.viewmodel.updateProviderChatSuggestionModelMode
+import com.example.myapplication.viewmodel.updateProviderEmbeddingModel
+import com.example.myapplication.viewmodel.updateProviderEmbeddingModelMode
 import com.example.myapplication.viewmodel.updateProviderGiftImageModel
 import com.example.myapplication.viewmodel.updateProviderGiftImageModelMode
 import com.example.myapplication.viewmodel.updateProviderMemoryModel
@@ -112,27 +114,101 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
             onSelectedModelChange = settingsViewModel::updateProviderSelectedModel,
             onUpdateFunctionModel = { function, providerId, model ->
                 when (function) {
-                    ProviderFunction.TITLE_SUMMARY -> settingsViewModel.updateProviderTitleSummaryModel(providerId, model)
-                    ProviderFunction.CHAT_SUGGESTION -> settingsViewModel.updateProviderChatSuggestionModel(providerId, model)
-                    ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModel(providerId, model)
-                    ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModel(providerId, model)
-                    ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModel(providerId, model)
-                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModel(providerId, model)
-                    ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModel(providerId, model)
-                    ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModel(providerId, model)
+                    ProviderFunction.TITLE_SUMMARY -> settingsViewModel.updateProviderTitleSummaryModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.CHAT_SUGGESTION -> settingsViewModel.updateProviderChatSuggestionModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.EMBEDDING -> settingsViewModel.updateProviderEmbeddingModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModel(
+                        providerId,
+                        model
+                    )
+
+                    ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModel(
+                        providerId,
+                        model
+                    )
+
                     else -> {}
                 }
             },
             onUpdateFunctionModelMode = { function, providerId, mode ->
                 when (function) {
-                    ProviderFunction.TITLE_SUMMARY -> settingsViewModel.updateProviderTitleSummaryModelMode(providerId, mode)
-                    ProviderFunction.CHAT_SUGGESTION -> settingsViewModel.updateProviderChatSuggestionModelMode(providerId, mode)
-                    ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModelMode(providerId, mode)
-                    ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModelMode(providerId, mode)
-                    ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModelMode(providerId, mode)
-                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModelMode(providerId, mode)
-                    ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModelMode(providerId, mode)
-                    ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModelMode(providerId, mode)
+                    ProviderFunction.TITLE_SUMMARY -> settingsViewModel.updateProviderTitleSummaryModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.CHAT_SUGGESTION -> settingsViewModel.updateProviderChatSuggestionModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.EMBEDDING -> settingsViewModel.updateProviderEmbeddingModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModelMode(
+                        providerId,
+                        mode
+                    )
+
+                    ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModelMode(
+                        providerId,
+                        mode
+                    )
+
                     else -> {}
                 }
             },

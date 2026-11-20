@@ -5,6 +5,7 @@ object BenchmarkContract {
     const val FIXTURE_VERSION = "narra-fixture-v1"
     const val BASELINE_CHANNEL = "baseline"
     const val DEFAULT_TTL_MILLIS = 5 * 60 * 1_000L
+
     // BaselineProfileRule 会执行多轮编译与路径采样，低负载设备上完整收集可能超过 10 分钟。
     const val MAX_TTL_MILLIS = 30 * 60 * 1_000L
     const val MAX_CLOCK_SKEW_MILLIS = 5_000L
@@ -44,7 +45,7 @@ enum class BenchmarkFixtureId(
         chatMessageCount = 12,
         roleplayMessageCount = 12,
         acceptsCurrentCompliance = true,
-        sourceDatabaseVersion = 47,
+        sourceDatabaseVersion = 56,
     ),
 }
 

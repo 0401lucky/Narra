@@ -56,6 +56,7 @@ import com.example.myapplication.viewmodel.ContextImportPreview
 import com.example.myapplication.viewmodel.ContextImportPayload
 import com.example.myapplication.viewmodel.ContextTransferSection
 import com.example.myapplication.viewmodel.ContextTransferUiState
+import com.example.myapplication.model.MemoryImportTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,6 +72,9 @@ fun ContextTransferScreen(
     onDismissImportPreview: () -> Unit,
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
+    onMemoryTargetSelected: (String, MemoryImportTarget?) -> Unit = { _, _ -> },
+    onReplaceMemoryStates: (Boolean) -> Unit = {},
+    onResumePendingImport: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -215,6 +219,13 @@ fun ContextTransferScreen(
                             title = "自定义预设",
                             supportingText = "当前共有 ${uiState.presetCount} 条",
                         )
+                        if (uiState.companionCount > 0) {
+                            SettingsGroupDivider(contentPadding = PaddingValues(horizontal = NarraUi.space16))
+                            TransferInfoRow(
+                                title = "陪伴角色偏好",
+                                supportingText = "${uiState.companionCount} 个角色 · 随私人角色包迁移",
+                            )
+                        }
                     }
                 }
 
@@ -296,6 +307,11 @@ fun ContextTransferScreen(
                     )
                 }
 
+                if (uiState.pendingOperations.isNotEmpty()) {
+                    item {
+                        ContextTransferRecoveryList(uiState.pendingOperations, uiState.isBusy, onResumePendingImport)
+                    }
+                }
                 uiState.importPreview?.let { preview ->
                     item { TransferSectionHeader("导入预览") }
                     item {
@@ -304,6 +320,8 @@ fun ContextTransferScreen(
                             isBusy = uiState.isBusy,
                             onConfirmImport = onConfirmImport,
                             onDismiss = onDismissImportPreview,
+                            onMemoryTargetSelected = onMemoryTargetSelected,
+                            onReplaceMemoryStates = onReplaceMemoryStates,
                         )
                     }
                 }
@@ -435,6 +453,8 @@ private fun ImportPreviewCard(
     isBusy: Boolean,
     onConfirmImport: () -> Unit,
     onDismiss: () -> Unit,
+    onMemoryTargetSelected: (String, MemoryImportTarget?) -> Unit,
+    onReplaceMemoryStates: (Boolean) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
     SettingsGroup(shape = NarraShapes.medium, contentPadding = PaddingValues()) {
@@ -486,6 +506,12 @@ private fun ImportPreviewCard(
                     supportingText = "${preview.presetCount} 条",
                 )
             }
+            if (preview.companionCount > 0) {
+                TransferInfoRow(
+                    title = "陪伴角色偏好",
+                    supportingText = "${preview.companionCount} 个角色；保留旧包未包含的域，不备份全聊天或声音库",
+                )
+            }
             if (preview.conflicts.isNotEmpty()) {
                 SettingsHintCard(
                     title = "检测到 ${preview.conflicts.size} 条冲突",
@@ -497,10 +523,13 @@ private fun ImportPreviewCard(
                     contentPadding = PaddingValues(NarraUi.space16),
                 )
             }
+            if (preview.memoryGroups.isNotEmpty()) {
+                MemoryImportTargetSelection(preview, isBusy, onMemoryTargetSelected, onReplaceMemoryStates)
+            }
             TransferActionButton(
                 text = if (isBusy) "处理中…" else "确认导入",
                 onClick = onConfirmImport,
-                enabled = !isBusy,
+                enabled = !isBusy && preview.canConfirmMemory,
                 isPrimary = true,
             )
             TransferActionButton(

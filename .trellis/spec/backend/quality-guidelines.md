@@ -35,6 +35,9 @@
   `sendMessage_failureMarksAssistantMessageAsError`。
 - Repository/Coordinator 使用 `runTest` 或现有 `runBlocking` 风格；新增
   协程代码优先 `runTest`。
+- JUnit4 的 `@Test` 方法必须返回 `Unit`。表达式形式的 `runBlocking` 如末句会
+  返回对象，显式写 `runBlocking<Unit>`；否则整类会因非 void 方法初始化失败，
+  不能把一个 initializationError 当作该类所有方法都已执行。
 - ViewModel 使用 `MainDispatcherRule`、
   `runTest(mainDispatcherRule.dispatcher.scheduler)` 和
   `advanceUntilIdle()`。
@@ -55,6 +58,10 @@
   默认值和历史数据。
 - 当前迁移测试没有采用 `MigrationTestHelper`；新用例应先沿用现有真实旧库
   构造方式，除非统一重构测试基础设施。
+- Windows 的文件型 Robolectric 测试若报 native SQLite 无法打开数据库，先检查
+  实际临时路径长度：测试方法名会进入目录，长方法名叠加 UUID 库名可能超限。
+  缩短但保持唯一的测试/库名，保留生产 journal 和真实关闭/重新打开语义；
+  不要用内存库替代持久恢复验证来绕过该失败。
 
 ### Compose 与设备测试
 
@@ -62,7 +69,29 @@
   `createAndroidComposeRule<ComponentActivity>()`。
 - 直接 `setContent` 渲染目标 Composable，优先 test tag、资源字符串和语义
   断言；回调最终值在 `runOnIdle` 中检查。
+- `assertTextContains(value)` 默认匹配完整文本项；检查片段须显式传
+  `substring = true`。固定预览或带前缀的导航目标优先用 `assertTextEquals`
+  核对完整文案，例如 `assertTextEquals("阅读原会话：$scenarioId")`，同时验证
+  特殊字符解码与目标归属。设备首次执行的断言失败须修复并跑完后续动作，
+  AndroidTest 编译成功不能代替交互验收。
 - `ExampleInstrumentedTest.kt` 是生成样例，不是新测试范例。
+- 长正文可能被原阅读组件拆成多个 Text；全文校验应在对应消息/beat 范围按顺序
+  拼接真实 unmerged Text，核对完整原文及每段无省略。`GetTextLayoutResult` 与坐标
+  必须来自同一 Text owner，不能把合并气泡外框坐标当作内部文字行坐标。正文高于
+  视口时，分别实际滚动验证首、末行完整，不能要求长段落在同一帧全部可见。
+- 已解析正文的显示回归应保留纯空白 TextLayout，逐段检查代理对/字符簇，再精确
+  拼接原文；不能再次清洗标签/实体或仅检查拼回后的字符串。具体陪伴分段合同见
+  [演出与连续阅读](./companion-stage-reading-guidelines.md)。
+- 涉及跟底协调的 Lazy 列表逐项回看先驱动真实用户滚动并核对当前位置所有权。程序化 scrollTo
+  不代表关闭 followingBottom；目标 Text 查询失败时先核对实际可见 key/index、
+  anchor 与原/过滤后的 TextLayout，不将离开视口直接判成正文被清洗或未渲染。
+- 独立 Dialog/Popup 会从宿主 View 的 Android Context 重建平台 density。外层
+  `LocalDensity(fontScale = 2f)` 不能单独证明窗口内实际为 200% 字体；窄屏大字
+  测试须核对独立 View owner 的 Resources、布局 density 与 TextLayoutResult。
+  D3 `CompanionObservationPanelTest.withNarrowPlatformWindow` 使用配置 Context
+  创建专用 ComposeView，约束真实窗口为 320×600dp，finally 先释放 Composition
+  再恢复原窗口并核对基础 Resources 未变。长内容保留原文本，断言真实溢出、
+  滚到底、末项首末行进入视口及 48dp 操作区；不能靠加长文本或图名声称大字通过。
 
 ### 截图回归（Roborazzi）
 

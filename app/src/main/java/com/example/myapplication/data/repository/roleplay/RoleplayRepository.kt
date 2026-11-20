@@ -1,5 +1,7 @@
 package com.example.myapplication.data.repository.roleplay
 
+import androidx.room.withTransaction
+import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
 import com.example.myapplication.data.local.roleplay.RoleplayGroupParticipantEntity
@@ -7,9 +9,11 @@ import com.example.myapplication.data.local.roleplay.RoleplayChatSummaryRow
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MAX_ONLINE_REPLY_COUNT
+import com.example.myapplication.model.MemoryPurpose
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayChatSummary
@@ -25,6 +29,15 @@ import com.example.myapplication.model.ROLEPLAY_GROUP_CONVERSATION_ASSISTANT_PRE
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.CompanionEncounter
+import com.example.myapplication.model.CompanionEncounterState
+import com.example.myapplication.model.CompanionEntryOrigin
+import com.example.myapplication.model.CompanionOpeningMode
+import com.example.myapplication.model.CompanionPreparedTurn
+import com.example.myapplication.model.CompanionRequestDescriptor
+import com.example.myapplication.model.CompanionTurnKind
+import com.example.myapplication.model.CompanionSessionSelection
+import com.example.myapplication.context.MemoryArchiveIdentity
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +58,13 @@ data class RoleplaySessionStartResult(
     val conversationMessages: List<ChatMessage> = emptyList(),
 )
 
+data class CompanionSessionPreparation(
+    val session: RoleplaySession,
+    val encounter: CompanionEncounter,
+    val opening: CompanionPreparedTurn?,
+    val origin: CompanionEntryOrigin,
+)
+
 interface RoleplayRepository {
     fun observeScenarios(): Flow<List<RoleplayScenario>>
 
@@ -56,7 +76,8 @@ interface RoleplayRepository {
 
     fun observeSessions(): Flow<List<RoleplaySession>>
 
-    fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipant>> = flowOf(emptyList())
+    fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipant>> =
+        flowOf(emptyList())
 
     fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>>
 
@@ -77,13 +98,34 @@ interface RoleplayRepository {
 
     suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult
 
+    suspend fun prepareCompanionScenario(
+        scenarioId: String,
+        entryId: String
+    ): CompanionSessionPreparation =
+        error("当前存储不支持陪伴开场")
+
+    suspend fun hasCompanionHistory(scenarioId: String): Boolean = false
+
+    suspend fun resumeCompanionScenario(scenarioId: String): CompanionSessionSelection? = null
+
+    suspend fun selectCompanionOpening(
+        entryId: String,
+        expectedEncounterId: String,
+        mode: CompanionOpeningMode,
+        encounterId: String = UUID.randomUUID().toString(),
+    ): CompanionSessionSelection = error("当前存储不支持陪伴开场")
+
+    suspend fun restoreCompanionOrigin(origin: CompanionEntryOrigin, encounterId: String): Boolean =
+        false
+
     suspend fun restartScenario(scenarioId: String): RoleplaySessionStartResult
 
     suspend fun getSessionByScenario(scenarioId: String): RoleplaySession?
 
     suspend fun getSession(sessionId: String): RoleplaySession?
 
-    suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> = emptyList()
+    suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> =
+        emptyList()
 
     suspend fun upsertGroupParticipant(participant: RoleplayGroupParticipant) = Unit
 
@@ -121,8 +163,12 @@ class RoomRoleplayRepository(
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
     private val mailboxCleanup: suspend (String, String) -> Unit = { _, _ -> },
     private val economyCleanup: suspend (String) -> Unit = {},
+    private val database: ChatDatabase? = null,
+    private val memoryArchiveRepository: MemoryArchiveRepository? = null,
+    private val companionRepository: CompanionRepository? = null,
 ) : RoleplayRepository {
     private val onlineMetaMutex = Mutex()
+    private val scenarioMutex = Mutex()
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> {
         return roleplayDao.observeScenarios().map { scenarios ->
@@ -191,64 +237,78 @@ class RoomRoleplayRepository(
     }
 
     override suspend fun upsertScenario(scenario: RoleplayScenario) {
-        val timestamp = nowProvider()
-        val existing = roleplayDao.getScenario(scenario.id)
-        val createdAt = existing?.createdAt ?: scenario.createdAt.takeIf { it > 0 } ?: timestamp
-        roleplayDao.upsertScenario(
-            toScenarioEntity(
+        withScenarioTransaction {
+            val timestamp = nowProvider()
+            val existing = roleplayDao.getScenario(scenario.id)
+            val createdAt = existing?.createdAt ?: scenario.createdAt.takeIf { it > 0 } ?: timestamp
+            val normalizedScenario = toScenarioEntity(
                 scenario.copy(
                     createdAt = createdAt,
                     updatedAt = timestamp,
                 ),
-            ),
-        )
+            )
+            roleplayDao.upsertScenario(normalizedScenario)
+            reconcileScenarioRun(existing, normalizedScenario)
+        }
     }
 
     override suspend fun upsertScenarioWithParticipants(
         scenario: RoleplayScenario,
         participants: List<RoleplayGroupParticipant>,
     ) {
-        val timestamp = nowProvider()
-        val existing = roleplayDao.getScenario(scenario.id)
-        val createdAt = existing?.createdAt ?: scenario.createdAt.takeIf { it > 0 } ?: timestamp
-        val normalizedScenario = scenario.copy(
-            createdAt = createdAt,
-            updatedAt = timestamp,
-        )
-        roleplayDao.upsertScenario(toScenarioEntity(normalizedScenario))
-        val participantEntities = participants
-            .filter { it.assistantId.isNotBlank() }
-            .distinctBy { it.assistantId.trim() }
-            .mapIndexed { index, participant ->
-                toGroupParticipantEntity(
-                    participant.copy(
-                        scenarioId = normalizedScenario.id,
-                        assistantId = participant.assistantId.trim(),
-                        displayNameOverride = participant.displayNameOverride.trim(),
-                        avatarUriOverride = participant.avatarUriOverride.trim(),
-                        sortOrder = index,
-                        createdAt = participant.createdAt.takeIf { it > 0 } ?: timestamp,
-                        updatedAt = timestamp,
-                    ),
-                )
-            }
-        roleplayDao.replaceGroupParticipantsForScenario(
-            scenarioId = normalizedScenario.id,
-            participants = participantEntities,
-        )
+        withScenarioTransaction {
+            val timestamp = nowProvider()
+            val existing = roleplayDao.getScenario(scenario.id)
+            val createdAt = existing?.createdAt ?: scenario.createdAt.takeIf { it > 0 } ?: timestamp
+            val normalizedScenario = toScenarioEntity(
+                scenario.copy(createdAt = createdAt, updatedAt = timestamp),
+            )
+            roleplayDao.upsertScenario(normalizedScenario)
+            val participantEntities = participants
+                .filter { it.assistantId.isNotBlank() }
+                .distinctBy { it.assistantId.trim() }
+                .mapIndexed { index, participant ->
+                    toGroupParticipantEntity(
+                        participant.copy(
+                            scenarioId = normalizedScenario.id,
+                            assistantId = participant.assistantId.trim(),
+                            displayNameOverride = participant.displayNameOverride.trim(),
+                            avatarUriOverride = participant.avatarUriOverride.trim(),
+                            sortOrder = index,
+                            createdAt = participant.createdAt.takeIf { it > 0 } ?: timestamp,
+                            updatedAt = timestamp,
+                        ),
+                    )
+                }
+            roleplayDao.replaceGroupParticipantsForScenario(
+                scenarioId = normalizedScenario.id,
+                participants = participantEntities,
+            )
+            reconcileScenarioRun(existing, normalizedScenario)
+        }
     }
 
     override suspend fun deleteScenario(scenarioId: String) {
-        val scenarioEntity = roleplayDao.getScenario(scenarioId)
-        val session = roleplayDao.getSessionByScenario(scenarioId)
-        if (session != null) {
-            conversationRepository.deleteConversationById(session.conversationId)
-            roleplayDao.deleteOnlineMeta(session.conversationId)
-            roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
+        if (scenarioId.isBlank()) return
+        val scenarioEntity = withScenarioTransaction {
+            val scenario = roleplayDao.getScenario(scenarioId)
+            val session = roleplayDao.getSessionByScenario(scenarioId)
+            val conversationIds = buildSet {
+                session?.let { add(it.conversationId) }
+                memoryArchiveRepository?.listScenarioBindings(scenarioId)
+                    ?.forEach { add(it.conversationId) }
+            }
+            memoryArchiveRepository?.deleteScenarioArchives(scenarioId)
+            conversationIds.forEach { conversationId ->
+                conversationRepository.deleteConversationById(conversationId)
+                roleplayDao.deleteOnlineMeta(conversationId)
+                roleplayDao.deleteDiaryEntriesForConversation(conversationId)
+            }
+            mailboxCleanup(scenarioId, session?.conversationId.orEmpty())
+            economyCleanup(scenarioId)
+            roleplayDao.deleteScenario(scenarioId)
+            scenario
         }
-        mailboxCleanup(scenarioId, session?.conversationId.orEmpty())
-        economyCleanup(scenarioId)
-        roleplayDao.deleteScenario(scenarioId)
         scenarioEntity?.let {
             imageFileCleaner(it.backgroundUri)
             imageFileCleaner(it.userPortraitUri)
@@ -256,16 +316,29 @@ class RoomRoleplayRepository(
         }
     }
 
-    override suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult {
+    override suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult =
+        withScenarioTransaction {
+            startScenarioInternal(scenarioId, seedOpening = true)
+        }
+
+    private suspend fun startScenarioInternal(
+        scenarioId: String,
+        seedOpening: Boolean
+    ): RoleplaySessionStartResult {
         val scenario = roleplayDao.getScenario(scenarioId)
             ?: error("场景不存在")
         val timestamp = nowProvider()
         val existingSession = roleplayDao.getSessionByScenario(scenarioId)
         if (existingSession != null) {
-            val existingConversation = conversationRepository.getConversation(existingSession.conversationId)
+            val existingConversation =
+                conversationRepository.getConversation(existingSession.conversationId)
             if (existingConversation != null) {
-                val refreshedSession = existingSession.copy(updatedAt = timestamp)
+                val refreshedSession = existingSession.copy(
+                    updatedAt = timestamp,
+                    runId = existingSession.runId.ifBlank { UUID.randomUUID().toString() },
+                )
                 roleplayDao.upsertSession(refreshedSession)
+                bindSession(scenario, refreshedSession)
                 val cleanedMessages = cleanOrphanedLoadingMessages(
                     conversationId = existingSession.conversationId,
                     selectedModel = existingConversation.model,
@@ -273,9 +346,9 @@ class RoomRoleplayRepository(
                 )
                 val hasRealHistory = cleanedMessages.any {
                     !it.isOpeningNarrationMessage(scenario.id) &&
-                        it.status != MessageStatus.LOADING
+                            it.status != MessageStatus.LOADING
                 }
-                val historyMessages = if (hasRealHistory) {
+                val historyMessages = if (hasRealHistory || !seedOpening) {
                     cleanedMessages
                 } else {
                     ensureOpeningNarrationSeeded(
@@ -290,68 +363,243 @@ class RoomRoleplayRepository(
                     reusedExistingSession = true,
                     hasHistory = historyMessages.any {
                         !it.isOpeningNarrationMessage(scenario.id) &&
-                            it.status != MessageStatus.LOADING
+                                it.status != MessageStatus.LOADING
                     },
                     assistantMismatch = normalizeAssistantId(existingConversation.assistantId) !=
-                        resolveConversationAssistantId(scenario),
+                            resolveConversationAssistantId(scenario),
                     conversationAssistantId = normalizeAssistantId(existingConversation.assistantId),
                     conversationMessages = historyMessages,
                 )
             }
         }
 
-        val conversation = conversationRepository.createConversation(
-            assistantId = resolveConversationAssistantId(scenario),
-        )
-        val seededMessages = ensureOpeningNarrationSeeded(
-            conversationId = conversation.id,
-            scenario = toScenarioDomain(scenario),
-        )
-        val newSession = RoleplaySessionEntity(
-            id = existingSession?.id ?: java.util.UUID.randomUUID().toString(),
-            scenarioId = scenarioId,
-            conversationId = conversation.id,
-            createdAt = existingSession?.createdAt ?: timestamp,
-            updatedAt = timestamp,
-        )
-        roleplayDao.upsertSession(newSession)
-        return RoleplaySessionStartResult(
-            session = toSessionDomain(newSession),
-            reusedExistingSession = false,
-            hasHistory = false,
-            assistantMismatch = false,
-            conversationAssistantId = resolveConversationAssistantId(scenario),
-            conversationMessages = seededMessages,
+        return createNewRun(
+            scenario,
+            existingSession,
+            resetPlayState = false,
+            seedOpening = seedOpening
         )
     }
 
-    override suspend fun restartScenario(scenarioId: String): RoleplaySessionStartResult {
-        val scenario = roleplayDao.getScenario(scenarioId)
-            ?: error("场景不存在")
+    override suspend fun hasCompanionHistory(scenarioId: String): Boolean {
+        val conversationId =
+            roleplayDao.getSessionByScenario(scenarioId)?.conversationId ?: return false
+        return database?.companionDao()?.listEncounters(conversationId)?.isNotEmpty() == true
+    }
+
+    override suspend fun prepareCompanionScenario(
+        scenarioId: String,
+        entryId: String,
+    ): CompanionSessionPreparation = withScenarioTransaction {
+        val companion = requireNotNull(companionRepository) { "陪伴存储不可用" }
+        val archive = requireNotNull(memoryArchiveRepository) { "记忆运行不可用" }
+        val scenario = roleplayDao.getScenario(scenarioId) ?: error("场景不存在")
+        require(
+            scenario.chatType == "single" && !scenario.longformModeEnabled &&
+                    scenario.interactionMode != RoleplayInteractionMode.OFFLINE_LONGFORM.storageValue
+        ) { "请在单角色对白会话中开始见面" }
+        val existing = companion.getEncounter(entryId)
+        if (existing != null) {
+            val selection = requireNotNull(companionEntryState().read(entryId)) { "开场记录不完整" }
+            val selected = selection.encounter
+            val session = getSessionByScenario(scenarioId) ?: error("原会话不存在")
+            check(
+                existing.context.scenarioId == scenarioId && existing.context.conversationId == session.conversationId &&
+                        archive.getRuntimeContext(
+                            session.conversationId,
+                            scenario.assistantId
+                        ) == existing.context &&
+                        selected.state != CompanionEncounterState.ENDED &&
+                        scenario.interactionMode == RoleplayInteractionMode.OFFLINE_DIALOGUE.storageValue
+            ) { "原陪伴运行或开场已改变" }
+            val turn = companion.listTurns(selected.id)
+                .firstOrNull { it.kind == CompanionTurnKind.OPENING }
+            val attempt =
+                (turn?.activeAttemptId ?: turn?.selectedAttemptId)?.let { companion.getAttempt(it) }
+            return@withScenarioTransaction CompanionSessionPreparation(
+                session,
+                selected,
+                if (turn != null && attempt != null) CompanionPreparedTurn(turn, attempt) else null,
+                requireNotNull(selection.origin) { "原会话返回信息缺失" },
+            )
+        }
+        val previousOrigin = resumeCompanionScenarioInternal(scenarioId)?.origin
+        // 无请求的准备标记和会话同事务保存；取消或进程重建后不能偷偷播入静态 greeting。
+        roleplayDao.upsertScenario(
+            scenario.copy(
+                interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE.storageValue,
+                longformModeEnabled = false,
+                enableRoleplayProtocol = true,
+                updatedAt = nowProvider(),
+            )
+        )
+        val start = startScenarioInternal(scenarioId, seedOpening = false)
+        val context = requireNotNull(
+            archive.getRuntimeContext(
+                start.session.conversationId,
+                scenario.assistantId
+            )
+        ) {
+            "当前角色或身份不可用"
+        }
+        val origin = previousOrigin ?: CompanionEntryOrigin(
+            scenarioId,
+            start.session.conversationId,
+            start.session.runId,
+            context.characterId,
+            context.personaKey,
+            RoleplayInteractionMode.fromStorageValue(scenario.interactionMode),
+            scenario.longformModeEnabled,
+            scenario.enableRoleplayProtocol,
+        )
+        val encounter = companion.createEncounter(context, CompanionOpeningMode.APPROACH, entryId)
+        val opening = companion.beginTurn(
+            encounter.id, CompanionTurnKind.OPENING,
+            descriptor = CompanionRequestDescriptor(
+                entryOrigin = origin,
+                entrySelectionId = entryId
+            ), turnId = "$entryId:opening",
+        )
+        CompanionSessionPreparation(start.session, encounter, opening, origin)
+    }
+
+    override suspend fun resumeCompanionScenario(scenarioId: String): CompanionSessionSelection? =
+        withScenarioTransaction {
+            resumeCompanionScenarioInternal(scenarioId)
+        }
+
+    private suspend fun resumeCompanionScenarioInternal(scenarioId: String): CompanionSessionSelection? {
+        val companion = companionRepository ?: return null
+        val scenario = roleplayDao.getScenario(scenarioId) ?: return null
+        if (scenario.chatType != "single" || scenario.longformModeEnabled ||
+            scenario.interactionMode != RoleplayInteractionMode.OFFLINE_DIALOGUE.storageValue
+        ) return null
+        val session = roleplayDao.getSessionByScenario(scenarioId) ?: return null
+        val context =
+            memoryArchiveRepository?.getRuntimeContext(session.conversationId, scenario.assistantId)
+                ?: return null
+        val candidates =
+            companion.listEncounters(session.conversationId).filter { it.context == context }
+        // D1 的 supersede 和唯一活动槽决定当前选择，不使用时间戳或随机 ID 排序。
+        val selected =
+            candidates.filter { it.state == CompanionEncounterState.DRAFT }.singleOrNull()
+                ?: candidates.filter { it.state == CompanionEncounterState.ACTIVE }.singleOrNull()
+                ?: return null
+        return companionEntryState().find(selected.id, session.conversationId)
+            ?: CompanionSessionSelection(selected, null, null)
+    }
+
+    override suspend fun selectCompanionOpening(
+        entryId: String,
+        expectedEncounterId: String,
+        mode: CompanionOpeningMode,
+        encounterId: String,
+    ): CompanionSessionSelection = withScenarioTransaction {
+        val companion = requireNotNull(companionRepository)
+        val entries = companionEntryState()
+        val previous = requireNotNull(entries.read(entryId)) { "入口准备记录已失效" }
+        check(
+            previous.encounter.id == expectedEncounterId &&
+                    previous.encounter.state == CompanionEncounterState.DRAFT &&
+                    memoryArchiveRepository?.getRuntimeContext(
+                        previous.encounter.context.conversationId,
+                        previous.encounter.context.characterId
+                    ) == previous.encounter.context
+        ) { "本次开场已在别处切换" }
+        if (mode == previous.encounter.openingMode) return@withScenarioTransaction previous
+        val selected = companion.createEncounter(previous.encounter.context, mode, encounterId)
+        entries.select(entryId, expectedEncounterId, selected.id)
+        if (mode != CompanionOpeningMode.DIRECT) companion.beginTurn(
+            selected.id,
+            CompanionTurnKind.OPENING,
+            descriptor = CompanionRequestDescriptor(entryOrigin = previous.origin),
+        )
+        CompanionSessionSelection(selected, entryId, previous.origin)
+    }
+
+    private fun companionEntryState() =
+        RoomCompanionEntryState(requireNotNull(database), requireNotNull(companionRepository))
+
+    override suspend fun restoreCompanionOrigin(
+        origin: CompanionEntryOrigin,
+        encounterId: String,
+    ): Boolean = withScenarioTransaction {
+        val companion = companionRepository ?: return@withScenarioTransaction false
+        val scenario =
+            roleplayDao.getScenario(origin.scenarioId) ?: return@withScenarioTransaction false
+        val session = roleplayDao.getSessionByScenario(origin.scenarioId)
+            ?: return@withScenarioTransaction false
+        val encounter = companion.getEncounter(encounterId) ?: return@withScenarioTransaction false
+        if (companionEntryState().find(encounterId, session.conversationId)?.origin != origin)
+            return@withScenarioTransaction false
+        val hasNewDraft = companion.listEncounters(session.conversationId).any {
+            it.id != encounterId && it.context == encounter.context && it.state == CompanionEncounterState.DRAFT
+        }
+        // 依赖 D1 的持久 supersede/活动槽，不能用时间戳与随机 ID 推断选择先后。
+        if (encounter.state == CompanionEncounterState.ENDED || hasNewDraft ||
+            session.conversationId != origin.conversationId || session.runId != origin.runId ||
+            scenario.assistantId != origin.characterId || scenario.chatType != "single" ||
+            MemoryArchiveIdentity.personaKey(toScenarioDomain(scenario)) != origin.personaKey ||
+            scenario.interactionMode != RoleplayInteractionMode.OFFLINE_DIALOGUE.storageValue || scenario.longformModeEnabled ||
+            !scenario.enableRoleplayProtocol ||
+            memoryArchiveRepository?.getRuntimeContext(
+                session.conversationId,
+                origin.characterId
+            ) != encounter.context
+        ) return@withScenarioTransaction false
+        companion.endEncounter(encounterId)
+        roleplayDao.upsertScenario(
+            scenario.copy(
+                interactionMode = origin.interactionMode.storageValue,
+                longformModeEnabled = origin.longformModeEnabled,
+                enableRoleplayProtocol = origin.enableRoleplayProtocol,
+                updatedAt = nowProvider(),
+            )
+        )
+        true
+    }
+
+    override suspend fun restartScenario(scenarioId: String): RoleplaySessionStartResult =
+        withScenarioTransaction {
+            val scenario = roleplayDao.getScenario(scenarioId)
+                ?: error("场景不存在")
+            val existingSession = roleplayDao.getSessionByScenario(scenarioId)
+            createNewRun(scenario, existingSession, resetPlayState = true)
+        }
+
+    private suspend fun createNewRun(
+        scenario: RoleplayScenarioEntity,
+        existingSession: RoleplaySessionEntity?,
+        resetPlayState: Boolean,
+        seedOpening: Boolean = true,
+    ): RoleplaySessionStartResult {
         val timestamp = nowProvider()
-        val existingSession = roleplayDao.getSessionByScenario(scenarioId)
         existingSession?.let { session ->
-            conversationRepository.deleteConversationById(session.conversationId)
-            roleplayDao.deleteOnlineMeta(session.conversationId)
-            roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
-            mailboxCleanup(scenarioId, session.conversationId)
-            economyCleanup(scenarioId)
+            // 重开保留原文、日记和记忆来源，只有明确删除场景才清理档案。
+            memoryArchiveRepository?.archiveConversation(session.conversationId)
+            if (resetPlayState) {
+                roleplayDao.deleteOnlineMeta(session.conversationId)
+                mailboxCleanup(scenario.id, session.conversationId)
+                economyCleanup(scenario.id)
+            }
         }
         val conversation = conversationRepository.createConversation(
             assistantId = resolveConversationAssistantId(scenario),
         )
-        val seededMessages = ensureOpeningNarrationSeeded(
-            conversationId = conversation.id,
-            scenario = toScenarioDomain(scenario),
-        )
         val restartedSession = RoleplaySessionEntity(
             id = existingSession?.id ?: UUID.randomUUID().toString(),
-            scenarioId = scenarioId,
+            scenarioId = scenario.id,
             conversationId = conversation.id,
             createdAt = existingSession?.createdAt ?: timestamp,
             updatedAt = timestamp,
+            runId = UUID.randomUUID().toString(),
         )
         roleplayDao.upsertSession(restartedSession)
+        bindSession(scenario, restartedSession)
+        val seededMessages = if (seedOpening) ensureOpeningNarrationSeeded(
+            conversationId = conversation.id,
+            scenario = toScenarioDomain(scenario),
+        ) else emptyList()
         return RoleplaySessionStartResult(
             session = toSessionDomain(restartedSession),
             reusedExistingSession = false,
@@ -361,6 +609,51 @@ class RoomRoleplayRepository(
             conversationMessages = seededMessages,
         )
     }
+
+    private suspend fun reconcileScenarioRun(
+        previous: RoleplayScenarioEntity?,
+        scenario: RoleplayScenarioEntity,
+    ) {
+        val session = roleplayDao.getSessionByScenario(scenario.id) ?: return
+        if (conversationRepository.getConversation(session.conversationId) == null) return
+        if (previous != null && previous.memoryPurpose != scenario.memoryPurpose) {
+            createNewRun(scenario, session, resetPlayState = true)
+        } else {
+            val boundSession =
+                session.copy(runId = session.runId.ifBlank { UUID.randomUUID().toString() })
+            if (boundSession != session) roleplayDao.upsertSession(boundSession)
+            bindSession(scenario, boundSession)
+        }
+    }
+
+    private suspend fun bindSession(
+        scenario: RoleplayScenarioEntity,
+        session: RoleplaySessionEntity
+    ) {
+        val archive = memoryArchiveRepository ?: return
+        val characterIds =
+            if (RoleplayChatType.fromStorageValue(scenario.chatType) == RoleplayChatType.GROUP) {
+                roleplayDao.listGroupParticipants(scenario.id).map { it.assistantId }
+            } else {
+                listOf(normalizeAssistantId(scenario.assistantId))
+            }
+        archive.bindConversation(
+            toScenarioDomain(scenario),
+            session.conversationId,
+            characterIds,
+            session.runId
+        )
+    }
+
+    private suspend fun <T> withScenarioTransaction(block: suspend () -> T): T =
+        scenarioMutex.withLock {
+            val currentDatabase = database
+            if (currentDatabase == null) {
+                block()
+            } else {
+                currentDatabase.withTransaction { block() }
+            }
+        }
 
     override suspend fun getSessionByScenario(scenarioId: String): RoleplaySession? {
         return roleplayDao.getSessionByScenario(scenarioId)?.let(::toSessionDomain)
@@ -381,28 +674,42 @@ class RoomRoleplayRepository(
         if (participant.scenarioId.isBlank() || participant.assistantId.isBlank()) {
             return
         }
-        val timestamp = nowProvider()
-        val existing = roleplayDao.getGroupParticipant(participant.id)
-        roleplayDao.upsertGroupParticipants(
-            listOf(
-                toGroupParticipantEntity(
-                    participant.copy(
-                        assistantId = participant.assistantId.trim(),
-                        displayNameOverride = participant.displayNameOverride.trim(),
-                        avatarUriOverride = participant.avatarUriOverride.trim(),
-                        createdAt = existing?.createdAt ?: participant.createdAt.takeIf { it > 0 } ?: timestamp,
-                        updatedAt = timestamp,
+        withScenarioTransaction {
+            val timestamp = nowProvider()
+            val existing = roleplayDao.getGroupParticipant(participant.id)
+            roleplayDao.upsertGroupParticipants(
+                listOf(
+                    toGroupParticipantEntity(
+                        participant.copy(
+                            assistantId = participant.assistantId.trim(),
+                            displayNameOverride = participant.displayNameOverride.trim(),
+                            avatarUriOverride = participant.avatarUriOverride.trim(),
+                            createdAt = existing?.createdAt
+                                ?: participant.createdAt.takeIf { it > 0 } ?: timestamp,
+                            updatedAt = timestamp,
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
+            roleplayDao.getScenario(participant.scenarioId)?.let { reconcileScenarioRun(it, it) }
+            if (existing != null && existing.scenarioId != participant.scenarioId) {
+                roleplayDao.getScenario(existing.scenarioId)?.let { reconcileScenarioRun(it, it) }
+            }
+        }
     }
 
     override suspend fun deleteGroupParticipant(participantId: String) {
         if (participantId.isBlank()) {
             return
         }
-        roleplayDao.deleteGroupParticipant(participantId)
+        withScenarioTransaction {
+            val participant = roleplayDao.getGroupParticipant(participantId)
+            roleplayDao.deleteGroupParticipant(participantId)
+            participant?.let {
+                roleplayDao.getScenario(it.scenarioId)
+                    ?.let { scenario -> reconcileScenarioRun(scenario, scenario) }
+            }
+        }
     }
 
     override suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntry> {
@@ -538,13 +845,17 @@ class RoomRoleplayRepository(
             chatType = RoleplayChatType.fromStorageValue(entity.chatType),
             groupReplyMode = RoleplayGroupReplyMode.fromStorageValue(entity.groupReplyMode),
             enableGroupMentionAutoReply = entity.enableGroupMentionAutoReply,
-            maxGroupAutoReplies = entity.maxGroupAutoReplies.coerceIn(1, com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES),
+            maxGroupAutoReplies = entity.maxGroupAutoReplies.coerceIn(
+                1,
+                com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES
+            ),
             onlineReplyMinCount = entity.onlineReplyMinCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT),
             onlineReplyMaxCount = entity.onlineReplyMaxCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT),
             isPinned = entity.isPinned,
             isMuted = entity.isMuted,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            memoryPurpose = MemoryPurpose.fromStorageValue(entity.memoryPurpose),
         )
     }
 
@@ -557,6 +868,7 @@ class RoomRoleplayRepository(
                 conversationId = row.sessionConversationId.orEmpty(),
                 createdAt = row.sessionCreatedAt ?: 0L,
                 updatedAt = row.sessionUpdatedAt ?: 0L,
+                runId = row.sessionRunId.orEmpty(),
             )
         }
         val lastMessageAt = row.lastMessageCreatedAt ?: 0L
@@ -614,6 +926,7 @@ class RoomRoleplayRepository(
             isMuted = isMuted,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            memoryPurpose = memoryPurpose,
         )
     }
 
@@ -623,7 +936,8 @@ class RoomRoleplayRepository(
             title = scenario.title.trim(),
             description = scenario.description.trim(),
             descriptionPromptEnabled = scenario.descriptionPromptEnabled,
-            assistantId = scenario.assistantId.trim().ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
+            assistantId = scenario.assistantId.trim()
+                .ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
             presetId = scenario.presetId.trim(),
             backgroundUri = scenario.backgroundUri.trim(),
             userDisplayNameOverride = scenario.userDisplayNameOverride.trim(),
@@ -657,6 +971,7 @@ class RoomRoleplayRepository(
             isMuted = scenario.isMuted,
             createdAt = scenario.createdAt,
             updatedAt = scenario.updatedAt,
+            memoryPurpose = scenario.memoryPurpose.storageValue,
         )
     }
 
@@ -667,6 +982,7 @@ class RoomRoleplayRepository(
             conversationId = entity.conversationId,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            runId = entity.runId,
         )
     }
 
@@ -737,7 +1053,11 @@ class RoomRoleplayRepository(
         existingMessages: List<ChatMessage>? = null,
         selectedModel: String = "",
     ): List<ChatMessage> {
-        val currentMessages = existingMessages ?: conversationRepository.listMessages(conversationId)
+        val currentMessages =
+            existingMessages ?: conversationRepository.listMessages(conversationId)
+        if (database?.companionDao()?.listEncounters(conversationId)
+                ?.isNotEmpty() == true
+        ) return currentMessages
         val openingNarration = scenario.openingNarration.trim()
         if (openingNarration.isBlank()) {
             return currentMessages
@@ -755,7 +1075,7 @@ class RoomRoleplayRepository(
             RoleplayOutputFormat.LONGFORM,
             RoleplayOutputFormat.PLAIN,
             RoleplayOutputFormat.UNSPECIFIED,
-            -> {
+                -> {
                 openingNarration
             }
         }
@@ -763,7 +1083,10 @@ class RoomRoleplayRepository(
             conversationId = conversationId,
             messages = listOf(
                 ChatMessage(
-                    id = RoleplayConversationSupport.openingNarrationMessageId(scenario.id, conversationId),
+                    id = RoleplayConversationSupport.openingNarrationMessageId(
+                        scenario.id,
+                        conversationId
+                    ),
                     conversationId = conversationId,
                     role = MessageRole.ASSISTANT,
                     content = renderedOpeningNarration,
@@ -772,7 +1095,9 @@ class RoomRoleplayRepository(
                         textMessagePart(renderedOpeningNarration),
                     ),
                     roleplayOutputFormat = outputFormat,
-                    roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
+                    roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(
+                        scenario
+                    ),
                 ),
             ),
             selectedModel = selectedModel,

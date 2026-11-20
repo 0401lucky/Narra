@@ -6,4 +6,5 @@ data class GatewayToolRuntimeContext(
     val conversation: Conversation? = null,
     val userInputText: String = "",
     val recentMessages: List<ChatMessage> = emptyList(),
+    val memoryContext: MemoryRuntimeContext? = null,
 )

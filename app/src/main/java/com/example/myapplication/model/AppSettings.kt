@@ -44,11 +44,14 @@ data class AppSettings(
     val momentsSettings: MomentsSettings = MomentsSettings(),
     val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,
     val memoryCapacity: Int = DEFAULT_MEMORY_CAPACITY,
+    val memoryRecallTokenBudget: Int = DEFAULT_MEMORY_RECALL_TOKEN_BUDGET,
+    val memoryResidentLimits: MemoryResidentLimits = MemoryResidentLimits(),
     val memoryExtractionPrompt: String = "",
     val memoryInjectionPrompt: String = "",
     val memoryInjectionPosition: MemoryInjectionPosition = MemoryInjectionPosition.AFTER_WORLD_BOOK,
     val contextLogEnabled: Boolean = true,
     val contextLogCapacity: Int = DEFAULT_CONTEXT_LOG_CAPACITY,
+    val companionCharacterSettings: Map<String, CompanionCharacterSettings> = emptyMap(),
 ) {
     fun resolvedAssistants(): List<Assistant> {
         val customAssistantsById = assistants.associateBy { it.id }
@@ -95,12 +98,27 @@ data class AppSettings(
         if (function == ProviderFunction.CHAT) {
             return activeProvider()
         }
+        if (function == ProviderFunction.EMBEDDING) {
+            return resolveEmbeddingProvider()
+        }
         val enabledProviders = enabledProviders()
         val assignedProviderId = functionModelProviderIds
             .normalized(resolvedProviders().map(ProviderSettings::id).toSet())
             .providerIdFor(function)
         return enabledProviders.firstOrNull { it.id == assignedProviderId }
             ?: activeProvider()
+    }
+
+    fun resolveEmbeddingProvider(): ProviderSettings? {
+        val assignedProviderId = (functionModelProviderIds as FunctionModelProviderIds?)
+            ?.providerIdFor(ProviderFunction.EMBEDDING)
+            .orEmpty()
+        if (assignedProviderId.isBlank()) return null
+        return enabledProviders().firstOrNull { it.id == assignedProviderId }
+            ?.takeIf { provider ->
+                provider.hasBaseCredentials() &&
+                        provider.resolveFunctionModelMode(ProviderFunction.EMBEDDING) == ProviderFunctionModelMode.CUSTOM
+            }
     }
 
     fun resolveFunctionModel(function: ProviderFunction): String {
@@ -112,7 +130,7 @@ data class AppSettings(
     fun resolveFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
         return resolveFunctionProvider(function)
             ?.resolveFunctionModelMode(function)
-            ?: if (function == ProviderFunction.GIFT_IMAGE) {
+            ?: if (function == ProviderFunction.GIFT_IMAGE || function == ProviderFunction.EMBEDDING) {
                 ProviderFunctionModelMode.DISABLED
             } else {
                 ProviderFunctionModelMode.FOLLOW_DEFAULT
@@ -198,9 +216,9 @@ data class AppSettings(
         val avatarUri = userAvatarUri.trim()
         val avatarUrl = userAvatarUrl.trim()
         val hasProfileContent = displayName != DEFAULT_USER_DISPLAY_NAME ||
-            persona.isNotBlank() ||
-            avatarUri.isNotBlank() ||
-            avatarUrl.isNotBlank()
+                persona.isNotBlank() ||
+                avatarUri.isNotBlank() ||
+                avatarUrl.isNotBlank()
         if (!hasProfileContent) {
             return null
         }
@@ -229,16 +247,16 @@ data class AppSettings(
                 val provider = resolveSearchSourceProvider(source)
                 source.takeIf {
                     it.enabled &&
-                        provider?.hasBaseCredentials() == true &&
-                        provider.supportsLlmSearchSource() &&
-                        provider.resolveFunctionModel(ProviderFunction.SEARCH).isNotBlank()
+                            provider?.hasBaseCredentials() == true &&
+                            provider.supportsLlmSearchSource() &&
+                            provider.resolveFunctionModel(ProviderFunction.SEARCH).isNotBlank()
                 }
             }
 
             SearchSourceType.MODEL_BUILTIN -> {
                 source.takeIf {
                     it.enabled &&
-                        activeProvider?.supportsModelBuiltInSearchSource() == true
+                            activeProvider?.supportsModelBuiltInSearchSource() == true
                 }
             }
 
@@ -280,11 +298,14 @@ const val DEFAULT_USER_DISPLAY_NAME = "用户"
 const val DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS = 900
 const val DEFAULT_MEMORY_AUTO_SUMMARY_EVERY = 10
 const val DEFAULT_MEMORY_CAPACITY = 1000
+const val DEFAULT_MEMORY_RECALL_TOKEN_BUDGET = 2000
 const val DEFAULT_CONTEXT_LOG_CAPACITY = 15
 const val MEMORY_AUTO_SUMMARY_EVERY_MIN = 0
 const val MEMORY_AUTO_SUMMARY_EVERY_MAX = 50
 const val MEMORY_CAPACITY_MIN = 50
 const val MEMORY_CAPACITY_MAX = 5000
+const val MEMORY_RECALL_TOKEN_BUDGET_MIN = 256
+const val MEMORY_RECALL_TOKEN_BUDGET_MAX = 16_000
 const val CONTEXT_LOG_CAPACITY_MIN = 5
 const val CONTEXT_LOG_CAPACITY_MAX = 50
 

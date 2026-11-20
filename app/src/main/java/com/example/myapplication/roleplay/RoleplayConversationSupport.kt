@@ -47,11 +47,12 @@ object RoleplayConversationSupport {
     fun resolvePromptSettings(
         scenario: RoleplayScenario,
         settings: AppSettings,
+        includeScenarioPersona: Boolean = false,
     ): AppSettings {
         val persona = resolveUserPersona(scenario, settings)
         return settings.copy(
             userDisplayName = persona.displayName,
-            userPersonaPrompt = if (scenario.userPersonaOverride.isBlank()) {
+            userPersonaPrompt = if (includeScenarioPersona || scenario.userPersonaOverride.isBlank()) {
                 persona.personaPrompt
             } else {
                 ""
@@ -114,7 +115,8 @@ object RoleplayConversationSupport {
     }
 
     fun resolveLatestUserInputText(requestMessages: List<ChatMessage>): String {
-        val latestUserMessage = requestMessages.lastOrNull { it.role == MessageRole.USER } ?: return ""
+        val latestUserMessage =
+            requestMessages.lastOrNull { it.role == MessageRole.USER } ?: return ""
         return latestUserMessage.parts.toPlainText()
             .ifBlank { latestUserMessage.content.trim() }
     }
@@ -175,7 +177,8 @@ object RoleplayConversationSupport {
                     RoleplayMessageFormatSupport.resolveAssistantRawContent(message),
                 ).trim().takeIf { it.isNotBlank() }
             }
-        val recentClichePhrases = RoleplayAntiClicheSupport.detectRecentClichePhrases(recentAssistantTexts)
+        val recentClichePhrases =
+            RoleplayAntiClicheSupport.detectRecentClichePhrases(recentAssistantTexts)
         val relationTension = resolveRelationTension(recentUserInput)
         val roundPriority = resolveRoundPriority(recentUserInput)
         val currentObstacle = resolveCurrentObstacle(
@@ -183,7 +186,8 @@ object RoleplayConversationSupport {
             recentEmotions = recentEmotions,
             recentUserInput = recentUserInput,
         )
-        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val currentInteractionMode =
+            RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val continuityAnchor = recentAssistantTexts.lastOrNull()
             ?.take(42)
             ?.takeIf { it.isNotBlank() }
@@ -229,7 +233,10 @@ object RoleplayConversationSupport {
                         .maxOfOrNull { it.createdAt }
                         ?: 0L
                     val currentTime = nowProvider()
-                    TimeGapNarrationSupport.buildTimeGapNarration(latestMessageTimestamp, currentTime)
+                    TimeGapNarrationSupport.buildTimeGapNarration(
+                        latestMessageTimestamp,
+                        currentTime
+                    )
                         ?.let { narration ->
                             append(narration)
                             append("\n")
@@ -315,9 +322,14 @@ object RoleplayConversationSupport {
         return when {
             text.isBlank() -> "持续互动"
             RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.tensionHigh)
-                || RoleplayDirectorKeywords.hasQuestionMark(text)
-                || RoleplayDirectorKeywords.hasExclamation(text) -> "高压对峙"
-            RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.tensionTender) -> "暧昧靠近"
+                    || RoleplayDirectorKeywords.hasQuestionMark(text)
+                    || RoleplayDirectorKeywords.hasExclamation(text) -> "高压对峙"
+
+            RoleplayDirectorKeywords.containsAny(
+                text,
+                RoleplayDirectorKeywords.tensionTender
+            ) -> "暧昧靠近"
+
             text.contains("吗") || text.contains("会不会") || text.contains("是不是") -> "试探拉扯"
             else -> "持续拉扯"
         }
@@ -332,8 +344,10 @@ object RoleplayConversationSupport {
             RoleplayDirectorKeywords.hasQuestionMark(text) -> "优先正面回应对方刚抛出的追问或质疑"
             RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.actionPriority) ->
                 "优先接住对方刚做出的动作，并给出角色的即时反应"
+
             RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.emotionPriority) ->
                 "优先回应对方当前情绪，再决定如何推进"
+
             else -> "先回应当下互动，再自然推进关系、信息或局势中的一项"
         }
     }

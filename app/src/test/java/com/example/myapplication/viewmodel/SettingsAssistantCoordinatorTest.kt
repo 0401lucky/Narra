@@ -22,6 +22,22 @@ import org.junit.Test
 
 class SettingsAssistantCoordinatorTest {
     @Test
+    fun removeAssistant_closesArchivesAfterSavedDeletion() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val operations = mutableListOf<String>()
+        val coordinator = SettingsAssistantCoordinator(
+            editor,
+            imageFileCleaner = { operations += "image"; true },
+            onAssistantRemoved = { id ->
+                assertTrue(editor.savedAssistants.none { it.id == id })
+                operations += "archive:$id"
+            },
+        )
+        coordinator.removeAssistant(AppSettings(assistants = listOf(Assistant(id = "a", name = "合成角色"))), "a")
+        assertEquals(listOf("archive:a", "image"), operations)
+    }
+
+    @Test
     fun addAssistant_appendsAssistantAndPreservesSelection() = runBlocking {
         val editor = RecordingSettingsEditor()
         val coordinator = SettingsAssistantCoordinator(editor)
@@ -47,7 +63,11 @@ class SettingsAssistantCoordinatorTest {
 
         coordinator.addAssistant(
             settings = AppSettings(defaultPresetId = "custom-preset"),
-            assistant = Assistant(id = "assistant-2", name = "新助手", defaultPresetId = DEFAULT_PRESET_ID),
+            assistant = Assistant(
+                id = "assistant-2",
+                name = "新助手",
+                defaultPresetId = DEFAULT_PRESET_ID
+            ),
         )
 
         assertEquals("custom-preset", editor.savedAssistants.single().defaultPresetId)
@@ -118,7 +138,11 @@ class SettingsAssistantCoordinatorTest {
             settings = AppSettings(
                 defaultPresetId = "global-preset",
                 assistants = listOf(
-                    Assistant(id = "assistant-1", name = "原助手", defaultPresetId = "source-preset"),
+                    Assistant(
+                        id = "assistant-1",
+                        name = "原助手",
+                        defaultPresetId = "source-preset"
+                    ),
                 ),
             ),
             assistantId = "assistant-1",
@@ -149,7 +173,10 @@ class SettingsAssistantCoordinatorTest {
         var savedAssistants: List<Assistant> = emptyList()
         var savedSelectedAssistantId: String = ""
 
-        override suspend fun saveProviderSettings(providers: List<ProviderSettings>, selectedProviderId: String) = Unit
+        override suspend fun saveProviderSettings(
+            providers: List<ProviderSettings>,
+            selectedProviderId: String
+        ) = Unit
 
         override suspend fun saveFunctionModelProviderIds(
             functionModelProviderIds: com.example.myapplication.model.FunctionModelProviderIds,
@@ -157,7 +184,10 @@ class SettingsAssistantCoordinatorTest {
 
         override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) = Unit
 
-        override suspend fun saveAssistants(assistants: List<Assistant>, selectedAssistantId: String) {
+        override suspend fun saveAssistants(
+            assistants: List<Assistant>,
+            selectedAssistantId: String
+        ) {
             savedAssistants = assistants
             savedSelectedAssistantId = selectedAssistantId
         }
@@ -184,7 +214,8 @@ class SettingsAssistantCoordinatorTest {
             roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) = Unit
 
-        override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) = Unit
+        override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) =
+            Unit
 
         override suspend fun saveSearchSettings(settings: SearchSettings) = Unit
 
@@ -196,13 +227,37 @@ class SettingsAssistantCoordinatorTest {
             settings: com.example.myapplication.model.VoiceRecognitionSettings,
         ) = Unit
 
-        override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
-        override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) = Unit
+        override suspend fun saveUserProfile(
+            displayName: String,
+            personaPrompt: String,
+            avatarUri: String,
+            avatarUrl: String
+        ) = Unit
+
+        override suspend fun saveUserPersonaMasks(
+            masks: List<UserPersonaMask>,
+            defaultMaskId: String
+        ) = Unit
+
         override suspend fun saveDefaultPresetId(presetId: String) = Unit
-        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
+        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) =
+            Unit
+
         override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
-        override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit
-        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) = Unit
+        override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) =
+            error("本测试不应保存记忆预算")
+
+        override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) =
+            error("本测试不应保存认知容量")
+
+        override suspend fun saveMemoryPromptSettings(
+            extractionPrompt: String,
+            injectionPrompt: String
+        ) = Unit
+
+        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) =
+            Unit
+
         override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) = Unit
     }
 }

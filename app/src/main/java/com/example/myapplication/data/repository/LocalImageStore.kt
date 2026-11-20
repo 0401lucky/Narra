@@ -5,6 +5,10 @@ import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import java.io.File
 import java.util.UUID
 
@@ -17,24 +21,53 @@ class LocalImageStore(
     private val context: Context,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    suspend fun copyToAppStorage(uri: Uri, scope: String): String? = withContext(dispatcher) {
-        val resolver = context.contentResolver
-        val extension = resolveImageExtension(runCatching { resolver.getType(uri) }.getOrNull())
-        val dir = File(context.filesDir, "$USER_IMAGE_ROOT/${sanitizeImageScope(scope)}")
-        if (!dir.exists() && !dir.mkdirs() && !dir.isDirectory) {
-            return@withContext null
+    suspend fun copyToAppStorage(uri: Uri, scope: String): String? {
+        var ownedTarget: File? = null
+        try {
+            return withContext(dispatcher) {
+                val resolver = context.contentResolver
+                val extension =
+                    resolveImageExtension(runCatching { resolver.getType(uri) }.getOrNull())
+                val dir = File(context.filesDir, "$USER_IMAGE_ROOT/${sanitizeImageScope(scope)}")
+                if (!dir.exists() && !dir.mkdirs() && !dir.isDirectory) {
+                    return@withContext null
+                }
+                val target = File(dir, "${UUID.randomUUID()}.$extension")
+                ownedTarget = target
+                val copied = try {
+                    resolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            while (true) {
+                                coroutineContext.ensureActive()
+                                val count = input.read(buffer)
+                                coroutineContext.ensureActive()
+                                if (count < 0) break
+                                output.write(buffer, 0, count)
+                            }
+                        }
+                        true
+                    } ?: false
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    target.delete()
+                    false
+                }
+                coroutineContext.ensureActive()
+                if (copied) target.absolutePath else null
+            }
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable + dispatcher) {
+                ownedTarget?.let {
+                    deleteIfInsideBaseDir(
+                        File(context.filesDir, USER_IMAGE_ROOT),
+                        it.absolutePath
+                    )
+                }
+            }
+            throw cancelled
         }
-        val target = File(dir, "${UUID.randomUUID()}.$extension")
-        val copied = runCatching {
-            resolver.openInputStream(uri)?.use { input ->
-                target.outputStream().use { output -> input.copyTo(output) }
-                true
-            } ?: false
-        }.getOrElse {
-            target.delete()
-            false
-        }
-        if (copied) target.absolutePath else null
     }
 
     fun deleteIfLocal(path: String?): Boolean {
@@ -73,8 +106,15 @@ internal fun sanitizeImageScope(scope: String): String {
 internal fun normalizeImagePath(path: String?): String? {
     if (path.isNullOrBlank()) return null
     val stripped = when {
-        path.startsWith("file://") -> path.removePrefix("file://")
-        path.startsWith("file:") -> path.removePrefix("file:")
+        path.startsWith("file:") -> runCatching {
+            val uri = java.net.URI(path)
+            require(uri.authority.isNullOrBlank())
+            val decoded = requireNotNull(uri.path)
+            if (File.separatorChar == '\\' && decoded.length > 3 && decoded[0] == '/' && decoded[2] == ':')
+                File(uri).absolutePath else decoded
+        }.getOrNull()
+            ?: path.removePrefix("file://").removePrefix("file:")
+
         else -> path
     }
     if (stripped.isBlank()) return null
@@ -89,7 +129,7 @@ internal fun deleteIfInsideBaseDir(baseDir: File, path: String?): Boolean {
     val baseCanonical = runCatching { baseDir.canonicalPath }.getOrNull() ?: return false
     val targetCanonical = runCatching { target.canonicalPath }.getOrNull() ?: return false
     val prefixed = targetCanonical == baseCanonical ||
-        targetCanonical.startsWith(baseCanonical + File.separator)
+            targetCanonical.startsWith(baseCanonical + File.separator)
     if (!prefixed) return false
     return runCatching { target.delete() }.getOrDefault(false)
 }

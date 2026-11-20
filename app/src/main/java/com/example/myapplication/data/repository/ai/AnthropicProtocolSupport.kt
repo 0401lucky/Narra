@@ -92,6 +92,7 @@ internal object AnthropicProtocolSupport {
         return AssistantReply(
             content = content,
             reasoningContent = reasoning,
+            completionEvidence = CompletionEvidenceSupport.anthropic(response),
         )
     }
 
@@ -113,6 +114,7 @@ internal object AnthropicProtocolSupport {
                     .orEmpty()
                     .ifBlank { rawData.trim() },
             )
+
             else -> AnthropicStreamDelta()
         }
     }
@@ -123,9 +125,11 @@ internal object AnthropicProtocolSupport {
             "text_delta" -> AnthropicStreamDelta(
                 content = delta.getString("text"),
             )
+
             "thinking_delta" -> AnthropicStreamDelta(
                 reasoning = delta.getString("thinking"),
             )
+
             else -> AnthropicStreamDelta()
         }
     }
@@ -158,6 +162,7 @@ internal object AnthropicProtocolSupport {
                     )
                 },
             )
+
             is List<*> -> content.flatMap(::toAnthropicContentPart)
             is Map<*, *> -> toAnthropicContentPart(content)
             else -> emptyList()
@@ -172,17 +177,20 @@ internal object AnthropicProtocolSupport {
                     text = contentPart.text,
                 ),
             )
+
             is ImageUrlContentPartDto -> imageContentPartFromUrl(contentPart.imageUrl)
             is Map<*, *> -> {
                 when (contentPart["type"]?.toString().orEmpty()) {
                     "text" -> listOfNotNull(
-                        contentPart["text"]?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { text ->
-                            AnthropicContentPartDto(
-                                type = "text",
-                                text = text,
-                            )
-                        },
+                        contentPart["text"]?.toString()?.trim()?.takeIf { it.isNotBlank() }
+                            ?.let { text ->
+                                AnthropicContentPartDto(
+                                    type = "text",
+                                    text = text,
+                                )
+                            },
                     )
+
                     "tool_use" -> {
                         val input = contentPart["input"] as? Map<*, *>
                         listOf(
@@ -201,6 +209,7 @@ internal object AnthropicProtocolSupport {
                             ),
                         )
                     }
+
                     "tool_result" -> listOf(
                         AnthropicContentPartDto(
                             type = "tool_result",
@@ -209,6 +218,7 @@ internal object AnthropicProtocolSupport {
                             isError = contentPart["is_error"] as? Boolean,
                         ),
                     )
+
                     "image_url" -> {
                         val imageUrl = contentPart["image_url"]
                         if (imageUrl is Map<*, *>) {
@@ -219,9 +229,11 @@ internal object AnthropicProtocolSupport {
                             emptyList()
                         }
                     }
+
                     else -> emptyList()
                 }
             }
+
             is String -> listOfNotNull(
                 contentPart.trim().takeIf { it.isNotBlank() }?.let { text ->
                     AnthropicContentPartDto(
@@ -230,6 +242,7 @@ internal object AnthropicProtocolSupport {
                     )
                 },
             )
+
             else -> emptyList()
         }
     }
@@ -286,6 +299,7 @@ internal object AnthropicProtocolSupport {
                     else -> ""
                 }
             }.trim()
+
             is Map<*, *> -> content["text"]?.toString().orEmpty()
             else -> ""
         }

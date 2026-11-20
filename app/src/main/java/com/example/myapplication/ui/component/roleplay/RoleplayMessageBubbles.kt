@@ -70,6 +70,9 @@ internal fun RoleplayMessageItem(
     lineHeightScale: Float = 1.0f,
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
+    showSpeakerName: Boolean? = null,
+    groupedWithPrevious: Boolean = false,
+    groupedWithNext: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -90,6 +93,9 @@ internal fun RoleplayMessageItem(
             lineHeightScale = lineHeightScale,
             bubbleMode = bubbleMode,
             noBackgroundSkin = noBackgroundSkin,
+            showSpeakerName = showSpeakerName,
+            groupedWithPrevious = groupedWithPrevious,
+            groupedWithNext = groupedWithNext,
         )
     }
 }
@@ -112,6 +118,9 @@ private fun RoleplayMessageItemContent(
     lineHeightScale: Float = 1.0f,
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
+    showSpeakerName: Boolean? = null,
+    groupedWithPrevious: Boolean = false,
+    groupedWithNext: Boolean = false,
 ) {
     val useGlassBubble = shouldUseRoleplayGlassBubble(
         hasBackgroundImage = backdropState.hasImage,
@@ -230,6 +239,7 @@ private fun RoleplayMessageItemContent(
                     isUser = true,
                     noBackgroundFraction = bubbleStyle.maxWidthFraction,
                 )
+                val shouldShowUserLabel = (showSpeakerName ?: false) && !groupedWithPrevious
                 BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.CenterEnd,
@@ -246,7 +256,9 @@ private fun RoleplayMessageItemContent(
                                 horizontalAlignment = Alignment.End,
                                 verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                             ) {
-                                RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
+                                if (shouldShowUserLabel) {
+                                    RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
+                                }
                                 RoleplayMessageMenuWrapper(
                                     message = message,
                                     onRetryTurn = onRetryTurn,
@@ -264,15 +276,25 @@ private fun RoleplayMessageItemContent(
                                         fillWidth = false,
                                         bubbleStyle = bubbleStyle,
                                         useGlassBubble = useGlassBubble,
+                                        groupedWithPrevious = groupedWithPrevious,
+                                        groupedWithNext = groupedWithNext,
                                     )
                                 }
                             }
-                            RoleplayMessageAvatar(
-                                message = message,
-                                colors = colors,
-                                onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(start = NarraUi.space8),
-                            )
+                            if (groupedWithPrevious) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = NarraUi.space8)
+                                        .size(36.dp),
+                                )
+                            } else {
+                                RoleplayMessageAvatar(
+                                    message = message,
+                                    colors = colors,
+                                    onPokeMessageAvatar = onPokeMessageAvatar,
+                                    modifier = Modifier.padding(start = NarraUi.space8),
+                                )
+                            }
                         }
                     } else {
                         Column(
@@ -280,7 +302,9 @@ private fun RoleplayMessageItemContent(
                             horizontalAlignment = Alignment.End,
                             verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
-                            RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
+                            if (shouldShowUserLabel) {
+                                RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
+                            }
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
@@ -298,6 +322,8 @@ private fun RoleplayMessageItemContent(
                                     fillWidth = false,
                                     bubbleStyle = bubbleStyle,
                                     useGlassBubble = useGlassBubble,
+                                    groupedWithPrevious = groupedWithPrevious,
+                                    groupedWithNext = groupedWithNext,
                                 )
                             }
                         }
@@ -311,6 +337,12 @@ private fun RoleplayMessageItemContent(
                     isUser = false,
                     noBackgroundFraction = bubbleStyle.maxWidthFraction,
                 )
+                val shouldShowCharacterLabel = when {
+                    groupedWithPrevious -> false
+                    showSpeakerName != null -> showSpeakerName
+                    bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE -> false
+                    else -> true
+                }
                 BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart,
@@ -322,18 +354,28 @@ private fun RoleplayMessageItemContent(
                             horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.Top,
                         ) {
-                            RoleplayMessageAvatar(
-                                message = message,
-                                colors = colors,
-                                onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(end = NarraUi.space8),
-                            )
+                            if (groupedWithPrevious) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(end = NarraUi.space8)
+                                        .size(36.dp),
+                                )
+                            } else {
+                                RoleplayMessageAvatar(
+                                    message = message,
+                                    colors = colors,
+                                    onPokeMessageAvatar = onPokeMessageAvatar,
+                                    modifier = Modifier.padding(end = NarraUi.space8),
+                                )
+                            }
                             Column(
                                 modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                                 horizontalAlignment = Alignment.Start,
                                 verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                             ) {
-                                RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
+                                if (shouldShowCharacterLabel) {
+                                    RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
+                                }
                                 RoleplayMessageMenuWrapper(
                                     message = message,
                                     onRetryTurn = onRetryTurn,
@@ -352,6 +394,8 @@ private fun RoleplayMessageItemContent(
                                         fillWidth = false,
                                         bubbleStyle = bubbleStyle,
                                         useGlassBubble = useGlassBubble,
+                                        groupedWithPrevious = groupedWithPrevious,
+                                        groupedWithNext = groupedWithNext,
                                     )
                                 }
                             }
@@ -362,7 +406,9 @@ private fun RoleplayMessageItemContent(
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
-                            RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
+                            if (shouldShowCharacterLabel) {
+                                RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
+                            }
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
@@ -381,6 +427,8 @@ private fun RoleplayMessageItemContent(
                                     fillWidth = false,
                                     bubbleStyle = bubbleStyle,
                                     useGlassBubble = useGlassBubble,
+                                    groupedWithPrevious = groupedWithPrevious,
+                                    groupedWithNext = groupedWithNext,
                                 )
                             }
                         }
@@ -628,16 +676,16 @@ private fun RoleplaySpeakerNameLabel(
 ) {
     val displayName = message.speakerName.trim()
         .ifBlank { if (isUser) "我" else "角色" }
-    Surface(shape = NarraShapes.small, color = colors.systemBackground) {
-    Text(
-        text = displayName,
-        modifier = Modifier.padding(horizontal = NarraUi.space4),
-        style = MaterialTheme.typography.labelMedium,
-        color = colors.systemText,
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
+    Surface(shape = NarraShapes.pill, color = colors.systemBackground.copy(alpha = 0.85f)) {
+        Text(
+            text = displayName,
+            modifier = Modifier.padding(horizontal = NarraUi.space8),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.systemText,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

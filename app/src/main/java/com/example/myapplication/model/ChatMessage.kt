@@ -37,10 +37,16 @@ data class ChatMessage(
     val citations: List<MessageCitation> = emptyList(),
     val roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
     val roleplayInteractionMode: RoleplayInteractionMode? = null,
+    val memoryRevision: Long = 1L,
+    val memoryRecallRequestId: String = "",
+    val companionTurnId: String = "",
+    val companionMemoryState: CompanionMemoryState = CompanionMemoryState.LEGACY,
+    @Transient val companionSourceProof: CompanionSourceProof? = null,
+    @Transient val companionReplyMetadata: CompanionReplyMetadata? = null,
 )
 
 fun ChatMessage.hasSendableContent(): Boolean {
     return content.isNotBlank() ||
-        attachments.isNotEmpty() ||
-        normalizeChatMessageParts(parts).isNotEmpty()
+            attachments.isNotEmpty() ||
+            normalizeChatMessageParts(parts).isNotEmpty()
 }

@@ -507,6 +507,8 @@ private class FakeRoleplayDao(
                     lastMessageContent = null,
                     lastMessageCreatedAt = null,
                     lastMessageRole = null,
+                    memoryPurpose = scenario.memoryPurpose,
+                    sessionRunId = session?.runId,
                 )
             }
         }

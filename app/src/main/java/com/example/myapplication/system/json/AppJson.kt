@@ -16,6 +16,7 @@ object AppJson {
     val gson: Gson by lazy {
         GsonBuilder()
             .disableHtmlEscaping()
+            .registerTypeAdapterFactory(ChatMessageCompatibilityAdapter())
             .create()
     }
 }

@@ -12,4 +12,7 @@ data class ConversationSummarySegment(
     val summary: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val sourceSnapshot: List<ConversationSummarySource> = emptyList(),
+    val completionStatus: PromptCompletionStatus = PromptCompletionStatus.UNKNOWN,
+    val memoryContext: MemoryRuntimeContext? = null,
 )

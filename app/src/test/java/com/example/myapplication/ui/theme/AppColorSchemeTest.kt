@@ -30,6 +30,25 @@ class AppColorSchemeTest {
         assertEquals(resolveAppColorScheme(AppColorTheme.OCEAN, false).surface, resolved.surface)
     }
 
+    @Test
+    fun fixedThemes_keepDistinctTonalSurfaces_inLightAndDark() {
+        listOf(false, true).forEach { dark ->
+            val matcha = resolveAppColorScheme(AppColorTheme.MATCHA, dark)
+            val vanilla = resolveAppColorScheme(AppColorTheme.VANILLA, dark)
+            val ocean = resolveAppColorScheme(AppColorTheme.OCEAN, dark)
+            assertEquals(
+                "dark=$dark 三套固定主题 background 应保有独立色温",
+                3,
+                setOf(matcha.background, vanilla.background, ocean.background).size,
+            )
+            assertEquals(
+                "dark=$dark 三套固定主题 surfaceContainer 应保有独立色温",
+                3,
+                setOf(matcha.surfaceContainer, vanilla.surfaceContainer, ocean.surfaceContainer).size,
+            )
+        }
+    }
+
     private fun contrast(a: Color, b: Color): Float {
         val first = a.luminance()
         val second = b.luminance()

@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository.ai.tooling
 import com.example.myapplication.data.remote.AnthropicApi
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ai.AnthropicProtocolSupport
+import com.example.myapplication.data.repository.ai.CompletionEvidenceSupport
 import com.example.myapplication.data.repository.ai.GatewayAssistantOutputParser
 import com.example.myapplication.data.repository.ai.AiErrorRedaction
 import com.example.myapplication.data.repository.ai.emptyAssistantContentMessage
@@ -19,6 +20,7 @@ import com.example.myapplication.model.ChatToolDto
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PromptEnvelope
+import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
@@ -110,13 +112,19 @@ class ToolEngine(
                 apiKey,
             )
             var response = api.createChatCompletionAt(
-                openAiTextUrlBuilder(baseUrl, activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS)),
+                openAiTextUrlBuilder(
+                    baseUrl,
+                    activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS)
+                ),
                 request,
             )
             if (!response.isSuccessful) {
                 val errorDetail = response.errorBody()?.string().orEmpty()
                 if (response.code() == 400 &&
-                    GatewayRequestSupport.shouldRetryWithoutReasoningParameters(request, errorDetail)
+                    GatewayRequestSupport.shouldRetryWithoutReasoningParameters(
+                        request,
+                        errorDetail
+                    )
                 ) {
                     request = GatewayRequestSupport.withoutReasoningParameters(request)
                     response = api.createChatCompletionAt(
@@ -354,7 +362,10 @@ class ToolEngine(
                 baseUrl,
                 apiKey,
             ).createResponseAt(
-                openAiTextUrlBuilder(baseUrl, activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.RESPONSES)),
+                openAiTextUrlBuilder(
+                    baseUrl,
+                    activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.RESPONSES)
+                ),
                 request,
             )
             if (!response.isSuccessful) {
@@ -384,6 +395,7 @@ class ToolEngine(
                             content = parsed.content,
                             reasoningContent = parsed.reasoning,
                             citations = citations,
+                            completionEvidence = CompletionEvidenceSupport.responses(body),
                         ),
                     ),
                     citations = citations,
@@ -482,6 +494,10 @@ class ToolEngine(
             finalReply = AssistantReply(
                 content = "我先不继续调用工具，基于当前已知信息继续推进。",
                 citations = citations,
+                completionEvidence = CompletionEvidenceSupport.evidence(
+                    PromptCompletionStatus.INCOMPLETE,
+                    rawFinishReason = "tool_round_limit",
+                ),
             ),
             citations = citations,
             toolRoundCount = toolRoundCount,
@@ -508,6 +524,7 @@ class ToolEngine(
                 reasoningContent = extractedOutput.reasoning,
                 parts = extractedOutput.parts,
                 citations = citations,
+                completionEvidence = CompletionEvidenceSupport.chat(assistantMessage, finishReason),
             ),
             finishReason = finishReason,
         )

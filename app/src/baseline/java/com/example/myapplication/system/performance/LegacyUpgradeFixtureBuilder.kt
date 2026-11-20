@@ -50,7 +50,10 @@ internal class LegacyUpgradeFixtureBuilder(
             }
             val actual = dataset.copy(
                 chatMessages = readMessages(database, BenchmarkFixtureIds.CHAT_CONVERSATION_ID),
-                roleplayMessages = readMessages(database, BenchmarkFixtureIds.ROLEPLAY_CONVERSATION_ID),
+                roleplayMessages = readMessages(
+                    database,
+                    BenchmarkFixtureIds.ROLEPLAY_CONVERSATION_ID
+                ),
             )
             val expectedSummary = dataset.safeSummary()
             val actualSummary = actual.safeSummary()
@@ -64,7 +67,7 @@ internal class LegacyUpgradeFixtureBuilder(
     private fun verifyUpgradeContract() {
         check(
             BenchmarkFixtureId.S3_SUPPORTED_UPGRADE.sourceDatabaseVersion ==
-                MEASURED_SOURCE_SCHEMA_VERSION,
+                    MEASURED_SOURCE_SCHEMA_VERSION,
         ) { "S3 fixture 来源版本与固定快照不一致" }
         check(ChatDatabase.CURRENT_VERSION == MEASURED_TARGET_SCHEMA_VERSION) {
             "S3 fixture 目标版本已变化，必须更新固定快照与升级区间"
@@ -165,6 +168,8 @@ internal class LegacyUpgradeFixtureBuilder(
             put("citationsJson", "[]")
             put("roleplayOutputFormat", "UNSPECIFIED")
             put("roleplayInteractionMode", message.roleplayInteractionMode)
+            put("memoryRevision", 1L)
+            put("memoryRecallRequestId", "")
         }
     }
 
@@ -176,6 +181,7 @@ internal class LegacyUpgradeFixtureBuilder(
             put("description", "固定离线升级性能验证场景")
             put("descriptionPromptEnabled", 0)
             put("assistantId", BenchmarkFixtureIds.ASSISTANT_ID)
+            put("presetId", "")
             put("backgroundUri", "")
             put("userDisplayNameOverride", "基准用户")
             put("userPersonaMaskId", "")
@@ -205,6 +211,7 @@ internal class LegacyUpgradeFixtureBuilder(
             put("isMuted", 0)
             put("createdAt", timestamp)
             put("updatedAt", timestamp)
+            put("memoryPurpose", "legacy_compat")
         }
     }
 
@@ -230,6 +237,7 @@ internal class LegacyUpgradeFixtureBuilder(
             put("id", BenchmarkFixtureIds.ROLEPLAY_SESSION_ID)
             put("scenarioId", BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID)
             put("conversationId", BenchmarkFixtureIds.ROLEPLAY_CONVERSATION_ID)
+            put("runId", SOURCE_ROLEPLAY_RUN_ID)
             put("createdAt", timestamp)
             put("updatedAt", timestamp)
         }
@@ -299,11 +307,15 @@ internal class LegacyUpgradeFixtureBuilder(
     }
 
     companion object {
-        const val MEASURED_SOURCE_SCHEMA_VERSION = 47
-        const val MEASURED_TARGET_SCHEMA_VERSION = 48
-        const val SCHEMA_ASSET_PATH = "benchmark/s3-schema-v47.sql"
-        const val SCHEMA_ASSET_SHA256 = "cc4a60c82d5a3ae33949937622704b1fa3c4223b6782e67cc6ae9a64a05f109b"
-        const val SOURCE_SCHEMA_IDENTITY_HASH = "d9407f25f48657b4ed1e52c84c1c8b12"
+        const val MEASURED_SOURCE_SCHEMA_VERSION = 56
+        const val MEASURED_TARGET_SCHEMA_VERSION = 57
+        const val SCHEMA_ASSET_PATH = "benchmark/s3-schema-v56.sql"
+        const val SCHEMA_ASSET_SHA256 =
+            "57da481f5082135f40b13bdbc4ac722c5b217e02030f3f1e485d84b92e59af51"
+        const val SOURCE_SCHEMA_IDENTITY_HASH = "37d3992a3b6f8544d71ead1e129bccef"
+
+        // 固定来源档案的运行 ID 独立于 session ID，保持重复测量时的数据一致。
+        private const val SOURCE_ROLEPLAY_RUN_ID = "45024b8f-750c-3c1c-b9e6-8d6342b9e135"
         private const val CHAT_CONVERSATION_RECENCY_OFFSET_MILLIS = 1_000L
     }
 }

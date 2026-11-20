@@ -5,6 +5,9 @@ import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.theme.readableRoleplayText
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,14 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -54,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +58,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.Expand
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.Sparkles
+import com.composables.icons.lucide.X
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -119,6 +124,8 @@ internal fun RoleplayInputBar(
     showActionButton: Boolean = true,
     showExpandButton: Boolean = true,
     expandedPanelMaxHeight: Dp = NarraMinimumTouchTarget * 5,
+    quickActionsInDialog: Boolean = false,
+    compactInlineEditor: Boolean = false,
 ) {
     val canSend = (input.isNotBlank() || pendingImageParts.isNotEmpty()) && !isSending
     val hasQuickActions = quickActions.isNotEmpty()
@@ -130,7 +137,7 @@ internal fun RoleplayInputBar(
         } else {
             quickActions + RoleplayInputQuickAction(
                 label = "添加图片",
-                icon = Icons.Default.Image,
+                icon = Lucide.Image,
                 accentColor = colors.characterAccent,
                 onClick = {
                     showActionPanel = false
@@ -154,13 +161,13 @@ internal fun RoleplayInputBar(
         mentionCandidates
             .filter { candidate ->
                 normalizedQuery.isBlank() ||
-                    candidate.displayName.contains(normalizedQuery, ignoreCase = true)
+                        candidate.displayName.contains(normalizedQuery, ignoreCase = true)
             }
             .take(8)
     }
     val showMentionPanel = mentionAnchor != null &&
-        dismissedMentionAnchor != mentionAnchor &&
-        activeMentionCandidates.isNotEmpty()
+            dismissedMentionAnchor != mentionAnchor &&
+            activeMentionCandidates.isNotEmpty()
 
     LaunchedEffect(inputFocusToken) {
         if (inputFocusToken > 0L && !isSending) {
@@ -170,8 +177,8 @@ internal fun RoleplayInputBar(
     }
     val handleInputChange: (String) -> Unit = { nextValue ->
         val insertedTrailingNewline = nextValue.length == input.length + 1 &&
-            nextValue.endsWith('\n') &&
-            nextValue.dropLast(1) == input
+                nextValue.endsWith('\n') &&
+                nextValue.dropLast(1) == input
         if (insertedTrailingNewline) {
             if (allowNextInlineNewline) {
                 allowNextInlineNewline = false
@@ -184,78 +191,80 @@ internal fun RoleplayInputBar(
                     onSend()
                 }
             }
-            } else {
-                allowNextInlineNewline = false
-                dismissedMentionAnchor = null
-                onInputChange(nextValue)
-            }
+        } else {
+            allowNextInlineNewline = false
+            dismissedMentionAnchor = null
+            onInputChange(nextValue)
         }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
     val stackedInput = LocalDensity.current.fontScale >= 1.5f
     val inputEditor: @Composable (Modifier) -> Unit = { editorModifier ->
-    BasicTextField(
-        value = input,
-        onValueChange = handleInputChange,
-        modifier = editorModifier
-                        .testTag("roleplay_input_editor")
-                        .semantics { contentDescription = "消息输入" }
-            .heightIn(min = NarraMinimumTouchTarget)
-            .focusRequester(focusRequester)
-            .padding(vertical = NarraUi.space8)
-            .onPreviewKeyEvent { event ->
-                if (
-                    event.type == KeyEventType.KeyDown &&
-                    event.key == Key.Enter &&
-                    !event.isShiftPressed
-                ) {
-                    if (canSend) {
-                        showActionPanel = false
-                        onSend()
-                        true
+        BasicTextField(
+            value = input,
+            onValueChange = handleInputChange,
+            modifier = editorModifier
+                .testTag("roleplay_input_editor")
+                .semantics { contentDescription = "消息输入" }
+                .heightIn(min = NarraMinimumTouchTarget)
+                .focusRequester(focusRequester)
+                .padding(vertical = NarraUi.space8)
+                .onPreviewKeyEvent { event ->
+                    if (
+                        event.type == KeyEventType.KeyDown &&
+                        event.key == Key.Enter &&
+                        !event.isShiftPressed
+                    ) {
+                        if (canSend) {
+                            showActionPanel = false
+                            onSend()
+                            true
+                        } else {
+                            false
+                        }
+                    } else if (
+                        event.type == KeyEventType.KeyDown &&
+                        event.key == Key.Enter &&
+                        event.isShiftPressed
+                    ) {
+                        allowNextInlineNewline = true
+                        false
                     } else {
                         false
                     }
-                } else if (
-                    event.type == KeyEventType.KeyDown &&
-                    event.key == Key.Enter &&
-                    event.isShiftPressed
-                ) {
-                    allowNextInlineNewline = true
-                    false
-                } else {
-                    false
+                },
+            enabled = !isSending,
+            maxLines = if (compactInlineEditor) 1 else 3,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.panelText),
+            cursorBrush = SolidColor(colors.characterAccent),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Send,
+            ),
+            keyboardActions = KeyboardActions(
+                onSend = {
+                    if (canSend) {
+                        showActionPanel = false
+                        onSend()
+                    }
+                },
+            ),
+            decorationBox = { innerTextField ->
+                Box {
+                    if (input.isEmpty()) {
+                        Text(
+                            stringResource(id = R.string.roleplay_input_placeholder),
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.panelMutedText,
+                            maxLines = if (compactInlineEditor) 1 else Int.MAX_VALUE,
+                            overflow = if (compactInlineEditor) TextOverflow.Ellipsis else TextOverflow.Clip,
+                        )
+                    }
+                    innerTextField()
                 }
             },
-        enabled = !isSending,
-        maxLines = 3,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.panelText),
-        cursorBrush = SolidColor(colors.characterAccent),
-        keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Send,
-        ),
-        keyboardActions = KeyboardActions(
-            onSend = {
-                if (canSend) {
-                    showActionPanel = false
-                    onSend()
-                }
-            },
-        ),
-        decorationBox = { innerTextField ->
-            Box {
-            if (input.isEmpty()) {
-                Text(
-                    stringResource(id = R.string.roleplay_input_placeholder),
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.panelMutedText,
-                )
-            }
-            innerTextField()
-            }
-        },
-    )
+        )
     }
 
     ImmersiveGlassSurface(
@@ -267,15 +276,26 @@ internal fun RoleplayInputBar(
     ) {
         Column(
             modifier = Modifier
-                .padding(start = NarraUi.space8, top = NarraUi.space8, end = NarraUi.space8, bottom = NarraUi.space8)
-                .animateContentSize(),
+                .padding(
+                    start = NarraUi.space8,
+                    top = NarraUi.space8,
+                    end = NarraUi.space8,
+                    bottom = NarraUi.space8
+                )
+                .animateContentSize(
+                    animationSpec = spring(dampingRatio = 0.86f, stiffness = 420f),
+                ),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             if (showActionButton && hasQuickActions) {
                 AnimatedVisibility(
-                    visible = showActionPanel,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
+                    visible = showActionPanel && !quickActionsInDialog,
+                    enter = expandVertically(
+                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+                    ) + fadeIn(tween(180)),
+                    exit = shrinkVertically(
+                        animationSpec = tween(180),
+                    ) + fadeOut(tween(140)),
                 ) {
                     RoleplayQuickActionPanel(
                         actions = quickPanelActions,
@@ -339,11 +359,17 @@ internal fun RoleplayInputBar(
                 inputEditor(Modifier.fillMaxWidth().padding(horizontal = NarraUi.space8))
             }
             Row(
-                modifier = if (stackedInput) Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()) else Modifier,
+                modifier = if (stackedInput) Modifier.fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()) else Modifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 if (showActionButton) {
+                    val addIconRotation by animateFloatAsState(
+                        targetValue = if (hasQuickActions && showActionPanel) 45f else 0f,
+                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 440f),
+                        label = "roleplay_input_add_rotation",
+                    )
                     Box {
                         NarraIconButton(
                             onClick = {
@@ -374,17 +400,26 @@ internal fun RoleplayInputBar(
                             ),
                         ) {
                             Icon(
-                                Icons.Default.Add,
+                                Lucide.Plus,
                                 contentDescription = stringResource(id = R.string.roleplay_more_actions),
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .graphicsLayer { rotationZ = addIconRotation },
                             )
                         }
                         if (!hasQuickActions) {
-                            DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                            DropdownMenu(
+                                expanded = showActionMenu,
+                                onDismissRequest = { showActionMenu = false }) {
                                 if (onPickImage != null) {
                                     DropdownMenuItem(
                                         text = { Text("添加图片") },
-                                        leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                        leadingIcon = {
+                                            Icon(
+                                                Lucide.Image,
+                                                contentDescription = null
+                                            )
+                                        },
                                         onClick = {
                                             showActionMenu = false
                                             showActionPanel = false
@@ -394,7 +429,12 @@ internal fun RoleplayInputBar(
                                 }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(id = R.string.roleplay_special_play)) },
-                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Lucide.SlidersHorizontal,
+                                            contentDescription = null
+                                        )
+                                    },
                                     onClick = { showActionMenu = false; onOpenSpecialPlay() },
                                 )
                             }
@@ -420,7 +460,7 @@ internal fun RoleplayInputBar(
                         ),
                     ) {
                         Icon(
-                            Icons.Default.OpenInFull,
+                            Lucide.Expand,
                             contentDescription = stringResource(id = R.string.roleplay_expand_editor),
                             modifier = Modifier.size(16.dp),
                         )
@@ -451,15 +491,22 @@ internal fun RoleplayInputBar(
                         ),
                     ) {
                         Icon(
-                            Icons.Default.AutoAwesome,
+                            Lucide.Sparkles,
                             contentDescription = "AI 帮写",
                             modifier = Modifier.size(17.dp),
                         )
                     }
                 }
                 if (isSending && onCancel != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space4)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = colors.characterAccent
+                        )
                         NarraIconButton(
                             onClick = {
                                 showActionPanel = false
@@ -472,7 +519,7 @@ internal fun RoleplayInputBar(
                             ),
                         ) {
                             Icon(
-                                Icons.Default.Close,
+                                Lucide.X,
                                 contentDescription = stringResource(id = R.string.common_cancel),
                                 modifier = Modifier.size(16.dp),
                             )
@@ -498,9 +545,9 @@ internal fun RoleplayInputBar(
                         ),
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Send,
+                            Lucide.ArrowUp,
                             contentDescription = stringResource(id = R.string.common_send),
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
@@ -518,6 +565,27 @@ internal fun RoleplayInputBar(
         contentColor = MaterialTheme.colorScheme.onSurface,
         accentColor = colors.characterAccent,
     )
+    if (quickActionsInDialog && showActionPanel && hasQuickActions) {
+        com.example.myapplication.ui.component.NarraAlertDialog(
+            title = stringResource(id = R.string.roleplay_quick_actions_title),
+            onDismiss = { showActionPanel = false }, onConfirm = { showActionPanel = false },
+            confirmLabel = "关闭", dismissLabel = null,
+            content = {
+                val dialogWindowSize = LocalWindowInfo.current.containerSize
+                val dialogHeight = with(LocalDensity.current) {
+                    dialogWindowSize.height.toDp()
+                }.coerceAtLeast(NarraMinimumTouchTarget)
+                RoleplayQuickActionPanel(
+                    quickPanelActions,
+                    colorScheme.onSurface,
+                    colorScheme.onSurfaceVariant,
+                    onActionClick = { action -> showActionPanel = false; action.onClick() },
+                    maxHeight = dialogHeight,
+                    showTitle = false
+                )
+            },
+        )
+    }
 }
 
 @Composable
@@ -541,7 +609,7 @@ private fun RoleplayPendingImageBanner(
             horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Icon(
-                imageVector = Icons.Default.Image,
+                imageVector = Lucide.Image,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
                 tint = colors.characterAccent,
@@ -578,7 +646,7 @@ private fun RoleplayPendingImageBanner(
                 ),
             ) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Lucide.X,
                     contentDescription = "移除图片",
                     modifier = Modifier.size(15.dp),
                 )
@@ -633,7 +701,12 @@ private fun RoleplaySpeakerQuickActionChip(
         },
     ) {
         Row(
-            modifier = Modifier.padding(start = NarraUi.space8, top = NarraUi.space4, end = NarraUi.space8, bottom = NarraUi.space4),
+            modifier = Modifier.padding(
+                start = NarraUi.space8,
+                top = NarraUi.space4,
+                end = NarraUi.space8,
+                bottom = NarraUi.space4
+            ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
@@ -779,6 +852,7 @@ private fun RoleplayQuickActionPanel(
     mutedTextColor: Color,
     onActionClick: (RoleplayInputQuickAction) -> Unit,
     maxHeight: Dp,
+    showTitle: Boolean = true,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -795,7 +869,7 @@ private fun RoleplayQuickActionPanel(
                 .padding(horizontal = NarraUi.space8, vertical = NarraUi.space12),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
-            Text(
+            if (showTitle) Text(
                 text = stringResource(id = R.string.roleplay_quick_actions_title),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
@@ -817,7 +891,10 @@ private fun RoleplayQuickActionPanel(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = NarraUi.space8, vertical = NarraUi.space12),
+                                    .padding(
+                                        horizontal = NarraUi.space8,
+                                        vertical = NarraUi.space12
+                                    ),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                             ) {
@@ -833,7 +910,11 @@ private fun RoleplayQuickActionPanel(
                                     Icon(
                                         imageVector = action.icon,
                                         contentDescription = action.label,
-                                        tint = readableRoleplayText(Color.White, action.accentColor, MaterialTheme.colorScheme.surface),
+                                        tint = readableRoleplayText(
+                                            Color.White,
+                                            action.accentColor,
+                                            MaterialTheme.colorScheme.surface
+                                        ),
                                         modifier = Modifier.size(20.dp),
                                     )
                                 }

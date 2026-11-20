@@ -16,6 +16,28 @@ import com.example.myapplication.data.local.memory.ConversationSummaryEntity
 import com.example.myapplication.data.local.memory.ConversationSummarySegmentEntity
 import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.data.local.memory.MemoryEntryEntity
+import com.example.myapplication.data.local.memory.MemoryArchiveDao
+import com.example.myapplication.data.local.memory.MemorySpaceEntity
+import com.example.myapplication.data.local.memory.MemoryConversationBindingEntity
+import com.example.myapplication.data.local.memory.MemoryRecordEntity
+import com.example.myapplication.data.local.memory.MemoryRecordRevisionEntity
+import com.example.myapplication.data.local.memory.MemorySourceEvidenceEntity
+import com.example.myapplication.data.local.memory.MemoryRecordSourceEntity
+import com.example.myapplication.data.local.memory.MemoryIngressEventEntity
+import com.example.myapplication.data.local.memory.MemoryProcessingJobEntity
+import com.example.myapplication.data.local.memory.MemoryJobSourceEntity
+import com.example.myapplication.data.local.memory.MemoryProcessingCursorEntity
+import com.example.myapplication.data.local.memory.MemoryRelationIntentEntity
+import com.example.myapplication.data.local.memory.MemoryEngineStateEntity
+import com.example.myapplication.data.local.memory.MemoryEventBoxEntity
+import com.example.myapplication.data.local.memory.MemoryEventMemberEntity
+import com.example.myapplication.data.local.memory.MemoryResidentEntryEntity
+import com.example.myapplication.data.local.memory.MemoryCurrentStateEntity
+import com.example.myapplication.data.local.memory.MemoryDerivedLinkEntity
+import com.example.myapplication.data.local.memory.MemoryEmbeddingIndexEntity
+import com.example.myapplication.data.local.memory.MemoryEmbeddingEntity
+import com.example.myapplication.data.local.memory.MemoryRecallReceiptEntity
+import com.example.myapplication.data.local.memory.MemoryProposalEntity
 import com.example.myapplication.data.local.moments.MomentCommentEntity
 import com.example.myapplication.data.local.moments.MomentDao
 import com.example.myapplication.data.local.moments.MomentMediaEntity
@@ -41,6 +63,12 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
     entities = [
         ConversationEntity::class,
         MessageEntity::class,
+        com.example.myapplication.data.local.companion.CompanionEncounterEntity::class,
+        com.example.myapplication.data.local.companion.CompanionTurnEntity::class,
+        com.example.myapplication.data.local.companion.CompanionAttemptEntity::class,
+        com.example.myapplication.data.local.companion.CompanionVoiceResourceEntity::class,
+        com.example.myapplication.data.local.companion.CompanionVoiceFavoriteEntity::class,
+        com.example.myapplication.data.local.companion.ContextTransferOperationEntity::class,
         WorldBookEntryEntity::class,
         MemoryEntryEntity::class,
         ConversationSummaryEntity::class,
@@ -65,14 +93,48 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         ShopBatchEntity::class,
         ShopItemEntity::class,
         InventoryItemEntity::class,
+        MemorySpaceEntity::class,
+        MemoryConversationBindingEntity::class,
+        MemoryRecordEntity::class,
+        MemoryRecordRevisionEntity::class,
+        MemorySourceEvidenceEntity::class,
+        MemoryRecordSourceEntity::class,
+        MemoryIngressEventEntity::class,
+        MemoryProcessingJobEntity::class,
+        MemoryJobSourceEntity::class,
+        MemoryProcessingCursorEntity::class,
+        MemoryRelationIntentEntity::class,
+        MemoryEngineStateEntity::class,
+        MemoryEventBoxEntity::class,
+        MemoryEventMemberEntity::class,
+        MemoryResidentEntryEntity::class,
+        MemoryCurrentStateEntity::class,
+        MemoryDerivedLinkEntity::class,
+        MemoryEmbeddingIndexEntity::class,
+        MemoryEmbeddingEntity::class,
+        MemoryRecallReceiptEntity::class,
+        MemoryProposalEntity::class,
+        com.example.myapplication.data.local.memory.MemoryKnowledgeRevisionEntity::class,
+        com.example.myapplication.data.local.memory.MemoryKnowledgeSourceEntity::class,
+        com.example.myapplication.data.local.memory.MemoryKnowledgeConsumptionEntity::class,
+        com.example.myapplication.data.local.memory.MemoryProcessingControlEntity::class,
+        com.example.myapplication.data.local.memory.MemoryTransferOriginEntity::class,
+        com.example.myapplication.data.local.memory.MemoryTransferReceiptEntity::class,
     ],
     version = ChatDatabase.CURRENT_VERSION,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
+    abstract fun companionDao(): com.example.myapplication.data.local.companion.CompanionDao
+    abstract fun companionVoiceDao(): com.example.myapplication.data.local.companion.CompanionVoiceDao
+    abstract fun contextTransferOperationDao(): com.example.myapplication.data.local.companion.ContextTransferOperationDao
     abstract fun worldBookDao(): WorldBookDao
     abstract fun memoryDao(): MemoryDao
+    abstract fun memoryArchiveDao(): MemoryArchiveDao
+    abstract fun memoryKnowledgeDao(): com.example.myapplication.data.local.memory.MemoryKnowledgeDao
+    abstract fun memoryVectorDao(): com.example.myapplication.data.local.memory.MemoryVectorDao
+    abstract fun memoryTransferDao(): com.example.myapplication.data.local.memory.MemoryTransferDao
     abstract fun roleplayDao(): RoleplayDao
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
     abstract fun mailboxDao(): MailboxDao
@@ -82,7 +144,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun roleplayEconomyDao(): RoleplayEconomyDao
 
     companion object {
-        const val CURRENT_VERSION = 48
+        const val CURRENT_VERSION = 57
 
         /**
          * 所有 Room 迁移。具体 DDL 在 [ChatDbMigrations]，这里只暴露注册表给 `AppGraph` 和测试。

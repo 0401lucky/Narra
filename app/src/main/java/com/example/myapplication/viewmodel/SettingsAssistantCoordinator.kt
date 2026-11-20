@@ -11,6 +11,7 @@ import java.util.UUID
 class SettingsAssistantCoordinator(
     private val settingsEditor: AiSettingsEditor,
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
+    private val onAssistantRemoved: suspend (String) -> Unit = {},
 ) {
     suspend fun addAssistant(
         settings: AppSettings,
@@ -58,6 +59,7 @@ class SettingsAssistantCoordinator(
             settings.selectedAssistantId
         }
         settingsEditor.saveAssistants(updatedAssistants, selectedId)
+        onAssistantRemoved(assistantId)
         target?.let { imageFileCleaner(it.avatarUri) }
     }
 
@@ -72,7 +74,9 @@ class SettingsAssistantCoordinator(
             isBuiltin = false,
             defaultPresetId = source.defaultPresetId.ifBlank { settings.defaultPresetId },
         )
-        settingsEditor.saveAssistants(settings.assistants + copy, settings.selectedAssistantId)
+        settingsEditor.saveAssistantsWithCompanionCopy(
+            settings.assistants + copy, settings.selectedAssistantId, assistantId, copy.id,
+        )
     }
 
     suspend fun selectAssistant(

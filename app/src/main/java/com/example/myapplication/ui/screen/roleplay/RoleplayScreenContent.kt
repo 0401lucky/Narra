@@ -2,6 +2,8 @@ package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -11,9 +13,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
+import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.EllipsisVertical
+import com.composables.icons.lucide.Lucide
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -124,6 +126,8 @@ internal fun RoleplaySceneContent(
     onDismissSpecialPlayEditor: () -> Unit,
     onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
     onSpecialPlayConfirm: () -> Unit,
+    companionActions: (@Composable () -> Unit)? = null,
+    companionDisplay: CompanionDisplayBinding? = null,
 ) {
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
@@ -157,16 +161,21 @@ internal fun RoleplaySceneContent(
     val characterPortrait = remember(scenario, assistant, characterName) {
         RoleplayPortraitSpec(
             name = characterName,
-            avatarUri = scenario.characterPortraitUri.trim().ifBlank { assistant?.avatarUri.orEmpty() },
+            avatarUri = scenario.characterPortraitUri.trim()
+                .ifBlank { assistant?.avatarUri.orEmpty() },
             avatarUrl = scenario.characterPortraitUrl.trim(),
             fallbackLabel = "角色",
         )
     }
     var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
     val immersiveMode = settings.roleplayImmersiveMode
-    val noBackgroundSkinSpec = com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec(
-        settings.roleplayNoBackgroundSkin,
-    )
+    val noBackgroundSkinSpec =
+        com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec(
+            settings.roleplayNoBackgroundSkin,
+        )
+    val stageImeVisible =
+        companionDisplay?.state?.mode == com.example.myapplication.model.CompanionDisplayMode.STAGE &&
+                WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
 
     ApplyRoleplaySystemBars(
         backdropState = backdropState,
@@ -213,11 +222,18 @@ internal fun RoleplaySceneContent(
                 .imePadding(),
         ) {
             val presenceMaxHeight = maxHeight * 0.20f
+            val sceneHeight = maxHeight
             Column(Modifier.fillMaxSize()) {
                 AnimatedVisibility(
-                    visible = chromeVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
+                    visible = chromeVisible && !stageImeVisible,
+                    enter = fadeIn(tween(200)) + slideInVertically(
+                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+                        initialOffsetY = { -it / 2 },
+                    ),
+                    exit = fadeOut(tween(150)) + slideOutVertically(
+                        animationSpec = tween(180),
+                        targetOffsetY = { -it / 2 },
+                    ),
                 ) {
                     Column {
                         RoleplaySceneTopBar(
@@ -233,8 +249,11 @@ internal fun RoleplaySceneContent(
                         )
 
                         // 次要场景信息共享有界滚动区，给对话与输入保留实际高度。
-                        Column(Modifier.heightIn(max = presenceMaxHeight).verticalScroll(rememberScrollState())) {
-                            if (settings.showRoleplayPresenceStrip) {
+                        Column(
+                            Modifier.heightIn(max = presenceMaxHeight)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            if (settings.showRoleplayPresenceStrip && companionDisplay?.state?.mode != com.example.myapplication.model.CompanionDisplayMode.STAGE) {
                                 RoleplayPresenceStrip(
                                     userPortrait = userPortrait,
                                     characterPortrait = characterPortrait,
@@ -245,7 +264,10 @@ internal fun RoleplaySceneContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = 120.dp)
-                                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space4),
+                                        .padding(
+                                            horizontal = NarraUi.space12,
+                                            vertical = NarraUi.space4
+                                        ),
                                 )
                             }
 
@@ -256,14 +278,17 @@ internal fun RoleplaySceneContent(
                                     onReject = onRejectPendingMemoryProposal,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                                        .padding(
+                                            horizontal = NarraUi.space12,
+                                            vertical = NarraUi.space8
+                                        ),
                                 )
                             }
                         }
                     }
                 }
 
-                if (!chromeVisible) {
+                if (!chromeVisible && !stageImeVisible) {
                     RoleplayChromeHandle(
                         backdropState = backdropState,
                         modifier = Modifier
@@ -273,7 +298,39 @@ internal fun RoleplaySceneContent(
                     )
                 }
 
+                if (companionDisplay == null) companionActions?.invoke()
+                else if (!stageImeVisible) Column(
+                    Modifier.fillMaxWidth()
+                        .heightIn(max = (sceneHeight * 0.18f).coerceAtLeast(NarraMinimumTouchTarget))
+                        .verticalScroll(rememberScrollState()).testTag("companion_scene_controls")
+                ) {
+                    CompanionDisplayToolbar(companionDisplay)
+                    companionActions?.invoke()
+                }
+
                 RoleplayDialoguePanel(
+                    messageContent = if (companionDisplay?.state?.mode == com.example.myapplication.model.CompanionDisplayMode.STAGE) {
+                        { viewportModifier ->
+                            val reply = messages.lastOrNull {
+                                it.sourceMessageId == companionDisplay.replyMessageId &&
+                                        !it.isStreaming && it.messageStatus == com.example.myapplication.model.MessageStatus.COMPLETED
+                            }
+                                ?.companionReply?.takeIf {
+                                    it.source.attemptId != null &&
+                                            com.example.myapplication.model.CompanionReplyDiagnostic.MISSING_SOURCE_METADATA !in it.diagnostics &&
+                                            it.source.protocolVersion == 1 && it.source.parserVersion == com.example.myapplication.roleplay.companion.CompanionReplyParser.PARSER_VERSION &&
+                                            it.beats.isNotEmpty()
+                                }
+                            CompanionStageViewport(
+                                reply,
+                                companionDisplay,
+                                characterName,
+                                scenario.id,
+                                settings,
+                                viewportModifier
+                            )
+                        }
+                    } else null,
                     conversationIdentity = scenario.id,
                     backdropState = backdropState,
                     messages = messages,
@@ -431,7 +488,7 @@ private fun RoleplaySceneTopBar(
                 } ?: Modifier,
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
+                    Lucide.ArrowLeft,
                     contentDescription = stringResource(id = R.string.common_back),
                     tint = contentColor,
                 )
@@ -442,7 +499,11 @@ private fun RoleplaySceneTopBar(
                     .weight(1f)
                     .heightIn(min = NarraMinimumTouchTarget)
                     .testTag("roleplay_scene_title")
-                    .clickable(role = Role.Button, onClickLabel = "收起标题栏", onClick = onToggleChrome)
+                    .clickable(
+                        role = Role.Button,
+                        onClickLabel = "收起标题栏",
+                        onClick = onToggleChrome
+                    )
                     .semantics { contentDescription = "$characterName，${sceneMoodState.label}" }
                     .padding(horizontal = NarraUi.space8),
             ) {
@@ -481,7 +542,7 @@ private fun RoleplaySceneTopBar(
                 } ?: Modifier,
             ) {
                 Icon(
-                    Icons.Default.MoreVert,
+                    Lucide.EllipsisVertical,
                     contentDescription = stringResource(id = R.string.roleplay_settings_button),
                     tint = contentColor,
                 )

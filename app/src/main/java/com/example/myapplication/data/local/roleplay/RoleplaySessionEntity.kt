@@ -1,5 +1,6 @@
 package com.example.myapplication.data.local.roleplay
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -27,4 +28,6 @@ data class RoleplaySessionEntity(
     val conversationId: String,
     val createdAt: Long,
     val updatedAt: Long,
+    @ColumnInfo(defaultValue = "''")
+    val runId: String = "",
 )

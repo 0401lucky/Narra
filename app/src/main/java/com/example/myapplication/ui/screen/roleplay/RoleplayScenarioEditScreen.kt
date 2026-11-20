@@ -55,12 +55,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.R
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_GROUP_AUTO_REPLIES
+import com.example.myapplication.model.MemoryPurpose
 import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayGroupReplyMode
@@ -72,6 +75,8 @@ import com.example.myapplication.model.toInteractionSpec
 import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.example.myapplication.ui.component.roleplay.MemoryPurposeSelector
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.component.UserProfileAvatar
 import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
@@ -111,7 +116,7 @@ fun RoleplayScenarioEditScreen(
     // 新建场景在同一次创建流程内需要稳定草稿 key，避免模式切换触发表单整体重置。
     val scenarioStateKey = scenario?.id ?: rememberSaveable { UUID.randomUUID().toString() }
     val baseScenario = remember(scenario, scenarioStateKey) {
-        scenario ?: RoleplayScenario(id = scenarioStateKey)
+        scenario ?: RoleplayScenario(id = scenarioStateKey, memoryPurpose = MemoryPurpose.INDEPENDENT)
     }
 
     LaunchedEffect(noticeMessage) {
@@ -128,6 +133,7 @@ fun RoleplayScenarioEditScreen(
     }
 
     var title by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.title) }
+    var memoryPurpose by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.memoryPurpose) }
     var description by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.description) }
     var descriptionPromptEnabled by rememberSaveable(scenarioStateKey) {
         mutableStateOf(baseScenario.descriptionPromptEnabled)
@@ -218,6 +224,16 @@ fun RoleplayScenarioEditScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item {
+                SettingsGroup {
+                    MemoryPurposeSelector(
+                        purpose = memoryPurpose,
+                        onPurposeChange = { memoryPurpose = it },
+                        originalPurpose = scenario?.memoryPurpose,
+                        modifier = Modifier.padding(NarraUi.space16),
+                    )
+                }
+            }
             item {
                 SettingsSectionHeader(
                     title = "会话资料",
@@ -617,6 +633,7 @@ fun RoleplayScenarioEditScreen(
                                 }
                                 onSave(
                                     baseScenario.copy(
+                                        memoryPurpose = memoryPurpose,
                                         title = title.trim(),
                                         description = description.trim(),
                                         descriptionPromptEnabled = descriptionPromptEnabled,
@@ -812,7 +829,7 @@ fun RoleplayScenarioEditScreen(
             },
             text = {
                 Text(
-                    text = "删除后无法恢复，相关会话资料和会话数据会一起移除。",
+                    text = stringResource(R.string.roleplay_delete_dialog_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },

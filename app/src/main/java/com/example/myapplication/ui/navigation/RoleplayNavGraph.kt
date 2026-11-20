@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import com.example.myapplication.BuildConfig
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.companionSettings
 import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
 import com.example.myapplication.system.performance.BenchmarkFixtureIds
 import com.example.myapplication.system.performance.BenchmarkContract
@@ -34,6 +37,10 @@ import com.example.myapplication.ui.screen.roleplay.RoleplayDiaryScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScreen
+import com.example.myapplication.ui.screen.roleplay.CompanionEntryCallbacks
+import com.example.myapplication.ui.screen.roleplay.CompanionSceneCallbacks
+import com.example.myapplication.viewmodel.RoleplayCompanionViewModel
+import com.example.myapplication.viewmodel.CompanionEntryPhase
 import com.example.myapplication.ui.screen.roleplay.RoleplayScreenCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplayMessageCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySuggestionCallbacks
@@ -101,17 +108,17 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 BenchmarkScenarioId.F3_ROLEPLAY_STREAM_REPLAY,
                 BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
                 BenchmarkScenarioId.P1_BASELINE_PROFILE,
-                -> true
+                    -> true
 
                 BenchmarkScenarioId.S0_FIRST_RUN_STARTUP,
                 BenchmarkScenarioId.F1_CHAT_SCROLL,
                 null,
-                -> false
+                    -> false
             }
             val benchmarkRoleplayFixtureReady = benchmarkRequiresRoleplayFixture &&
-                roleplayState.scenarios.any { scenario ->
-                    scenario.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID
-                } && BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID in roleplayState.scenarioSessionIds
+                    roleplayState.scenarios.any { scenario ->
+                        scenario.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID
+                    } && BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID in roleplayState.scenarioSessionIds
             if (benchmarkScenarioId != null) {
                 LaunchedEffect(benchmarkScenarioId, benchmarkRoleplayFixtureReady) {
                     when (benchmarkScenarioId) {
@@ -131,7 +138,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         BenchmarkScenarioId.F3_ROLEPLAY_STREAM_REPLAY,
                         BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
                         BenchmarkScenarioId.P1_BASELINE_PROFILE,
-                        -> if (benchmarkRoleplayFixtureReady) {
+                            -> if (benchmarkRoleplayFixtureReady) {
                             navController.navigate(
                                 AppRoutes.roleplayPlay(BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID),
                             ) {
@@ -148,6 +155,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     launchSingleTop = true
                 }
             }
+
             fun conversationIdForScenario(scenarioId: String): String {
                 return roleplayState.chatSummaries
                     .firstOrNull { it.scenario.id == scenarioId }
@@ -155,6 +163,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     ?.conversationId
                     .orEmpty()
             }
+
             fun navigateToSessionFeature(
                 scenarioId: String,
                 destination: (conversationId: String) -> String,
@@ -268,26 +277,36 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             launchSingleTop = true
                         }
                     },
-                    onCreateChat = { assistantId, mode, enableNarration ->
+                    onCreateChat = { assistantId, mode, enableNarration, memoryPurpose ->
                         roleplayViewModel.createChatForAssistant(
                             assistantId = assistantId,
                             interactionMode = mode,
                             enableNarration = enableNarration,
+                            memoryPurpose = memoryPurpose,
                         ) { scenarioId ->
-                            navigateToRoleplayChat(scenarioId)
+                            if (mode == com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE) {
+                                navController.navigate(AppRoutes.roleplayCompanion(scenarioId)) {
+                                    launchSingleTop = true
+                                }
+                            } else navigateToRoleplayChat(scenarioId)
                         }
                     },
-                    onCreateGroupChat = { title, assistantIds ->
+                    onCreateGroupChat = { title, assistantIds, memoryPurpose ->
                         roleplayViewModel.createGroupChat(
                             title = title,
                             assistantIds = assistantIds,
+                            memoryPurpose = memoryPurpose,
                         ) { scenarioId ->
                             navigateToRoleplayChat(scenarioId)
                         }
                     },
                     onUpdatePinned = roleplayViewModel::updateScenarioPinned,
                     onUpdateMuted = roleplayViewModel::updateScenarioMuted,
-                    onClearChat = { scenarioId -> roleplayViewModel.clearScenarioConversation(scenarioId) },
+                    onClearChat = { scenarioId ->
+                        roleplayViewModel.clearScenarioConversation(
+                            scenarioId
+                        )
+                    },
                     onDeleteChat = { scenarioId -> roleplayViewModel.deleteScenario(scenarioId) },
                     onOpenPhoneCheck = { scenarioId ->
                         navigateToSessionFeature(scenarioId) { conversationId ->
@@ -380,7 +399,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
-            val scenario = roleplayState.scenarios.firstOrNull { it.id == scenarioId }.takeIf { scenarioId != "new" }
+            val scenario = roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+                .takeIf { scenarioId != "new" }
             LaunchedEffect(scenarioId) {
                 roleplayViewModel.loadGroupParticipantsForScenario(scenarioId)
             }
@@ -390,7 +410,10 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 assistants = roleplayState.settings.resolvedAssistants(),
                 groupParticipants = roleplayState.currentGroupParticipants,
                 onSave = { updatedScenario, participants ->
-                    roleplayViewModel.upsertScenarioWithParticipants(updatedScenario, participants) {
+                    roleplayViewModel.upsertScenarioWithParticipants(
+                        updatedScenario,
+                        participants
+                    ) {
                         navController.popBackStack()
                     }
                 },
@@ -411,217 +434,369 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             )
         }
 
-        composable(AppRoutes.ROLEPLAY_PLAY) { backStackEntry ->
-            val roleplayViewModel = rememberRoleplayViewModel(
-                navController = navController,
-                appGraph = appGraph,
-                backStackEntry = backStackEntry,
-            )
-            val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
-            val benchmarkRuntimePolicy = if (
-                BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
-            ) {
-                LocalBenchmarkRuntimePolicy.current
-            } else {
-                null
-            }
-            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
-            val scenarioId = Uri.decode(rawScenarioId)
-            val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
-                ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
-            val routeAssistant = routeScenario?.let { scenario ->
-                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
-            } ?: roleplayState.currentAssistant
-            val providerOptions = remember(roleplayState.settings) {
-                roleplayState.settings.providers.filter { it.enabled }
-            }
-            val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT
-            val isOfflineReplayFixtureSession =
-                benchmarkRuntimePolicy?.useOfflineRoleplayReplay == true &&
-                    roleplayState.currentSession?.id == BenchmarkFixtureIds.ROLEPLAY_SESSION_ID &&
-                    offlineReplaySpec.matchesFixedFixture(
-                        scenarioId = scenarioId,
-                        conversationId = roleplayState.currentSession?.conversationId,
+        listOf(AppRoutes.ROLEPLAY_PLAY, AppRoutes.ROLEPLAY_COMPANION).forEach { playRoute ->
+            composable(playRoute) { backStackEntry ->
+                val roleplayViewModel = rememberRoleplayViewModel(
+                    navController = navController,
+                    appGraph = appGraph,
+                    backStackEntry = backStackEntry,
+                )
+                val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+                val companionViewModel: RoleplayCompanionViewModel = viewModel(
+                    factory = RoleplayCompanionViewModel.factory(
+                        backStackEntry.savedStateHandle,
+                        appGraph.roleplayRepository,
+                        appGraph.companionRepository,
+                        appGraph.companionRequestCoordinator,
+                        appGraph.settingsStore
+                    ),
+                )
+                val companionState by companionViewModel.uiState.collectAsStateWithLifecycle()
+                val companionEntryId =
+                    backStackEntry.arguments?.getString("companionEntryId")?.let(Uri::decode)
+                DisposableEffect(companionViewModel, backStackEntry) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) companionViewModel.cancel()
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) companionViewModel.refresh()
+                    }
+                    backStackEntry.lifecycle.addObserver(observer)
+                    onDispose {
+                        backStackEntry.lifecycle.removeObserver(observer)
+                        companionViewModel.cancel()
+                    }
+                }
+                val benchmarkRuntimePolicy = if (
+                    BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+                ) {
+                    LocalBenchmarkRuntimePolicy.current
+                } else {
+                    null
+                }
+                val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+                val scenarioId = Uri.decode(rawScenarioId)
+                val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
+                    ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+                val routeAssistant = routeScenario?.let { scenario ->
+                    roleplayState.settings.resolvedAssistants()
+                        .firstOrNull { it.id == scenario.assistantId }
+                } ?: roleplayState.currentAssistant
+                val providerOptions = remember(roleplayState.settings) {
+                    roleplayState.settings.providers.filter { it.enabled }
+                }
+                val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT
+                val isOfflineReplayFixtureSession =
+                    benchmarkRuntimePolicy?.useOfflineRoleplayReplay == true &&
+                            roleplayState.currentSession?.id == BenchmarkFixtureIds.ROLEPLAY_SESSION_ID &&
+                            offlineReplaySpec.matchesFixedFixture(
+                                scenarioId = scenarioId,
+                                conversationId = roleplayState.currentSession?.conversationId,
+                            )
+                LaunchedEffect(scenarioId, companionEntryId) {
+                    if (companionEntryId != null) {
+                        roleplayViewModel.cancelSending()
+                        companionViewModel.open(scenarioId, companionEntryId)
+                    }
+                    // 仅在场景尚未加载或会话缺失时才进入，避免从设置页返回时重置消息列表
+                    if (companionEntryId == null && (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null)) {
+                        roleplayViewModel.enterScenario(scenarioId)
+                    }
+                }
+                LaunchedEffect(
+                    scenarioId, companionState.encounter?.context?.conversationId,
+                    roleplayState.currentSession?.runId
+                ) {
+                    if (companionEntryId != null && companionState.encounter != null &&
+                        (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession?.conversationId != companionState.encounter?.context?.conversationId)
+                    ) {
+                        roleplayViewModel.enterScenario(scenarioId)
+                    } else if (companionEntryId == null && roleplayState.currentSession?.scenarioId == scenarioId) {
+                        companionViewModel.open(
+                            scenarioId,
+                            null,
+                            roleplayState.currentSession?.runId.orEmpty()
+                        )
+                    }
+                }
+                val activeCompanion = companionState.takeIf {
+                    it.phase == CompanionEntryPhase.ACTIVE && it.scenarioId == scenarioId &&
+                            routeScenario?.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE &&
+                            !routeScenario.longformModeEnabled
+                }
+                val sendCompanionInput: ((List<com.example.myapplication.model.ChatMessagePart>, () -> Unit) -> Unit)? =
+                    activeCompanion?.let {
+                        { parts, onInputSaved ->
+                            val text = roleplayState.input
+                            companionViewModel.send(text, parts) {
+                                if (roleplayViewModel.uiState.value.input == text) roleplayViewModel.updateInput(
+                                    ""
+                                )
+                                onInputSaved()
+                            }
+                        }
+                    }
+                val startCompanion: (() -> Unit)? = if (routeScenario != null &&
+                    routeScenario.chatType == com.example.myapplication.model.RoleplayChatType.SINGLE &&
+                    routeScenario.interactionMode != com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM &&
+                    !routeScenario.longformModeEnabled && benchmarkRuntimePolicy == null
+                ) {
+                    {
+                        roleplayViewModel.cancelSending()
+                        companionViewModel.cancel()
+                        navController.navigate(AppRoutes.roleplayCompanion(scenarioId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                } else null
+                val leaveCompanion = {
+                    companionViewModel.leave {
+                        roleplayViewModel.leaveScenario()
+                        navController.popBackStack()
+                    }
+                }
+                LaunchedEffect(
+                    scenarioId,
+                    roleplayState.currentSession?.id,
+                    roleplayState.currentSession?.conversationId,
+                    roleplayState.messages.size,
+                    roleplayState.offlineReplayPhase,
+                    isOfflineReplayFixtureSession,
+                ) {
+                    if (isOfflineReplayFixtureSession) {
+                        roleplayViewModel.prepareOfflineReplay()
+                    }
+                }
+                CompanionRouteContent(
+                    scenarioId, companionEntryId, companionState, routeAssistant?.name.orEmpty(),
+                    CompanionEntryCallbacks(
+                        onChooseOpening = companionViewModel::chooseOpening,
+                        onRegenerate = companionViewModel::regenerate,
+                        onAccept = companionViewModel::acceptOpening,
+                        onRecover = companionViewModel::recover,
+                        onCancel = companionViewModel::cancel,
+                        onBack = leaveCompanion,
+                        onRead = {
+                            val route = if (routeAssistant != null && routeScenario?.chatType == com.example.myapplication.model.RoleplayChatType.SINGLE)
+                                AppRoutes.roleplayCompanionHistory(scenarioId, routeAssistant.id)
+                            else AppRoutes.roleplayReading(scenarioId)
+                            navController.navigate(route)
+                        },
+                        onSettings = { navController.navigate(AppRoutes.roleplaySettings(scenarioId)) },
+                        onSaveZone = companionViewModel::saveZone,
+                        onSavePendingResult = companionViewModel::savePendingResult,
+                        onExpressionSettings = {
+                            companionState.encounter?.context?.characterId?.let { characterId ->
+                                navController.navigate(
+                                    AppRoutes.roleplayCompanionSettings(
+                                        scenarioId,
+                                        characterId
+                                    )
+                                )
+                            }
+                        },
                     )
-            LaunchedEffect(scenarioId) {
-                // 仅在场景尚未加载或会话缺失时才进入，避免从设置页返回时重置消息列表
-                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
-                    roleplayViewModel.enterScenario(scenarioId)
-                }
-            }
-            LaunchedEffect(
-                scenarioId,
-                roleplayState.currentSession?.id,
-                roleplayState.currentSession?.conversationId,
-                roleplayState.messages.size,
-                roleplayState.offlineReplayPhase,
-                isOfflineReplayFixtureSession,
-            ) {
-                if (isOfflineReplayFixtureSession) {
-                    roleplayViewModel.prepareOfflineReplay()
-                }
-            }
-            RoleplayScreen(
-                scenario = routeScenario,
-                assistant = routeAssistant,
-                settings = roleplayState.settings,
-                contextStatus = roleplayState.contextStatus,
-                groupParticipants = roleplayState.currentGroupParticipants,
-                messages = roleplayState.messages,
-                suggestions = roleplayState.suggestions,
-                input = roleplayState.input,
-                inputFocusToken = roleplayState.inputFocusToken,
-                replyToMessageId = roleplayState.replyToMessageId,
-                replyToPreview = roleplayState.replyToPreview,
-                replyToSpeakerName = roleplayState.replyToSpeakerName,
-                isSending = roleplayState.isSending,
-                isGeneratingSuggestions = roleplayState.isGeneratingSuggestions,
-                isScenarioLoading = roleplayState.isScenarioLoading,
-                hasActiveSession = roleplayState.currentSession?.scenarioId == scenarioId,
-                isOfflineReplayFixtureSession = isOfflineReplayFixtureSession,
-                offlineReplayPhase = roleplayState.offlineReplayPhase,
-                showAssistantMismatchDialog = roleplayState.showAssistantMismatchDialog,
-                previousAssistantName = roleplayState.previousAssistantName,
-                currentAssistantName = roleplayState.currentAssistantName,
-                noticeMessage = roleplayState.noticeMessage,
-                errorMessage = roleplayState.errorMessage,
-                suggestionErrorMessage = roleplayState.suggestionErrorMessage,
-                pendingMemoryProposal = roleplayState.pendingMemoryProposal,
-                callbacks = RoleplayScreenCallbacks(
-                    message = RoleplayMessageCallbacks(
-                        onInputChange = roleplayViewModel::updateInput,
-                        onSend = roleplayViewModel::sendMessageWithParts,
-                        onRequestGroupParticipantReply = roleplayViewModel::requestGroupParticipantReply,
-                        onCancelSending = roleplayViewModel::cancelSending,
-                        onRetryTurn = roleplayViewModel::retryTurn,
-                        onRetryAiPhoto = roleplayViewModel::retryAiPhoto,
-                        onEditUserMessage = roleplayViewModel::editUserMessage,
-                        onQuoteMessage = roleplayViewModel::quoteMessage,
-                        onPokeMessageAvatar = roleplayViewModel::pokeMessageAvatar,
-                        onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
-                        onDeleteMessage = roleplayViewModel::deleteMessage,
-                        onRecallMessage = roleplayViewModel::recallMessage,
-                        onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
-                        onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
-                        onSendVoiceMessage = roleplayViewModel::sendVoiceMessage,
-                        onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
-                    ),
-                    suggestion = RoleplaySuggestionCallbacks(
-                        onGenerateSuggestions = roleplayViewModel::generateDraftInput,
-                        onApplySuggestion = roleplayViewModel::applySuggestion,
-                        onClearSuggestions = roleplayViewModel::clearSuggestions,
-                    ),
-                    navigation = RoleplayNavigationCallbacks(
-                        onOpenDiary = {
-                            navController.navigate(AppRoutes.roleplayDiary(scenarioId)) {
-                                launchSingleTop = true
-                            }
+                ) {
+                    RoleplayScreen(
+                        scenario = routeScenario,
+                        assistant = routeAssistant,
+                        settings = roleplayState.settings,
+                        contextStatus = roleplayState.contextStatus,
+                        groupParticipants = roleplayState.currentGroupParticipants,
+                        messages = roleplayState.messages,
+                        suggestions = roleplayState.suggestions,
+                        input = roleplayState.input,
+                        inputFocusToken = roleplayState.inputFocusToken,
+                        replyToMessageId = roleplayState.replyToMessageId,
+                        replyToPreview = roleplayState.replyToPreview,
+                        replyToSpeakerName = roleplayState.replyToSpeakerName,
+                        isSending = roleplayState.isSending || activeCompanion?.isBusy == true,
+                        isGeneratingSuggestions = roleplayState.isGeneratingSuggestions,
+                        isScenarioLoading = roleplayState.isScenarioLoading,
+                        hasActiveSession = roleplayState.currentSession?.scenarioId == scenarioId,
+                        isOfflineReplayFixtureSession = isOfflineReplayFixtureSession,
+                        offlineReplayPhase = roleplayState.offlineReplayPhase,
+                        showAssistantMismatchDialog = roleplayState.showAssistantMismatchDialog,
+                        previousAssistantName = roleplayState.previousAssistantName,
+                        currentAssistantName = roleplayState.currentAssistantName,
+                        noticeMessage = roleplayState.noticeMessage,
+                        errorMessage = companionState.errorMessage ?: roleplayState.errorMessage,
+                        suggestionErrorMessage = roleplayState.suggestionErrorMessage,
+                        pendingMemoryProposal = roleplayState.pendingMemoryProposal,
+                        companionState = activeCompanion,
+                        companionDisplay = rememberCompanionDisplayBinding(routeScenario, activeCompanion, appGraph, navController, roleplayState.messages),
+                        companionSceneCallbacks = activeCompanion?.let {
+                            CompanionSceneCallbacks(
+                                companionViewModel::continueScene,
+                                companionViewModel::regenerate,
+                                companionViewModel::recover,
+                                { startCompanion?.invoke() },
+                                {
+                                    it.encounter?.context?.characterId?.let { characterId ->
+                                        navController.navigate(
+                                            AppRoutes.roleplayCompanionSettings(
+                                                scenarioId,
+                                                characterId
+                                            )
+                                        )
+                                    }
+                                },
+                            )
                         },
-                        onOpenPhoneCheck = { ownerType ->
-                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
-                            if (conversationId.isNotBlank()) {
-                                navController.navigate(
-                                    AppRoutes.phoneCheck(
-                                        conversationId = conversationId,
-                                        scenarioId = scenarioId,
-                                        ownerType = ownerType,
-                                    ),
-                                ) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        },
-                        onOpenMoments = {
-                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
-                            if (conversationId.isNotBlank()) {
-                                navController.navigate(
-                                    AppRoutes.moments(
-                                        conversationId = conversationId,
-                                        scenarioId = scenarioId,
-                                        ownerType = PhoneSnapshotOwnerType.CHARACTER,
-                                    ),
-                                ) {
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                roleplayViewModel.ensureScenarioSession(scenarioId) { readyConversationId ->
-                                    navController.navigate(
-                                        AppRoutes.moments(
-                                            conversationId = readyConversationId,
-                                            scenarioId = scenarioId,
-                                            ownerType = PhoneSnapshotOwnerType.CHARACTER,
-                                        ),
-                                    ) {
+                        onStartCompanion = startCompanion,
+                        callbacks = RoleplayScreenCallbacks(
+                            message = RoleplayMessageCallbacks(
+                                onInputChange = roleplayViewModel::updateInput,
+                                onSend = { parts ->
+                                    if (sendCompanionInput != null) sendCompanionInput(parts) {}
+                                    else roleplayViewModel.sendMessageWithParts(parts)
+                                },
+                                onSendWithInputSaved = sendCompanionInput,
+                                onRequestGroupParticipantReply = roleplayViewModel::requestGroupParticipantReply,
+                                onCancelSending = {
+                                    companionViewModel.cancel()
+                                    roleplayViewModel.cancelSending()
+                                },
+                                onRetryTurn = roleplayViewModel::retryTurn,
+                                onRetryAiPhoto = roleplayViewModel::retryAiPhoto,
+                                onEditUserMessage = roleplayViewModel::editUserMessage,
+                                onQuoteMessage = roleplayViewModel::quoteMessage,
+                                onPokeMessageAvatar = roleplayViewModel::pokeMessageAvatar,
+                                onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
+                                onDeleteMessage = roleplayViewModel::deleteMessage,
+                                onRecallMessage = roleplayViewModel::recallMessage,
+                                onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
+                                onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
+                                onSendVoiceMessage = roleplayViewModel::sendVoiceMessage,
+                                onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
+                            ),
+                            suggestion = RoleplaySuggestionCallbacks(
+                                onGenerateSuggestions = roleplayViewModel::generateDraftInput,
+                                onApplySuggestion = roleplayViewModel::applySuggestion,
+                                onClearSuggestions = roleplayViewModel::clearSuggestions,
+                            ),
+                            navigation = RoleplayNavigationCallbacks(
+                                onOpenDiary = {
+                                    navController.navigate(AppRoutes.roleplayDiary(scenarioId)) {
                                         launchSingleTop = true
                                     }
-                                }
-                            }
-                        },
-                        onOpenVideoCall = {
-                            navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onOpenMailbox = {
-                            navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onOpenWallet = {
-                            navController.navigate(AppRoutes.roleplayWallet(scenarioId)) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onOpenReadingMode = {
-                            navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onOpenSettings = {
-                            navController.navigate(AppRoutes.roleplaySettings(scenarioId)) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onOpenVoiceSynthesisSettings = {
-                            navController.navigate(AppRoutes.SETTINGS) {
-                                launchSingleTop = true
-                            }
-                            navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
-                                launchSingleTop = true
-                            }
-                        },
-                        onNavigateBack = {
-                            if (
-                                benchmarkRuntimePolicy?.scenarioId ==
-                                BenchmarkScenarioId.P1_BASELINE_PROFILE
-                            ) {
-                                navController.navigate(AppRoutes.CHAT) {
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                roleplayViewModel.leaveScenario()
-                                navController.popBackStack()
-                            }
-                        },
-                    ),
-                    session = RoleplaySessionCallbacks(
-                        onRestartSession = roleplayViewModel::restartCurrentSession,
-                        onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
-                        onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
-                        onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
-                        onStartOfflineReplay = roleplayViewModel::startOfflineReplay,
-                    ),
-                    group = RoleplayGroupCallbacks(
-                        onToggleParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
-                        onRemoveParticipant = roleplayViewModel::removeGroupParticipant,
-                        onUpdateReplyMode = roleplayViewModel::updateGroupReplyMode,
-                    ),
-                    ui = RoleplayUiCallbacks(
-                        onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
-                        onClearErrorMessage = roleplayViewModel::clearErrorMessage,
-                    ),
-                ),
-            )
+                                },
+                                onOpenPhoneCheck = { ownerType ->
+                                    val conversationId =
+                                        roleplayState.currentSession?.conversationId.orEmpty()
+                                    if (conversationId.isNotBlank()) {
+                                        navController.navigate(
+                                            AppRoutes.phoneCheck(
+                                                conversationId = conversationId,
+                                                scenarioId = scenarioId,
+                                                ownerType = ownerType,
+                                            ),
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                },
+                                onOpenMoments = {
+                                    val conversationId =
+                                        roleplayState.currentSession?.conversationId.orEmpty()
+                                    if (conversationId.isNotBlank()) {
+                                        navController.navigate(
+                                            AppRoutes.moments(
+                                                conversationId = conversationId,
+                                                scenarioId = scenarioId,
+                                                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                            ),
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        roleplayViewModel.ensureScenarioSession(scenarioId) { readyConversationId ->
+                                            navController.navigate(
+                                                AppRoutes.moments(
+                                                    conversationId = readyConversationId,
+                                                    scenarioId = scenarioId,
+                                                    ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                                ),
+                                            ) {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                },
+                                onOpenVideoCall = {
+                                    navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenMailbox = {
+                                    navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenWallet = {
+                                    navController.navigate(AppRoutes.roleplayWallet(scenarioId)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenReadingMode = {
+                                    navController.navigate(roleplayReadingPath(scenarioId, routeScenario, roleplayState.messages)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenSettings = {
+                                    navController.navigate(AppRoutes.roleplaySettings(scenarioId)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenVoiceSynthesisSettings = {
+                                    navController.navigate(AppRoutes.SETTINGS) {
+                                        launchSingleTop = true
+                                    }
+                                    navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onNavigateBack = {
+                                    if (
+                                        benchmarkRuntimePolicy?.scenarioId ==
+                                        BenchmarkScenarioId.P1_BASELINE_PROFILE
+                                    ) {
+                                        navController.navigate(AppRoutes.CHAT) {
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        leaveCompanion()
+                                    }
+                                },
+                            ),
+                            session = RoleplaySessionCallbacks(
+                                onRestartSession = {
+                                    companionViewModel.cancel()
+                                    roleplayViewModel.restartCurrentSession {
+                                        if (companionEntryId != null) {
+                                            navController.popBackStack()
+                                            navController.navigate(AppRoutes.roleplayPlay(scenarioId)) {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                },
+                                onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
+                                onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
+                                onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
+                                onStartOfflineReplay = roleplayViewModel::startOfflineReplay,
+                            ),
+                            group = RoleplayGroupCallbacks(
+                                onToggleParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
+                                onRemoveParticipant = roleplayViewModel::removeGroupParticipant,
+                                onUpdateReplyMode = roleplayViewModel::updateGroupReplyMode,
+                            ),
+                            ui = RoleplayUiCallbacks(
+                                onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
+                                onClearErrorMessage = { companionViewModel.clearError(); roleplayViewModel.clearErrorMessage() },
+                            ),
+                        ),
+                    )
+                }
+            }
         }
 
         composable(
@@ -651,7 +826,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
                 ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
             val routeAssistant = routeScenario?.let { scenario ->
-                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+                roleplayState.settings.resolvedAssistants()
+                    .firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             val providerOptions = remember(roleplayState.settings) {
                 roleplayState.settings.providers.filter { it.enabled }
@@ -695,7 +871,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 isRefreshingConversationSummary = roleplayState.isRefreshingConversationSummary,
                 onOpenReadingMode = {
                     settingsViewModel.saveSettings {
-                        navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
+                        navController.navigate(roleplayReadingPath(scenarioId, routeScenario, roleplayState.messages)) {
                             launchSingleTop = true
                         }
                     }
@@ -768,7 +944,10 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     if (assistantId.isNotBlank()) {
                         val activeConversationId = roleplayState.currentSession?.conversationId
                         navController.navigate(
-                            AppRoutes.settingsAssistantMemorySimple(assistantId, activeConversationId),
+                            AppRoutes.settingsAssistantMemorySimple(
+                                assistantId,
+                                activeConversationId
+                            ),
                         ) {
                             launchSingleTop = true
                         }
@@ -797,9 +976,12 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     }
                 },
                 isBenchmarkSessionReady = routeScenario != null &&
-                    roleplayState.currentSession?.scenarioId == scenarioId,
+                        roleplayState.currentSession?.scenarioId == scenarioId,
             )
         }
+
+        registerCompanionSettingsDestination(appGraph, navController)
+        registerCompanionPresentationDestinations(appGraph, navController)
 
         composable(
             AppRoutes.ROLEPLAY_READING,
@@ -836,6 +1018,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 lineHeightScale = roleplayState.settings.roleplayLineHeightScale.scaleFactor,
                 highContrast = roleplayState.settings.roleplayHighContrast,
                 onDismiss = { navController.popBackStack() },
+                companionObservationEnabledFor = { characterId ->
+                    roleplayState.settings.companionSettings(characterId).writing.observation.enabled
+                },
             )
         }
 
@@ -851,7 +1036,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
                 ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
             val routeAssistant = routeScenario?.let { scenario ->
-                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+                roleplayState.settings.resolvedAssistants()
+                    .firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             LaunchedEffect(scenarioId) {
                 if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
@@ -927,7 +1113,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
                 ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
             val routeAssistant = routeScenario?.let { scenario ->
-                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+                roleplayState.settings.resolvedAssistants()
+                    .firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             LaunchedEffect(scenarioId) {
                 if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
@@ -973,6 +1160,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     memoryRepository = appGraph.memoryRepository,
                     conversationSummaryRepository = appGraph.conversationSummaryRepository,
                     economyEventBus = appGraph.roleplayEconomyEventBus,
+                    memoryArchiveRepository = appGraph.memoryArchiveRepository,
                     imageSaver = { b64Data ->
                         appGraph.saveBase64Image(
                             b64Data = b64Data,

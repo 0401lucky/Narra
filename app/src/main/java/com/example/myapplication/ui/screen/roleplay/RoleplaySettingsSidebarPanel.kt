@@ -3,6 +3,9 @@ package com.example.myapplication.ui.screen.roleplay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,26 +30,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.ManageAccounts
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.filled.SettingsSuggest
-import androidx.compose.material.icons.filled.Style
-import androidx.compose.material.icons.filled.SyncAlt
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.ArrowDownUp
+import com.composables.icons.lucide.BookOpen
+import com.composables.icons.lucide.Brain
+import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.CircleUserRound
+import com.composables.icons.lucide.Code
+import com.composables.icons.lucide.FileText
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Link
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageCircleMore
+import com.composables.icons.lucide.NotebookPen
+import com.composables.icons.lucide.Palette
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.Sparkles
+import com.composables.icons.lucide.Users
+import com.composables.icons.lucide.X
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -219,14 +223,19 @@ internal fun RoleplaySettingsSidebarContent(
     AnimatedContent(
         targetState = activePage,
         transitionSpec = {
+            val enterSpring = spring(
+                dampingRatio = 0.88f,
+                stiffness = 400f,
+                visibilityThreshold = IntOffset.VisibilityThreshold,
+            )
             if (targetState == RoleplaySettingsPanelPage.MAIN) {
                 // 返回主页：从左滑入
-                (slideInHorizontally { -it / 3 } + fadeIn())
-                    .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
+                (slideInHorizontally(enterSpring) { -it / 4 } + fadeIn(tween(180)))
+                    .togetherWith(slideOutHorizontally(tween(200)) { it / 3 } + fadeOut(tween(150)))
             } else {
                 // 进入子页：从右滑入
-                (slideInHorizontally { it / 3 } + fadeIn())
-                    .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
+                (slideInHorizontally(enterSpring) { it / 3 } + fadeIn(tween(180)))
+                    .togetherWith(slideOutHorizontally(tween(200)) { -it / 4 } + fadeOut(tween(150)))
             }.using(SizeTransform(clip = false))
         },
         label = "settings_page_transition",
@@ -390,7 +399,7 @@ internal fun RoleplaySettingsSidebarContent(
                     backdropState = backdropState,
                     title = "本角色面具",
                     summary = roleplayScenarioMaskSummary(scenario, settings),
-                    icon = Icons.Default.ManageAccounts,
+                    icon = Lucide.CircleUserRound,
                     onClick = { showMaskSheet = true },
                     enabled = scenario != null,
                 )
@@ -400,7 +409,7 @@ internal fun RoleplaySettingsSidebarContent(
                     backdropState = backdropState,
                     title = "人设提示词",
                     summary = assistant?.name?.ifBlank { "当前角色" } ?: "未绑定角色",
-                    icon = Icons.Default.Style,
+                    icon = Lucide.Palette,
                     onClick = onOpenAssistantPrompt,
                     enabled = assistant != null,
                 )
@@ -955,21 +964,21 @@ private fun RoleplaySettingsMainPanel(
                 SummaryLinkRow(
                     title = "情景设定",
                     summary = scenario?.interactionMode?.displayName ?: "未设置",
-                    icon = Icons.Default.Tune,
+                    icon = Lucide.SlidersHorizontal,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.SCENE) },
                 )
                 SummaryDivider()
                 SummaryLinkRow(
                     title = "用户身份",
                     summary = effectiveUserName,
-                    icon = Icons.Default.ManageAccounts,
+                    icon = Lucide.CircleUserRound,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.IDENTITY) },
                 )
                 SummaryDivider()
                 SummaryLinkRow(
                     title = "本会话预设",
                     summary = presetSummary,
-                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                    icon = Lucide.FileText,
                     onClick = { showPresetSheet = true },
                     enabled = scenario != null,
                 )
@@ -977,7 +986,7 @@ private fun RoleplaySettingsMainPanel(
                 SummaryLinkRow(
                     title = "背景与立绘",
                     summary = visualSummary,
-                    icon = Icons.Default.Image,
+                    icon = Lucide.Image,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.VISUAL) },
                     enabled = scenario != null,
                 )
@@ -986,7 +995,7 @@ private fun RoleplaySettingsMainPanel(
                     SummaryLinkRow(
                         title = "群聊设置",
                         summary = "${groupParticipants.size} 位成员 · ${scenario?.groupReplyMode?.displayName.orEmpty()}",
-                        icon = Icons.Default.Group,
+                        icon = Lucide.Users,
                         onClick = { onNavigateToPage(RoleplaySettingsPanelPage.GROUP) },
                     )
                 }
@@ -999,14 +1008,14 @@ private fun RoleplaySettingsMainPanel(
                 SummaryLinkRow(
                     title = "主题",
                     summary = "${settings.roleplayNoBackgroundSkin.preset.displayName} · ${roleplayImmersiveModeLabel(settings.roleplayImmersiveMode)}",
-                    icon = Icons.Default.Style,
+                    icon = Lucide.Palette,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.THEME) },
                 )
                 SummaryDivider()
                 SummaryLinkRow(
                     title = "快捷切换",
                     summary = currentModel.ifBlank { "阅读模式 / 当前模型" },
-                    icon = Icons.Default.SyncAlt,
+                    icon = Lucide.ArrowDownUp,
                     modifier = Modifier.benchmarkActionTag(
                         BenchmarkActionIds.OPEN_ROLEPLAY_QUICK_SETTINGS,
                     ),
@@ -1028,8 +1037,10 @@ private fun RoleplaySettingsMainPanel(
             Column(modifier = Modifier.animateItem()) {
             AnimatedVisibility(
                 visible = advancedExpanded,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+                enter = fadeIn(tween(180)) + expandVertically(
+                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 380f),
+                ),
+                exit = fadeOut(tween(140)) + shrinkVertically(tween(180)),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
@@ -1038,7 +1049,7 @@ private fun RoleplaySettingsMainPanel(
                         SummaryLinkRow(
                             title = "提供商连接",
                             summary = connectionSummary,
-                            icon = Icons.Default.Link,
+                            icon = Lucide.Link,
                             onClick = {
                                 val providerId = activeProvider?.id.orEmpty()
                                 if (providerId.isNotBlank()) {
@@ -1053,7 +1064,7 @@ private fun RoleplaySettingsMainPanel(
                         SummaryLinkRow(
                             title = "人设提示词",
                             summary = assistant?.name?.ifBlank { "当前角色" } ?: "未绑定角色",
-                            icon = Icons.Default.AutoStories,
+                            icon = Lucide.NotebookPen,
                             onClick = onOpenAssistantPrompt,
                             enabled = assistant != null,
                         )
@@ -1065,14 +1076,14 @@ private fun RoleplaySettingsMainPanel(
                             } else {
                                 "未挂载"
                             },
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
+                            icon = Lucide.BookOpen,
                             onClick = onOpenWorldBookSettings,
                         )
                         SummaryDivider()
                         SummaryLinkRow(
                             title = "正则",
                             summary = "待接入",
-                            icon = Icons.Default.Code,
+                            icon = Lucide.Code,
                             onClick = { onNavigateToPage(RoleplaySettingsPanelPage.REGEX) },
                         )
                     }
@@ -1080,7 +1091,7 @@ private fun RoleplaySettingsMainPanel(
                         SummarySwitchRow(
                             title = "长记忆",
                             summary = if (assistant?.memoryEnabled == true) "已启用" else "未启用",
-                            icon = Icons.Default.Psychology,
+                            icon = Lucide.Brain,
                             checked = assistant?.memoryEnabled == true,
                             onCheckedChange = onUpdateAssistantMemoryEnabled,
                             enabled = assistant != null,
@@ -1089,7 +1100,7 @@ private fun RoleplaySettingsMainPanel(
                         SummaryLinkRow(
                             title = "长记忆管理",
                             summary = longMemorySummary,
-                            icon = Icons.Default.ViewAgenda,
+                            icon = Lucide.FileText,
                             onClick = onOpenLongMemorySettings,
                             enabled = assistant != null,
                         )
@@ -1097,7 +1108,7 @@ private fun RoleplaySettingsMainPanel(
                         SummaryLinkRow(
                             title = "整理摘要与记忆",
                             summary = summaryRefreshText,
-                            icon = Icons.Default.SettingsSuggest,
+                            icon = Lucide.Sparkles,
                             onClick = onRefreshConversationSummary,
                             enabled = (summaryReady || memoryReady) && !isRefreshingConversationSummary,
                             loading = isRefreshingConversationSummary,
@@ -1123,7 +1134,7 @@ private fun RoleplaySettingsMainPanel(
                     } else {
                         "查看最近 15 条"
                     },
-                    icon = Icons.Default.SettingsSuggest,
+                    icon = Lucide.Sparkles,
                     onClick = onOpenContextLog,
                 )
             }
@@ -1269,7 +1280,7 @@ private fun ScenarioPresetPickRow(
         }
         if (selected) {
             Icon(
-                imageVector = Icons.Default.Check,
+                imageVector = Lucide.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -1605,7 +1616,7 @@ private fun RoleplaySettingsMembersOverviewCard(
                         enabled = scenario != null,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = Lucide.Plus,
                             contentDescription = "添加成员",
                             tint = RoleplaySettingsPanelAccentColor,
                         )
@@ -1675,14 +1686,14 @@ private fun RoleplayCompactMemberRow(
             }
         }
         Icon(
-            imageVector = Icons.Default.Forum,
+            imageVector = Lucide.MessageCircleMore,
             contentDescription = null,
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(22.dp),
             tint = RoleplaySettingsPanelBodyColor.copy(alpha = 0.72f),
         )
         IconButton(onClick = { showRemoveConfirm = true }) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = Lucide.X,
                 contentDescription = "$displayName：移除成员",
                 tint = RoleplaySettingsPanelBodyColor.copy(alpha = 0.82f),
             )
@@ -2070,10 +2081,10 @@ private fun SummaryLinkRow(
             }
         }
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            imageVector = Lucide.ChevronRight,
             contentDescription = null,
             tint = if (enabled) supportingColor else supportingColor.copy(alpha = 0.45f),
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(18.dp),
         )
     }
 }

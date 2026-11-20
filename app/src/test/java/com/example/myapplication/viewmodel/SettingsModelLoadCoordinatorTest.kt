@@ -24,8 +24,17 @@ class SettingsModelLoadCoordinatorTest {
     fun loadModelsForProvider_returnsPendingFetchedModelsWhenNotPersisting() = runBlocking {
         val coordinator = SettingsModelLoadCoordinator(
             modelCatalogRepository = object : AiModelCatalogRepository {
-                override suspend fun fetchModels(baseUrl: String, apiKey: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol): List<String> = error("不应调用")
-                override suspend fun fetchModelInfos(baseUrl: String, apiKey: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol): List<ModelInfo> {
+                override suspend fun fetchModels(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol
+                ): List<String> = error("不应调用")
+
+                override suspend fun fetchModelInfos(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol
+                ): List<ModelInfo> {
                     return listOf(ModelInfo(modelId = "model-a"), ModelInfo(modelId = "model-b"))
                 }
             },
@@ -51,8 +60,17 @@ class SettingsModelLoadCoordinatorTest {
         val editor = RecordingSettingsEditor()
         val coordinator = SettingsModelLoadCoordinator(
             modelCatalogRepository = object : AiModelCatalogRepository {
-                override suspend fun fetchModels(baseUrl: String, apiKey: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol): List<String> = error("不应调用")
-                override suspend fun fetchModelInfos(baseUrl: String, apiKey: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol): List<ModelInfo> {
+                override suspend fun fetchModels(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol
+                ): List<String> = error("不应调用")
+
+                override suspend fun fetchModelInfos(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol
+                ): List<ModelInfo> {
                     return listOf(
                         ModelInfo(modelId = "model-a"),
                         ModelInfo(modelId = "model-b"),
@@ -99,7 +117,10 @@ class SettingsModelLoadCoordinatorTest {
         var savedProviders: List<ProviderSettings> = emptyList()
         var savedSelectedProviderId: String = ""
 
-        override suspend fun saveProviderSettings(providers: List<ProviderSettings>, selectedProviderId: String) {
+        override suspend fun saveProviderSettings(
+            providers: List<ProviderSettings>,
+            selectedProviderId: String
+        ) {
             savedProviders = providers
             savedSelectedProviderId = selectedProviderId
         }
@@ -109,7 +130,10 @@ class SettingsModelLoadCoordinatorTest {
         ) = Unit
 
         override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) = Unit
-        override suspend fun saveAssistants(assistants: List<Assistant>, selectedAssistantId: String) = Unit
+        override suspend fun saveAssistants(
+            assistants: List<Assistant>,
+            selectedAssistantId: String
+        ) = Unit
 
         override suspend fun saveDisplaySettings(
             themeMode: ThemeMode,
@@ -133,7 +157,8 @@ class SettingsModelLoadCoordinatorTest {
             roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) = Unit
 
-        override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) = Unit
+        override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) =
+            Unit
 
         override suspend fun saveSearchSettings(settings: SearchSettings) = Unit
 
@@ -145,13 +170,37 @@ class SettingsModelLoadCoordinatorTest {
             settings: com.example.myapplication.model.VoiceRecognitionSettings,
         ) = Unit
 
-        override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
-        override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) = Unit
+        override suspend fun saveUserProfile(
+            displayName: String,
+            personaPrompt: String,
+            avatarUri: String,
+            avatarUrl: String
+        ) = Unit
+
+        override suspend fun saveUserPersonaMasks(
+            masks: List<UserPersonaMask>,
+            defaultMaskId: String
+        ) = Unit
+
         override suspend fun saveDefaultPresetId(presetId: String) = Unit
-        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
+        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) =
+            Unit
+
         override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
-        override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit
-        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) = Unit
+        override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) =
+            error("本测试不应保存记忆预算")
+
+        override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) =
+            error("本测试不应保存认知容量")
+
+        override suspend fun saveMemoryPromptSettings(
+            extractionPrompt: String,
+            injectionPrompt: String
+        ) = Unit
+
+        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) =
+            Unit
+
         override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) = Unit
     }
 }

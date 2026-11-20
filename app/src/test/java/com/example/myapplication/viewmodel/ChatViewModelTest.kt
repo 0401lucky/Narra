@@ -744,8 +744,13 @@ class ChatViewModelTest {
                     summary = "前文已经总结完成。",
                     coveredMessageCount = 12,
                     updatedAt = 10L,
+                    sourceSnapshot = com.example.myapplication.conversation.ConversationSummaryCoverageSupport.sourceSnapshot(
+                        existingMessages.sortedWith(compareBy({ it.createdAt }, { it.id })).take(12),
+                    ),
+                    completionStatus = com.example.myapplication.model.PromptCompletionStatus.COMPLETED,
                 ),
             ),
+            sourceMessages = existingMessages.sortedWith(compareBy({ it.createdAt }, { it.id })),
         )
         val promptAssembler = DefaultPromptContextAssembler(
             conversationSummaryRepository = summaryRepository,
@@ -766,6 +771,7 @@ class ChatViewModelTest {
             ),
             conversationSummaryRepository = summaryRepository,
             promptContextAssembler = promptAssembler,
+            nowProvider = incrementingNowProvider(1_000L),
         )
 
         advanceUntilIdle()
@@ -824,6 +830,10 @@ class ChatViewModelTest {
                     summary = "只覆盖了更早的一小段。",
                     coveredMessageCount = 4,
                     updatedAt = 10L,
+                    sourceSnapshot = com.example.myapplication.conversation.ConversationSummaryCoverageSupport.sourceSnapshot(
+                        existingMessages.sortedWith(compareBy({ it.createdAt }, { it.id })).take(4),
+                    ),
+                    completionStatus = com.example.myapplication.model.PromptCompletionStatus.COMPLETED,
                 ),
             ),
         )
@@ -859,6 +869,53 @@ class ChatViewModelTest {
             ContextSummaryState.STALE,
             viewModel.uiState.value.contextGovernance?.summaryState,
         )
+    }
+
+    @Test
+    fun sendMessage_withUnknownCompletionSummaryKeepsFullRawHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val existingMessages = (1..16).map { index ->
+            ChatMessage(
+                id = "old-$index", conversationId = "c1",
+                role = if (index % 2 == 0) MessageRole.ASSISTANT else MessageRole.USER,
+                content = "必须保留的原文$index", createdAt = index.toLong(),
+            )
+        }
+        val summary = ConversationSummary(
+            conversationId = "c1", assistantId = "assistant-1", summary = "兼容提供商的摘要",
+            coveredMessageCount = 12,
+            sourceSnapshot = com.example.myapplication.conversation.ConversationSummaryCoverageSupport.sourceSnapshot(existingMessages.take(12)),
+            completionStatus = com.example.myapplication.model.PromptCompletionStatus.UNKNOWN,
+        )
+        val summaryRepository = FakeConversationSummaryRepository(listOf(summary), sourceMessages = existingMessages)
+        val store = FakeConversationStore(
+            conversations = listOf(Conversation("c1", "旧会话", createdAt = 1, updatedAt = 16, assistantId = "assistant-1")),
+            messagesByConversation = mapOf("c1" to existingMessages),
+        )
+        enqueueStreamResponse(content = "继续")
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(), apiKey = "key", selectedModel = "deepseek-chat",
+                assistants = listOf(Assistant(id = "assistant-1", name = "摘要助手")), selectedAssistantId = "assistant-1",
+            ),
+            conversationSummaryRepository = summaryRepository,
+            promptContextAssembler = DefaultPromptContextAssembler(conversationSummaryRepository = summaryRepository),
+            nowProvider = incrementingNowProvider(1_000L),
+            messageIdProvider = idProviderOf("new-user", "new-assistant"),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateInput("现在继续")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val requestMessages = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject.getAsJsonArray("messages")
+        assertEquals(existingMessages.size + 2, requestMessages.size())
+        existingMessages.forEach { original ->
+            assertTrue(requestMessages.any { it.asJsonObject["content"].asString == original.content })
+        }
+        assertEquals(0, viewModel.uiState.value.contextGovernance?.summaryCoveredMessageCount)
+        assertEquals(summary, summaryRepository.getSummary("c1"))
     }
 
     @Test
@@ -1921,7 +1978,8 @@ class ChatViewModelTest {
                       "message": {
                         "role": "assistant",
                         "content": "新的聊天摘要"
-                      }
+                      },
+                      "finish_reason": "stop"
                     }
                   ]
                 }
@@ -1952,7 +2010,7 @@ class ChatViewModelTest {
                 },
             ),
         )
-        val summaryRepository = FakeConversationSummaryRepository()
+        val summaryRepository = FakeConversationSummaryRepository(sourceMessages = store.listMessages(conversationId))
         val provider = ProviderSettings(
             id = "provider-1",
             baseUrl = server.url("/v1/").toString(),
@@ -1990,6 +2048,7 @@ class ChatViewModelTest {
                                             role = "assistant",
                                             content = "新的聊天摘要",
                                         ),
+                                        finishReason = "stop",
                                     ),
                                 ),
                             ),

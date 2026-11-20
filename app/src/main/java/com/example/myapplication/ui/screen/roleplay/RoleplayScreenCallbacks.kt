@@ -37,6 +37,7 @@ data class RoleplayMessageCallbacks(
     val onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
     val onSendVoiceMessage: (VoiceMessageDraft) -> Unit,
     val onConfirmTransferReceipt: (String) -> Unit,
+    val onSendWithInputSaved: ((List<ChatMessagePart>, () -> Unit) -> Unit)? = null,
 )
 
 data class RoleplaySuggestionCallbacks(

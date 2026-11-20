@@ -27,6 +27,7 @@ import com.example.myapplication.roleplay.RoleplayLongformParagraph
 import com.example.myapplication.roleplay.RoleplayLongformParagraphAlignment
 import com.example.myapplication.roleplay.RoleplayLongformParagraphTone
 import com.example.myapplication.roleplay.RoleplayLongformSpanType
+import com.example.myapplication.roleplay.companion.CompanionDisplayParagraphs
 
 @Composable
 fun RoleplayLongformCard(
@@ -119,6 +120,9 @@ fun RoleplayLongformCard(
 internal fun String.toLongformParagraphs(): List<String> {
     return RoleplayLongformMarkupParser.splitDisplayParagraphs(this)
 }
+
+internal fun String.toLongformParagraphs(parsedCompanion: Boolean): List<String> =
+    if (parsedCompanion) CompanionDisplayParagraphs.split(this) else toLongformParagraphs()
 
 internal val RoleplayQuotedDialogueHighlightColor = Color(0xFF90CAF9)
 
@@ -258,14 +262,41 @@ internal fun buildCharacterDialogueAnnotatedString(
     )
 }
 
+internal fun buildQuotedDialogueAnnotatedString(
+    text: String,
+    narrationColor: Color,
+    dialogueColor: Color,
+    parsedCompanion: Boolean,
+): AnnotatedString = buildDialogueAnnotatedString(
+    text = text,
+    narrationColor = narrationColor,
+    dialogueColor = dialogueColor,
+    highlightWholeTextWhenNoQuotes = false,
+    parsedCompanion = parsedCompanion,
+)
+
+internal fun buildCharacterDialogueAnnotatedString(
+    text: String,
+    narrationColor: Color,
+    dialogueColor: Color,
+    parsedCompanion: Boolean,
+): AnnotatedString = buildDialogueAnnotatedString(
+    text = text,
+    narrationColor = narrationColor,
+    dialogueColor = dialogueColor,
+    highlightWholeTextWhenNoQuotes = true,
+    parsedCompanion = parsedCompanion,
+)
+
 private fun buildDialogueAnnotatedString(
     text: String,
     narrationColor: Color,
     dialogueColor: Color,
     highlightWholeTextWhenNoQuotes: Boolean,
+    parsedCompanion: Boolean = false,
 ): AnnotatedString {
     return buildAnnotatedString {
-        if (text.isBlank()) {
+        if (text.isBlank() && !parsedCompanion) {
             return@buildAnnotatedString
         }
         val matches = DialogueQuotedTextRegex.findAll(text).toList()

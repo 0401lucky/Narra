@@ -154,6 +154,7 @@ class RoleplayViewModel(
     private val offlineReplaySpec: BenchmarkOfflineReplaySpec? = null,
     private val benchmarkAiViolationTracker: BenchmarkAiViolationTracker? = null,
     private val offlineReplayDelay: suspend (Long) -> Unit = { delay(it) },
+    private val durableMemoryExtractionCoordinator: com.example.myapplication.conversation.DurableMemoryExtractionCoordinator? = null,
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -186,6 +187,7 @@ class RoleplayViewModel(
         aiPromptExtrasService = aiPromptExtrasService,
         memoryRepository = memoryRepository,
         nowProvider = nowProvider,
+        durableCoordinator = durableMemoryExtractionCoordinator,
     )
     private val suggestionCoordinator = RoleplaySuggestionCoordinator(
         conversationRepository = conversationRepository,
@@ -239,6 +241,7 @@ class RoleplayViewModel(
         pendingMemoryProposalRepository = pendingMemoryProposalRepository,
         aiPromptExtrasService = aiPromptExtrasService,
         refreshContextGovernance = ::rebuildContextGovernanceSnapshot,
+        loadPersistedMessages = { conversationId -> conversationRepository.listMessages(conversationId) },
     )
     private val scenarioActionSupport = RoleplayScenarioActionSupport(
         scope = viewModelScope,
@@ -316,6 +319,8 @@ class RoleplayViewModel(
                 maxMemoryInputLength = MAX_MEMORY_INPUT_LENGTH,
             )
         },
+        usesDurableMemory = { memoryExtractionCoordinator.usesDurableMemory() },
+        resolveMemoryRuntimeContext = memoryExtractionCoordinator::summaryRuntimeContext,
         contextLogStore = contextLogStore,
         buildEconomyPromptContext = buildEconomyPromptContext,
         settleTransfer = settleTransfer,
@@ -536,6 +541,7 @@ class RoleplayViewModel(
         assistantId: String,
         interactionMode: RoleplayInteractionMode,
         enableNarration: Boolean,
+        memoryPurpose: com.example.myapplication.model.MemoryPurpose = com.example.myapplication.model.MemoryPurpose.CONTINUOUS,
         onCreated: (String) -> Unit,
     ) {
         val scenarioId = UUID.randomUUID().toString()
@@ -553,6 +559,7 @@ class RoleplayViewModel(
                 longformModeEnabled = interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM,
                 enableRoleplayProtocol = interactionMode != RoleplayInteractionMode.OFFLINE_LONGFORM,
                 descriptionPromptEnabled = false,
+                memoryPurpose = memoryPurpose,
             ),
         ) {
             onCreated(scenarioId)
@@ -562,6 +569,7 @@ class RoleplayViewModel(
     fun createGroupChat(
         title: String,
         assistantIds: List<String>,
+        memoryPurpose: com.example.myapplication.model.MemoryPurpose = com.example.myapplication.model.MemoryPurpose.CONTINUOUS,
         onCreated: (String) -> Unit,
     ) {
         val availableAssistantIds = _uiState.value.settings.resolvedAssistants()
@@ -602,6 +610,7 @@ class RoleplayViewModel(
                 groupReplyMode = RoleplayGroupReplyMode.NATURAL,
                 enableGroupMentionAutoReply = true,
                 maxGroupAutoReplies = DEFAULT_GROUP_AUTO_REPLIES,
+                memoryPurpose = memoryPurpose,
             ),
             participants = participants,
         ) {
@@ -921,6 +930,35 @@ class RoleplayViewModel(
         onSuccess: (() -> Unit)? = null,
     ) {
         scenarioActionSupport.deleteScenario(scenarioId, onSuccess)
+    }
+
+    /** 仅整理用户明确选中的消息；历史回填不会隐式扩展到整段对话。 */
+    fun organizeSelectedMessages(messageIds: Set<String>) {
+        val coordinator = durableMemoryExtractionCoordinator ?: return
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        val scenario = state.currentScenario ?: return
+        if (messageIds.isEmpty() || state.isRefreshingConversationSummary) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshingConversationSummary = true) }
+            try {
+                val selected = conversationRepository.listMessages(session.conversationId)
+                    .filter { it.id in messageIds }.map { it.id }
+                require(selected.size == messageIds.size) { "所选消息已改变，请重新选择" }
+                val result = coordinator.processSelectedMessages(session.conversationId, scenario.assistantId, selected)
+                if (_uiState.value.currentSession?.conversationId == session.conversationId) {
+                    _uiState.update { current -> RoleplayStateSupport.applyNoticeMessage(current,
+                        if (result.failureCode.isBlank()) "已整理所选消息，保留 ${result.createdRecords} 条记忆，跳过 ${result.skippedSources} 项无可用来源材料"
+                        else "整理尚未完成，已保存进度，可稍后重试") }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _uiState.update { it.copy(errorMessage = SensitiveTextRedactor.throwableMessageForUi(failure, "所选消息整理失败")) }
+            } finally {
+                _uiState.update { it.copy(isRefreshingConversationSummary = false) }
+            }
+        }
     }
 
     fun clearErrorMessage() {
@@ -2042,15 +2080,13 @@ class RoleplayViewModel(
         assistant: Assistant?,
         requestMessages: List<ChatMessage>,
     ): List<ChatMessage> {
-        val summary = conversationSummaryRepository.getSummary(conversationId)
-        return ConversationMessageTransforms.trimRequestMessagesWithSummary(
+        val memoryContext = memoryExtractionCoordinator.summaryRuntimeContext(conversationId, assistant?.id.orEmpty()) ?: return requestMessages
+        val summary = conversationSummaryRepository.getSummaryForContext(memoryContext)
+        return com.example.myapplication.conversation.ConversationSummaryCoverageSupport.trimRequestMessagesWithSummary(
+            summary = summary,
             requestMessages = requestMessages,
-            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-            summaryCoveredMessageCount = summary
-                ?.takeIf { it.summary.isNotBlank() }
-                ?.coveredMessageCount
-                ?: 0,
             recentWindow = resolveSummaryRecentWindow(assistant),
+            expectedMemoryContext = memoryContext,
         )
     }
 
@@ -2428,6 +2464,7 @@ class RoleplayViewModel(
             releaseTransfer: suspend (String) -> Unit = {},
             offlineReplaySpec: BenchmarkOfflineReplaySpec? = null,
             benchmarkAiViolationTracker: BenchmarkAiViolationTracker? = null,
+            durableMemoryExtractionCoordinator: com.example.myapplication.conversation.DurableMemoryExtractionCoordinator? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 RoleplayViewModel(
@@ -2455,6 +2492,7 @@ class RoleplayViewModel(
                     releaseTransfer = releaseTransfer,
                     offlineReplaySpec = offlineReplaySpec,
                     benchmarkAiViolationTracker = benchmarkAiViolationTracker,
+                    durableMemoryExtractionCoordinator = durableMemoryExtractionCoordinator,
                 )
             }
         }

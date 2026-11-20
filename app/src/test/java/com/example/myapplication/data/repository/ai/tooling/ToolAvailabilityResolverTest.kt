@@ -57,6 +57,13 @@ class ToolAvailabilityResolverTest {
             ),
         ),
     )
+    private val summaryContext = com.example.myapplication.model.MemoryRuntimeContext(
+        characterId = "assistant-1", spaceId = "test-space", conversationId = "conversation-1",
+        scenarioId = "test-scenario", runId = "test-run", personaKey = "test-persona",
+    )
+    private val summaryMessages = (1..8).map { index ->
+        com.example.myapplication.model.ChatMessage("m$index", "conversation-1", com.example.myapplication.model.MessageRole.USER, "完整来源$index", createdAt = index.toLong())
+    }
     private val summaryRepository = FakeConversationSummaryRepository(
         initialSummaries = listOf(
             ConversationSummary(
@@ -64,8 +71,13 @@ class ToolAvailabilityResolverTest {
                 assistantId = "assistant-1",
                 summary = "已经确认主要线索指向北境商会。",
                 coveredMessageCount = 8,
+                sourceSnapshot = com.example.myapplication.conversation.ConversationSummaryCoverageSupport.sourceSnapshot(summaryMessages),
+                completionStatus = com.example.myapplication.model.PromptCompletionStatus.COMPLETED,
+                memoryContext = summaryContext,
             ),
         ),
+        sourceMessages = summaryMessages,
+        currentMemoryContexts = listOf(summaryContext),
     )
 
     private val resolver = ToolAvailabilityResolver(
@@ -163,6 +175,8 @@ class ToolAvailabilityResolverTest {
                         createdAt = 1L,
                         updatedAt = 1L,
                     ),
+                    memoryContext = summaryContext,
+                    recentMessages = summaryMessages,
                 ),
             ),
         )

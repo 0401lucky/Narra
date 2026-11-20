@@ -52,23 +52,37 @@ internal object ChatStreamingSupport {
         try {
             streamEvents.collect { event ->
                 when (event) {
-                    is com.example.myapplication.model.ChatStreamEvent.ContentDelta -> streamBuffer.appendContent(event.value)
-                    is com.example.myapplication.model.ChatStreamEvent.ImageDelta -> streamBuffer.appendImage(event.part)
+                    is com.example.myapplication.model.ChatStreamEvent.ContentDelta -> streamBuffer.appendContent(
+                        event.value
+                    )
+
+                    is com.example.myapplication.model.ChatStreamEvent.ImageDelta -> streamBuffer.appendImage(
+                        event.part
+                    )
+
                     is com.example.myapplication.model.ChatStreamEvent.ReasoningStepStarted -> streamBuffer.startReasoningStep(
                         stepId = event.stepId,
                         createdAt = event.createdAt,
                     )
+
                     is com.example.myapplication.model.ChatStreamEvent.ReasoningStepDelta -> streamBuffer.appendReasoningStepDelta(
                         stepId = event.stepId,
                         value = event.value,
                     )
+
                     is com.example.myapplication.model.ChatStreamEvent.ReasoningStepCompleted -> streamBuffer.completeReasoningStep(
                         stepId = event.stepId,
                         finishedAt = event.finishedAt,
                     )
+
                     is com.example.myapplication.model.ChatStreamEvent.ReasoningDelta -> Unit
-                    is com.example.myapplication.model.ChatStreamEvent.Citations -> streamBuffer.setCitations(event.items)
-                    com.example.myapplication.model.ChatStreamEvent.Completed -> streamCompleted = true
+                    is com.example.myapplication.model.ChatStreamEvent.Citations -> streamBuffer.setCitations(
+                        event.items
+                    )
+
+                    is com.example.myapplication.model.ChatStreamEvent.CompletionEvidence -> Unit
+                    com.example.myapplication.model.ChatStreamEvent.Completed -> streamCompleted =
+                        true
                 }
             }
             streamCompleted = true

@@ -1,9 +1,12 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.context.PromptContextAssembler
+import com.example.myapplication.context.MemoryArchiveIdentity
 import com.example.myapplication.context.PromptContextResult
 import com.example.myapplication.context.DefaultPromptContextAssembler
+import com.example.myapplication.conversation.ConversationSummaryCoverageSupport
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
+import com.example.myapplication.conversation.DurableMemoryExtractionCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.data.remote.ApiServiceFactory
@@ -17,6 +20,7 @@ import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.MemoryArchiveRepository
 import com.example.myapplication.data.repository.context.InMemoryPendingMemoryProposalRepository
 import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
@@ -44,6 +48,8 @@ import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.PunishIntensity
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MemoryEntry
+import com.example.myapplication.model.MemoryRuntimeContext
+import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelAbility
@@ -77,6 +83,7 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
+import com.example.myapplication.testutil.FakeRoleplaySummaryArchive
 import com.example.myapplication.testutil.FakeWorldBookRepository
 import com.example.myapplication.testutil.createTestAiServices
 import com.example.myapplication.system.logging.AppLogger
@@ -168,7 +175,26 @@ class RoleplayViewModelTest {
             val scenario = repository.listScenarios().single()
             assertEquals("Tavo", scenario.title)
             assertEquals("你好呀", scenario.openingNarration)
+            assertEquals(com.example.myapplication.model.MemoryPurpose.CONTINUOUS, scenario.memoryPurpose)
         }
+
+    @Test
+    fun explicitMemoryPurpose_survivesPrivateAndGroupCreation() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistants = listOf(Assistant(id = "a", name = "甲"), Assistant(id = "b", name = "乙"))
+        val store = FakeConversationStore()
+        val repository = FakeRoleplayRepository(conversationStore = store, scenarios = emptyList(), sessions = emptyList())
+        val model = createViewModel(store = store, roleplayRepository = repository,
+            settings = AppSettings(assistants = assistants, selectedAssistantId = "a"),
+            promptContextAssembler = DefaultPromptContextAssembler())
+        runCurrent()
+        model.createChatForAssistant("a", RoleplayInteractionMode.OFFLINE_DIALOGUE, true,
+            memoryPurpose = com.example.myapplication.model.MemoryPurpose.INDEPENDENT) {}
+        runCurrent()
+        model.createGroupChat("合成群聊", listOf("a", "b"), memoryPurpose = com.example.myapplication.model.MemoryPurpose.INDEPENDENT) {}
+        runCurrent()
+        assertEquals(2, repository.listScenarios().size)
+        assertTrue(repository.listScenarios().all { it.memoryPurpose == com.example.myapplication.model.MemoryPurpose.INDEPENDENT })
+    }
 
     @Test
     fun generateSuggestions_updatesUiStateAndUsesSuggestionModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
@@ -4475,6 +4501,7 @@ class RoleplayViewModelTest {
             conversationId = "conv-1",
             createdAt = 1L,
             updatedAt = 2L,
+            runId = "stale-summary-run",
         )
         val existingMessages = (1..10).map { index ->
             ChatMessage(
@@ -4500,6 +4527,15 @@ class RoleplayViewModelTest {
                 session.conversationId to existingMessages,
             ),
         )
+        val memoryContext = MemoryRuntimeContext(
+            characterId = assistant.id,
+            spaceId = "stale-summary-space",
+            conversationId = session.conversationId,
+            scenarioId = scenario.id,
+            runId = session.runId,
+            personaKey = MemoryArchiveIdentity.personaKey(scenario),
+            generation = 1L,
+        )
         val summaryRepository = FakeConversationSummaryRepository(
             initialSummaries = listOf(
                 com.example.myapplication.model.ConversationSummary(
@@ -4508,8 +4544,20 @@ class RoleplayViewModelTest {
                     summary = "只覆盖了开头的一小段。",
                     coveredMessageCount = 2,
                     updatedAt = 3L,
+                    sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(existingMessages.take(2)),
+                    completionStatus = PromptCompletionStatus.COMPLETED,
+                    memoryContext = memoryContext,
                 ),
             ),
+            sourceMessages = existingMessages,
+            currentMemoryContexts = listOf(memoryContext),
+        )
+        val memoryArchive = FakeRoleplaySummaryArchive(
+            store = store,
+            memoryContext = memoryContext,
+            sourceMessages = existingMessages,
+            newMessageRoles = mapOf("user-1" to MessageRole.USER, "assistant-1" to MessageRole.ASSISTANT),
+            onMessagesRead = { summaryRepository.sourceMessages = it },
         )
         val provider = ProviderSettings(
             id = "provider-1",
@@ -4537,8 +4585,11 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = DefaultPromptContextAssembler(
                 conversationSummaryRepository = summaryRepository,
+                memoryArchiveRepository = memoryArchive,
             ),
             conversationSummaryRepository = summaryRepository,
+            memoryArchiveRepository = memoryArchive,
+            nowProvider = incrementingNowProvider(100L),
             messageIdProvider = idProviderOf("user-1", "assistant-1"),
         )
 
@@ -5976,23 +6027,7 @@ class RoleplayViewModelTest {
 
     @Test
     fun refreshCurrentConversationSummary_rebuildsContextGovernanceImmediately() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """
-                {
-                  "choices": [
-                    {
-                      "index": 0,
-                      "message": {
-                        "role": "assistant",
-                        "content": "新的剧情摘要"
-                      }
-                    }
-                  ]
-                }
-                """.trimIndent(),
-            ),
-        )
+        enqueueStreamResponse("摘要后的下一轮回复")
         val assistant = Assistant(
             id = "assistant-1",
             name = "余罪",
@@ -6008,6 +6043,7 @@ class RoleplayViewModelTest {
             conversationId = "conv-1",
             createdAt = 1L,
             updatedAt = 2L,
+            runId = "b844728e-3a53-42c1-9dbd-3d477e4257d1",
         )
         val store = FakeConversationStore(
             conversations = listOf(
@@ -6032,7 +6068,30 @@ class RoleplayViewModelTest {
                 },
             ),
         )
-        val summaryRepository = FakeConversationSummaryRepository()
+        val existingMessages = store.listMessages(session.conversationId)
+        val memoryContext = MemoryRuntimeContext(
+            characterId = assistant.id,
+            spaceId = "summary-space-${session.id}",
+            conversationId = session.conversationId,
+            scenarioId = scenario.id,
+            runId = session.runId,
+            personaKey = MemoryArchiveIdentity.personaKey(scenario),
+            generation = 1L,
+        )
+        val summaryRepository = FakeConversationSummaryRepository(
+            sourceMessages = existingMessages,
+            currentMemoryContexts = listOf(memoryContext),
+        )
+        val memoryArchive = FakeRoleplaySummaryArchive(
+            store = store,
+            memoryContext = memoryContext,
+            sourceMessages = existingMessages,
+            newMessageRoles = mapOf(
+                "after-summary-user" to MessageRole.USER,
+                "after-summary-assistant" to MessageRole.ASSISTANT,
+            ),
+            onMessagesRead = { summaryRepository.sourceMessages = it },
+        )
         val provider = ProviderSettings(
             id = "provider-1",
             name = "测试 Provider",
@@ -6059,8 +6118,12 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = DefaultPromptContextAssembler(
                 conversationSummaryRepository = summaryRepository,
+                memoryArchiveRepository = memoryArchive,
             ),
             conversationSummaryRepository = summaryRepository,
+            memoryArchiveRepository = memoryArchive,
+            nowProvider = incrementingNowProvider(100L),
+            messageIdProvider = idProviderOf("after-summary-user", "after-summary-assistant"),
             apiServiceProvider = { _, _ ->
                 object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
@@ -6075,6 +6138,7 @@ class RoleplayViewModelTest {
                                             role = "assistant",
                                             content = "新的剧情摘要",
                                         ),
+                                        finishReason = "stop",
                                     ),
                                 ),
                             ),
@@ -6101,30 +6165,36 @@ class RoleplayViewModelTest {
         viewModel.refreshCurrentConversationSummary()
         advanceUntilIdle()
 
-        assertEquals("新的剧情摘要", summaryRepository.getSummary(session.conversationId)?.summary)
+        assertEquals("新的剧情摘要", summaryRepository.getSummaryForContext(memoryContext)?.summary)
         assertEquals(5, viewModel.uiState.value.contextGovernance?.summaryCoveredMessageCount)
         assertEquals(ContextSummaryState.APPLIED, viewModel.uiState.value.contextGovernance?.summaryState)
+
+        val summary = requireNotNull(summaryRepository.getSummaryForContext(memoryContext))
+        assertEquals(5, summary.coveredMessageCount)
+        assertEquals((1..5).map { "m$it" }, summary.sourceSnapshot.map { it.messageId })
+        assertEquals(memoryContext, summary.memoryContext)
+        assertEquals(PromptCompletionStatus.COMPLETED, summary.completionStatus)
+        viewModel.updateInput("摘要后继续。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val nextRequest = requireNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+        val requestBody = JsonParser.parseString(nextRequest.body.readUtf8()).asJsonObject
+        val requestMessages = requestBody.getAsJsonArray("messages").map { it.asJsonObject }
+        val systemText = requestMessages.filter { it.get("role").asString == "system" }
+            .joinToString("\n") { it.get("content").asString }
+        assertTrue(systemText.contains("新的剧情摘要"))
+        val history = requestMessages.filter { it.get("role").asString != "system" }
+            .map { it.get("content").asString }
+        // 新用户输入后待裁剪前缀增为 6，现有摘要只可靠覆盖 5 条，不能漏掉未覆盖原文。
+        assertEquals(existingMessages.map { it.content }, history.dropLast(1))
+        assertTrue(history.last().startsWith("<format_reminder>"))
+        assertEquals("摘要后继续。", history.last().substringAfter("</format_reminder>").trim())
     }
 
     @Test
     fun refreshCurrentConversationSummary_forceRefreshesShortRoleplayHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """
-                {
-                  "choices": [
-                    {
-                      "index": 0,
-                      "message": {
-                        "role": "assistant",
-                        "content": "短剧情摘要"
-                      }
-                    }
-                  ]
-                }
-                """.trimIndent(),
-            ),
-        )
+        enqueueStreamResponse("摘要后的下一轮回复")
         val assistant = Assistant(
             id = "assistant-1",
             name = "余罪",
@@ -6140,6 +6210,7 @@ class RoleplayViewModelTest {
             conversationId = "conv-short",
             createdAt = 1L,
             updatedAt = 2L,
+            runId = "07be0c45-5d2e-40ac-837a-b8fa844df045",
         )
         val store = FakeConversationStore(
             conversations = listOf(
@@ -6171,7 +6242,30 @@ class RoleplayViewModelTest {
                 ),
             ),
         )
-        val summaryRepository = FakeConversationSummaryRepository()
+        val existingMessages = store.listMessages(session.conversationId)
+        val memoryContext = MemoryRuntimeContext(
+            characterId = assistant.id,
+            spaceId = "summary-space-${session.id}",
+            conversationId = session.conversationId,
+            scenarioId = scenario.id,
+            runId = session.runId,
+            personaKey = MemoryArchiveIdentity.personaKey(scenario),
+            generation = 1L,
+        )
+        val summaryRepository = FakeConversationSummaryRepository(
+            sourceMessages = existingMessages,
+            currentMemoryContexts = listOf(memoryContext),
+        )
+        val memoryArchive = FakeRoleplaySummaryArchive(
+            store = store,
+            memoryContext = memoryContext,
+            sourceMessages = existingMessages,
+            newMessageRoles = mapOf(
+                "after-summary-user" to MessageRole.USER,
+                "after-summary-assistant" to MessageRole.ASSISTANT,
+            ),
+            onMessagesRead = { summaryRepository.sourceMessages = it },
+        )
         val provider = ProviderSettings(
             id = "provider-1",
             name = "测试 Provider",
@@ -6198,8 +6292,12 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = DefaultPromptContextAssembler(
                 conversationSummaryRepository = summaryRepository,
+                memoryArchiveRepository = memoryArchive,
             ),
             conversationSummaryRepository = summaryRepository,
+            memoryArchiveRepository = memoryArchive,
+            nowProvider = incrementingNowProvider(100L),
+            messageIdProvider = idProviderOf("after-summary-user", "after-summary-assistant"),
             apiServiceProvider = { _, _ ->
                 object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
@@ -6214,6 +6312,7 @@ class RoleplayViewModelTest {
                                             role = "assistant",
                                             content = "短剧情摘要",
                                         ),
+                                        finishReason = "stop",
                                     ),
                                 ),
                             ),
@@ -6240,10 +6339,32 @@ class RoleplayViewModelTest {
         viewModel.refreshCurrentConversationSummary()
         advanceUntilIdle()
 
-        assertEquals("短剧情摘要", summaryRepository.getSummary(session.conversationId)?.summary)
-        assertEquals(2, summaryRepository.getSummary(session.conversationId)?.coveredMessageCount)
+        assertEquals("短剧情摘要", summaryRepository.getSummaryForContext(memoryContext)?.summary)
+        assertEquals(2, summaryRepository.getSummaryForContext(memoryContext)?.coveredMessageCount)
         assertEquals("摘要已刷新，覆盖 2 条消息", viewModel.uiState.value.noticeMessage)
         assertEquals(2, viewModel.uiState.value.contextGovernance?.summaryCoveredMessageCount)
+
+        val summary = requireNotNull(summaryRepository.getSummaryForContext(memoryContext))
+        assertEquals(2, summary.coveredMessageCount)
+        assertEquals((1..2).map { "m$it" }, summary.sourceSnapshot.map { it.messageId })
+        assertEquals(memoryContext, summary.memoryContext)
+        assertEquals(PromptCompletionStatus.COMPLETED, summary.completionStatus)
+        viewModel.updateInput("摘要后继续。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val nextRequest = requireNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+        val requestBody = JsonParser.parseString(nextRequest.body.readUtf8()).asJsonObject
+        val requestMessages = requestBody.getAsJsonArray("messages").map { it.asJsonObject }
+        val systemText = requestMessages.filter { it.get("role").asString == "system" }
+            .joinToString("\n") { it.get("content").asString }
+        assertTrue(systemText.contains("短剧情摘要"))
+        val history = requestMessages.filter { it.get("role").asString != "system" }
+            .map { it.get("content").asString }
+        // 短历史仍位于近期窗口；摘要注入不能被误当成删除原文的授权。
+        assertEquals(existingMessages.map { it.content }, history.dropLast(1))
+        assertTrue(history.last().startsWith("<format_reminder>"))
+        assertEquals("摘要后继续。", history.last().substringAfter("</format_reminder>").trim())
     }
 
     @Test
@@ -6878,6 +6999,7 @@ class RoleplayViewModelTest {
             EmptyPhoneSnapshotRepository,
         settleTransfer: suspend (String) -> Unit = {},
         releaseTransfer: suspend (String) -> Unit = {},
+        memoryArchiveRepository: MemoryArchiveRepository? = null,
     ): RoleplayViewModel {
         val resolvedApiServiceProvider = apiServiceProvider ?: { baseUrl, apiKey ->
             ApiServiceFactory().create(
@@ -6924,6 +7046,14 @@ class RoleplayViewModelTest {
             imageSaver = imageSaver,
             settleTransfer = settleTransfer,
             releaseTransfer = releaseTransfer,
+            durableMemoryExtractionCoordinator = memoryArchiveRepository?.let { archive ->
+                DurableMemoryExtractionCoordinator(
+                    archive = archive,
+                    ai = services.aiPromptExtrasService,
+                    currentSettings = { settings },
+                    hasCurrentConsent = { false },
+                )
+            },
         )
     }
 

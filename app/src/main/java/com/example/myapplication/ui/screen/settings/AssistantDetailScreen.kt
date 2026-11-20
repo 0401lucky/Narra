@@ -70,6 +70,7 @@ fun AssistantDetailScreen(
     onSelectPreset: (String) -> Unit,
     onOpenPresetManager: () -> Unit,
     onNavigateBack: () -> Unit,
+    onOpenCompanionVoice: (() -> Unit)? = null,
 ) {
     val palette = rememberSettingsPalette()
     var showPresetSheet by rememberSaveable { mutableStateOf(false) }
@@ -169,6 +170,15 @@ fun AssistantDetailScreen(
                         badge = if (assistant.memoryEnabled) "已启用" else "未启用",
                         onClick = onOpenMemory,
                     )
+                    if (onOpenCompanionVoice != null) {
+                        SettingsGroupDivider()
+                        AssistantEntryRow(
+                            icon = { EntryGlyph(icon = { Icon(Lucide.MessageCircleMore, null) }) },
+                            title = "陪伴语音与收藏",
+                            badge = "MiMo",
+                            onClick = onOpenCompanionVoice,
+                        )
+                    }
                 }
             }
 

@@ -1,6 +1,8 @@
 package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.companionSourceEligibility
+import com.example.myapplication.model.CompanionSourceEligibility
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageRole
@@ -80,7 +82,7 @@ object RoleplayRoundTripSupport {
             loadingMessage = loadingMessage,
             initialMessages = baseMessages + userMessage + loadingMessage,
             requestMessages = baseMessages.filter {
-                it.status == MessageStatus.COMPLETED && it.hasSendableContent()
+                it.companionSourceEligibility() == CompanionSourceEligibility.TEXT_ALLOWED && it.hasSendableContent()
             } + userMessage,
         )
     }
@@ -147,8 +149,8 @@ object RoleplayRoundTripSupport {
     ): PreparedRoleplayRetry? {
         val targetIndex = currentMessages.indexOfFirst { message ->
             message.id == sourceMessageId &&
-                message.role == MessageRole.ASSISTANT &&
-                (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+                    message.role == MessageRole.ASSISTANT &&
+                    (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
         }
         if (targetIndex == -1) {
             return null
@@ -167,7 +169,7 @@ object RoleplayRoundTripSupport {
             loadingMessage = loadingMessage,
             initialMessages = baseMessages + loadingMessage,
             requestMessages = baseMessages.filter {
-                it.status == MessageStatus.COMPLETED && it.hasSendableContent()
+                it.companionSourceEligibility() == CompanionSourceEligibility.TEXT_ALLOWED && it.hasSendableContent()
             },
         )
     }
@@ -178,9 +180,9 @@ object RoleplayRoundTripSupport {
     ): PreparedRoleplayEdit? {
         val targetIndex = currentMessages.indexOfFirst { message ->
             message.id == sourceMessageId &&
-                message.role == MessageRole.USER &&
-                message.status == MessageStatus.COMPLETED &&
-                message.hasSendableContent()
+                    message.role == MessageRole.USER &&
+                    message.status == MessageStatus.COMPLETED &&
+                    message.hasSendableContent()
         }
         if (targetIndex == -1) {
             return null

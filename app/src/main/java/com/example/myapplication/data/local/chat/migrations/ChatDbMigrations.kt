@@ -996,6 +996,320 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_48_49 = object : Migration(48, 49) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE roleplay_scenarios ADD COLUMN memoryPurpose TEXT NOT NULL DEFAULT 'legacy_compat'")
+            db.execSQL("ALTER TABLE roleplay_sessions ADD COLUMN runId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE messages ADD COLUMN memoryRevision INTEGER NOT NULL DEFAULT 1")
+            db.query("SELECT id FROM roleplay_sessions").use { cursor ->
+                while (cursor.moveToNext()) {
+                    db.execSQL(
+                        "UPDATE roleplay_sessions SET runId = ? WHERE id = ?",
+                        arrayOf(java.util.UUID.randomUUID().toString(), cursor.getString(0))
+                    )
+                }
+            }
+            createMemoryFoundationTables(db)
+            migrateLegacyMemoryFoundation(db)
+        }
+    }
+
+    private fun createMemoryFoundationTables(db: SupportSQLiteDatabase) {
+        val spaceReference =
+            "FOREIGN KEY(spaceId) REFERENCES memory_spaces(id) ON UPDATE NO ACTION ON DELETE NO ACTION"
+        val recordReference =
+            "FOREIGN KEY(recordId) REFERENCES memory_records(id) ON UPDATE NO ACTION ON DELETE CASCADE"
+        createMemoryTable(
+            db, "memory_spaces", """
+            id TEXT NOT NULL PRIMARY KEY, identityKey TEXT NOT NULL, characterId TEXT NOT NULL, purpose TEXT NOT NULL,
+            scenarioId TEXT NOT NULL, runId TEXT NOT NULL, generation INTEGER NOT NULL, status TEXT NOT NULL,
+            createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL
+        """, indexes = listOf("characterId"), uniqueIndexes = listOf("identityKey")
+        )
+        createMemoryTable(
+            db, "memory_conversation_bindings", """
+            conversationId TEXT NOT NULL, characterId TEXT NOT NULL, spaceId TEXT NOT NULL, purpose TEXT NOT NULL,
+            scenarioId TEXT NOT NULL, runId TEXT NOT NULL, personaKey TEXT NOT NULL, archived INTEGER NOT NULL,
+            createdAt INTEGER NOT NULL, PRIMARY KEY(conversationId, characterId), $spaceReference
+        """, indexes = listOf("spaceId", "scenarioId")
+        )
+        createMemoryTable(
+            db,
+            "memory_records",
+            """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, kind TEXT NOT NULL,
+            category TEXT NOT NULL, content TEXT NOT NULL, revision INTEGER NOT NULL, status TEXT NOT NULL,
+            importance INTEGER NOT NULL, pinned INTEGER NOT NULL, pinnedUntil INTEGER, occurredAt INTEGER,
+            datePrecision TEXT NOT NULL, personaKey TEXT NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL,
+            lastUsedAt INTEGER NOT NULL, jobId TEXT, localItemId TEXT, legacyScopeType TEXT NOT NULL,
+            legacyScopeId TEXT NOT NULL, legacySourceMessageId TEXT NOT NULL, $spaceReference
+        """,
+            indexes = listOf("spaceId,status", "characterId"),
+            uniqueIndexes = listOf("jobId,localItemId")
+        )
+        createMemoryTable(
+            db, "memory_record_revisions", """
+            recordId TEXT NOT NULL, revision INTEGER NOT NULL, content TEXT NOT NULL, origin TEXT NOT NULL,
+            createdAt INTEGER NOT NULL, PRIMARY KEY(recordId, revision), $recordReference
+        """
+        )
+        createMemoryTable(
+            db,
+            "memory_source_evidence",
+            """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, kind TEXT NOT NULL,
+            conversationId TEXT NOT NULL, messageId TEXT, messageRevision INTEGER NOT NULL, speakerId TEXT NOT NULL,
+            speakerRole TEXT NOT NULL, personaKey TEXT NOT NULL, visibleCharacterIdsJson TEXT NOT NULL,
+            content TEXT NOT NULL, contentLength INTEGER NOT NULL, status TEXT NOT NULL, occurredAt INTEGER NOT NULL,
+            ingestedAt INTEGER NOT NULL, contentFingerprint TEXT NOT NULL, $spaceReference
+        """,
+            indexes = listOf("spaceId", "conversationId,messageId"),
+            uniqueIndexes = listOf("spaceId,messageId,messageRevision")
+        )
+        createMemoryTable(
+            db, "memory_record_sources", """
+            recordId TEXT NOT NULL, recordRevision INTEGER NOT NULL, sourceId TEXT NOT NULL, sourceRevision INTEGER NOT NULL,
+            spanStart INTEGER NOT NULL, spanEnd INTEGER NOT NULL, PRIMARY KEY(recordId,recordRevision,sourceId,spanStart,spanEnd),
+            FOREIGN KEY(recordId,recordRevision) REFERENCES memory_record_revisions(recordId,revision) ON UPDATE NO ACTION ON DELETE CASCADE,
+            FOREIGN KEY(sourceId) REFERENCES memory_source_evidence(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+        """, indexes = listOf("sourceId")
+        )
+        createMemoryTable(
+            db, "memory_ingress_events", """
+            sequence INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, spaceId TEXT NOT NULL, sourceId TEXT NOT NULL,
+            status TEXT NOT NULL, ingestedAt INTEGER NOT NULL,
+            FOREIGN KEY(sourceId) REFERENCES memory_source_evidence(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+        """, indexes = listOf("spaceId,sequence"), uniqueIndexes = listOf("sourceId")
+        )
+        createMemoryTable(
+            db, "memory_processing_jobs", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, conversationId TEXT NOT NULL,
+            scenarioId TEXT NOT NULL, runId TEXT NOT NULL, personaKey TEXT NOT NULL, generation INTEGER NOT NULL,
+            idempotencyKey TEXT NOT NULL, targetRevisionsJson TEXT NOT NULL, status TEXT NOT NULL, artifact TEXT NOT NULL,
+            leaseOwner TEXT NOT NULL, leaseUntil INTEGER NOT NULL, failureCode TEXT NOT NULL, createdAt INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL, resultRecordIdsJson TEXT NOT NULL, cursorAfterCommit INTEGER NOT NULL, $spaceReference
+        """, indexes = listOf("spaceId,status"), uniqueIndexes = listOf("spaceId,idempotencyKey")
+        )
+        createMemoryTable(
+            db, "memory_job_sources", """
+            jobId TEXT NOT NULL, sourceId TEXT NOT NULL, sourceRevision INTEGER NOT NULL,
+            spanStart INTEGER NOT NULL, spanEnd INTEGER NOT NULL, PRIMARY KEY(jobId,sourceId,spanStart,spanEnd),
+            FOREIGN KEY(jobId) REFERENCES memory_processing_jobs(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+            FOREIGN KEY(sourceId) REFERENCES memory_source_evidence(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+        """, indexes = listOf("sourceId")
+        )
+        createMemoryTable(
+            db, "memory_processing_cursors", """
+            spaceId TEXT NOT NULL PRIMARY KEY, committedSequence INTEGER NOT NULL, historyBackfilled INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL, $spaceReference
+        """
+        )
+        createMemoryTable(
+            db, "memory_relation_intents", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL,
+            fromRecordId TEXT NOT NULL, fromRevision INTEGER NOT NULL, targetRecordId TEXT NOT NULL, targetRevision INTEGER NOT NULL,
+            label TEXT NOT NULL, eventName TEXT NOT NULL, status TEXT NOT NULL, createdAt INTEGER NOT NULL,
+            FOREIGN KEY(fromRecordId) REFERENCES memory_records(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+            FOREIGN KEY(targetRecordId) REFERENCES memory_records(id) ON UPDATE NO ACTION ON DELETE CASCADE
+        """, indexes = listOf("fromRecordId", "targetRecordId", "spaceId,status")
+        )
+        createMemoryTable(
+            db,
+            "memory_engine_state",
+            "id INTEGER NOT NULL PRIMARY KEY, engineVersion INTEGER NOT NULL, updatedAt INTEGER NOT NULL"
+        )
+        createMemoryTable(
+            db, "memory_event_boxes", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, title TEXT NOT NULL,
+            summary TEXT NOT NULL, summaryRevision INTEGER NOT NULL, summaryStatus TEXT NOT NULL, status TEXT NOT NULL,
+            currentState TEXT NOT NULL, generation INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL,
+            $spaceReference
+        """, indexes = listOf("spaceId,status")
+        )
+        createMemoryTable(
+            db, "memory_event_members", """
+            eventId TEXT NOT NULL, recordId TEXT NOT NULL, coveredRevision INTEGER, status TEXT NOT NULL,
+            addedAt INTEGER NOT NULL, PRIMARY KEY(eventId,recordId), $recordReference,
+            FOREIGN KEY(eventId) REFERENCES memory_event_boxes(id) ON UPDATE NO ACTION ON DELETE CASCADE
+        """, indexes = listOf("recordId")
+        )
+        createMemoryTable(
+            db, "memory_resident_entries", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, category TEXT NOT NULL,
+            personaKey TEXT NOT NULL, content TEXT NOT NULL, revision INTEGER NOT NULL, status TEXT NOT NULL,
+            subjective INTEGER NOT NULL, supersedesId TEXT, editedByUser INTEGER NOT NULL, createdAt INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL, $spaceReference
+        """, indexes = listOf("spaceId,category,personaKey")
+        )
+        createMemoryTable(
+            db, "memory_current_states", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, stateKey TEXT NOT NULL,
+            personaKey TEXT NOT NULL, content TEXT NOT NULL, revision INTEGER NOT NULL, status TEXT NOT NULL,
+            expiresAt INTEGER, endedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, $spaceReference
+        """, uniqueIndexes = listOf("spaceId,stateKey,personaKey")
+        )
+        createMemoryTable(
+            db, "memory_derived_links", """
+            ownerKind TEXT NOT NULL, ownerId TEXT NOT NULL, recordId TEXT NOT NULL, recordRevision INTEGER NOT NULL,
+            PRIMARY KEY(ownerKind,ownerId,recordId), $recordReference
+        """, indexes = listOf("recordId")
+        )
+        createMemoryTable(
+            db, "memory_embedding_indexes", """
+            spaceId TEXT NOT NULL, vectorSpace TEXT NOT NULL, generation INTEGER NOT NULL, providerId TEXT NOT NULL,
+            model TEXT NOT NULL, dimensions INTEGER NOT NULL, preprocessingVersion INTEGER NOT NULL, status TEXT NOT NULL,
+            active INTEGER NOT NULL, updatedAt INTEGER NOT NULL, PRIMARY KEY(spaceId,vectorSpace,generation), $spaceReference
+        """
+        )
+        createMemoryTable(
+            db, "memory_embeddings", """
+            recordId TEXT NOT NULL, recordRevision INTEGER NOT NULL, chunkIndex INTEGER NOT NULL, vectorSpace TEXT NOT NULL,
+            generation INTEGER NOT NULL, spaceId TEXT NOT NULL, dimensions INTEGER NOT NULL, spanStart INTEGER NOT NULL,
+            spanEnd INTEGER NOT NULL, vector BLOB NOT NULL, status TEXT NOT NULL, updatedAt INTEGER NOT NULL,
+            PRIMARY KEY(recordId,recordRevision,chunkIndex,vectorSpace,generation), $recordReference
+        """, indexes = listOf("spaceId,vectorSpace,generation")
+        )
+        createMemoryTable(
+            db, "memory_recall_receipts", """
+            requestId TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, conversationId TEXT NOT NULL,
+            generation INTEGER NOT NULL, selectedJson TEXT NOT NULL, sentJson TEXT NOT NULL, omittedJson TEXT NOT NULL,
+            payloadFingerprint TEXT NOT NULL, status TEXT NOT NULL, createdAt INTEGER NOT NULL, sentAt INTEGER, $spaceReference
+        """, indexes = listOf("spaceId,createdAt")
+        )
+        createMemoryTable(
+            db, "memory_proposals", """
+            id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, characterId TEXT NOT NULL, conversationId TEXT NOT NULL,
+            generation INTEGER NOT NULL, personaKey TEXT NOT NULL, content TEXT NOT NULL, kind TEXT NOT NULL, category TEXT NOT NULL,
+            sourceRefsJson TEXT NOT NULL, status TEXT NOT NULL, finalRecordId TEXT, createdAt INTEGER NOT NULL,
+            decidedAt INTEGER, $spaceReference
+        """, indexes = listOf("spaceId,status")
+        )
+    }
+
+    private fun createMemoryTable(
+        db: SupportSQLiteDatabase,
+        name: String,
+        columns: String,
+        indexes: List<String> = emptyList(),
+        uniqueIndexes: List<String> = emptyList(),
+    ) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `$name` (${columns.trimIndent()})")
+        (indexes.map { it to false } + uniqueIndexes.map { it to true }).forEach { (fields, unique) ->
+            val indexName = "index_${name}_${fields.replace(',', '_')}"
+            db.execSQL("CREATE ${if (unique) "UNIQUE " else ""}INDEX IF NOT EXISTS `$indexName` ON `$name` ($fields)")
+        }
+    }
+
+    private fun migrateLegacyMemoryFoundation(db: SupportSQLiteDatabase) {
+        // 旧 GLOBAL 无角色记录仍可兼容读取；未知归属使用明确哨兵，不猜测为现实用户事实。
+        val oldMemories = """
+            SELECT m.*,
+                CASE WHEN TRIM(m.characterId) != '' THEN m.characterId
+                    WHEN m.scopeType = 'assistant' AND TRIM(m.scopeId) != '' THEN m.scopeId
+                    ELSE 'legacy-unassigned' END AS resolvedOwner,
+                CASE WHEN m.scopeType = 'conversation' THEN m.scopeId ELSE '' END AS resolvedConversation
+            FROM memory_entries m
+        """.trimIndent()
+        val legacyKey = "'legacy:' || hex(resolvedOwner) || ':' || hex(resolvedConversation)"
+        db.execSQL(
+            """
+            INSERT OR IGNORE INTO memory_spaces
+                (id,identityKey,characterId,purpose,scenarioId,runId,generation,status,createdAt,updatedAt)
+            SELECT $legacyKey, $legacyKey, resolvedOwner, 'legacy_compat', '', '', 1, 'ACTIVE', MIN(createdAt), MAX(updatedAt)
+            FROM ($oldMemories) GROUP BY resolvedOwner,resolvedConversation
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_records
+                (id,spaceId,characterId,kind,category,content,revision,status,importance,pinned,pinnedUntil,
+                 occurredAt,datePrecision,personaKey,createdAt,updatedAt,lastUsedAt,jobId,localItemId,
+                 legacyScopeType,legacyScopeId,legacySourceMessageId)
+            SELECT id, $legacyKey, resolvedOwner, 'LEGACY_UNCLASSIFIED', 'DAILY', content, 1, 'ACTIVE',
+                importance,pinned,NULL,NULL,'unknown','unknown',createdAt,updatedAt,lastUsedAt,NULL,NULL,
+                scopeType,scopeId,sourceMessageId FROM ($oldMemories)
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_record_revisions(recordId,revision,content,origin,createdAt)
+            SELECT id,1,content,'MIGRATION',updatedAt FROM memory_records
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_source_evidence
+                (id,spaceId,characterId,kind,conversationId,messageId,messageRevision,speakerId,speakerRole,
+                 personaKey,visibleCharacterIdsJson,content,contentLength,status,occurredAt,ingestedAt,contentFingerprint)
+            SELECT 'legacy-source:' || r.id,r.spaceId,r.characterId,'LEGACY_HINT',
+                CASE WHEN r.legacyScopeType = 'conversation' THEN r.legacyScopeId ELSE COALESCE(m.conversationId,'') END,
+                NULL,0,'','','unknown','[]','',0,
+                CASE WHEN m.id IS NULL THEN 'MISSING' ELSE 'UNKNOWN' END,r.createdAt,r.updatedAt,''
+            FROM memory_records r LEFT JOIN messages m ON m.id = r.legacySourceMessageId
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_record_sources(recordId,recordRevision,sourceId,sourceRevision,spanStart,spanEnd)
+            SELECT id,1,'legacy-source:' || id,0,0,0 FROM memory_records
+        """.trimIndent()
+        )
+        // 仅迁移旧引擎自己生成的固定心境 ID；普通短句不按文本猜成当前状态。
+        db.execSQL(
+            """
+            INSERT INTO memory_current_states
+                (id,spaceId,characterId,stateKey,personaKey,content,revision,status,expiresAt,endedAt,createdAt,updatedAt)
+            SELECT id,spaceId,characterId,'mood','unknown',SUBSTR(content,5),1,'ACTIVE',NULL,NULL,createdAt,updatedAt
+            FROM memory_records WHERE legacyScopeType = 'conversation'
+                AND id = 'mental-state:' || legacyScopeId AND SUBSTR(content,1,4) = '【心境】'
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_derived_links(ownerKind,ownerId,recordId,recordRevision)
+            SELECT 'STATE',id,id,1 FROM memory_current_states
+        """.trimIndent()
+        )
+        val oldOwners = """
+            SELECT rs.conversationId,rs.scenarioId,rs.runId,rs.createdAt,s.assistantId AS characterId
+            FROM roleplay_sessions rs JOIN roleplay_scenarios s ON s.id = rs.scenarioId
+            WHERE s.chatType != 'group' AND TRIM(s.assistantId) != ''
+            UNION
+            SELECT rs.conversationId,rs.scenarioId,rs.runId,rs.createdAt,p.assistantId AS characterId
+            FROM roleplay_sessions rs JOIN roleplay_scenarios s ON s.id = rs.scenarioId
+            JOIN roleplay_group_participants p ON p.scenarioId = s.id
+            WHERE s.chatType = 'group' AND TRIM(p.assistantId) != ''
+        """.trimIndent()
+        val bindingKey = "'legacy:' || hex(o.characterId) || ':' || hex(o.conversationId)"
+        db.execSQL(
+            """
+            INSERT OR IGNORE INTO memory_spaces
+                (id,identityKey,characterId,purpose,scenarioId,runId,generation,status,createdAt,updatedAt)
+            SELECT $bindingKey,$bindingKey,o.characterId,'legacy_compat','','',1,'ACTIVE',o.createdAt,o.createdAt
+            FROM ($oldOwners) o
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT OR IGNORE INTO memory_conversation_bindings
+                (conversationId,characterId,spaceId,purpose,scenarioId,runId,personaKey,archived,createdAt)
+            SELECT o.conversationId,o.characterId,$bindingKey,'legacy_compat',o.scenarioId,o.runId,'unknown',
+                CASE WHEN c.id IS NULL THEN 1 ELSE 0 END,o.createdAt FROM ($oldOwners) o
+            LEFT JOIN conversations c ON c.id = o.conversationId
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO memory_processing_cursors(spaceId,committedSequence,historyBackfilled,updatedAt)
+            SELECT id,0,0,updatedAt FROM memory_spaces
+        """.trimIndent()
+        )
+        db.execSQL(
+            "INSERT INTO memory_engine_state(id,engineVersion,updatedAt) VALUES (1,1,?)",
+            arrayOf(System.currentTimeMillis())
+        )
+    }
+
     val MIGRATION_46_47 = object : Migration(46, 47) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
@@ -1122,6 +1436,290 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_49_50 = object : Migration(49, 50) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE memory_source_evidence ADD COLUMN contentFormatVersion INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("ALTER TABLE memory_processing_jobs ADD COLUMN purpose TEXT NOT NULL DEFAULT 'AUTOMATIC_EXTRACTION'")
+            db.execSQL("ALTER TABLE memory_processing_jobs ADD COLUMN requestJson TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_processing_jobs ADD COLUMN requestState TEXT NOT NULL DEFAULT 'UNKNOWN'")
+            db.execSQL("UPDATE memory_processing_jobs SET requestState = 'NOT_STARTED' WHERE status = 'PLANNED' AND artifact = ''")
+            db.execSQL("ALTER TABLE memory_proposals ADD COLUMN reason TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_proposals ADD COLUMN importance INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE memory_proposals ADD COLUMN scenarioId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_proposals ADD COLUMN runId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_proposals ADD COLUMN scopeType TEXT NOT NULL DEFAULT 'assistant'")
+            listOf("conversation_summaries", "conversation_summary_segments").forEach { table ->
+                db.execSQL("ALTER TABLE $table ADD COLUMN sourceSnapshotJson TEXT NOT NULL DEFAULT '[]'")
+                db.execSQL("ALTER TABLE $table ADD COLUMN completionStatus TEXT NOT NULL DEFAULT 'unknown'")
+                db.execSQL("ALTER TABLE $table ADD COLUMN memoryContextJson TEXT NOT NULL DEFAULT ''")
+            }
+            db.execSQL("ALTER TABLE conversation_summary_segments ADD COLUMN isAggregate INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("DROP INDEX index_conversation_summary_segments_conversationId_startMessageId_endMessageId")
+            db.execSQL("CREATE UNIQUE INDEX index_conversation_summary_segments_conversationId_startMessageId_endMessageId ON conversation_summary_segments (conversationId, startMessageId, endMessageId, memoryContextJson, isAggregate)")
+        }
+    }
+
+    val MIGRATION_50_51 = object : Migration(50, 51) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN memoryRecallRequestId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_recall_receipts ADD COLUMN personaKey TEXT NOT NULL DEFAULT 'unknown'")
+            listOf(
+                "scenarioId",
+                "runId",
+                "anchorMessageId",
+                "userMessageId",
+                "failureCode"
+            ).forEach { column ->
+                db.execSQL("ALTER TABLE memory_recall_receipts ADD COLUMN $column TEXT NOT NULL DEFAULT ''")
+            }
+            db.execSQL("ALTER TABLE memory_recall_receipts ADD COLUMN transmissionsJson TEXT NOT NULL DEFAULT '[]'")
+            // 旧索引保留原向量与元数据；未知身份不能被当成新运行的可用索引。
+            db.execSQL(
+                """
+                CREATE TABLE memory_embedding_indexes_v51 (
+                    spaceId TEXT NOT NULL, vectorSpace TEXT NOT NULL, generation INTEGER NOT NULL,
+                    providerId TEXT NOT NULL, model TEXT NOT NULL, dimensions INTEGER NOT NULL,
+                    preprocessingVersion INTEGER NOT NULL, status TEXT NOT NULL, active INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL, personaKey TEXT NOT NULL DEFAULT 'unknown',
+                    configurationKey TEXT NOT NULL DEFAULT '', contextJson TEXT NOT NULL DEFAULT '',
+                    recordsJson TEXT NOT NULL DEFAULT '[]', totalChunks INTEGER NOT NULL DEFAULT 0,
+                    completedChunks INTEGER NOT NULL DEFAULT 0, pendingBatchJson TEXT NOT NULL DEFAULT '[]',
+                    requestToken TEXT NOT NULL DEFAULT '', failureCode TEXT NOT NULL DEFAULT '',
+                    fullRebuild INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY(spaceId, vectorSpace, generation, personaKey),
+                    FOREIGN KEY(spaceId) REFERENCES memory_spaces(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+            """.trimIndent()
+            )
+            db.execSQL(
+                """
+                INSERT INTO memory_embedding_indexes_v51
+                    (spaceId,vectorSpace,generation,providerId,model,dimensions,preprocessingVersion,status,active,updatedAt)
+                SELECT spaceId,vectorSpace,generation,providerId,model,dimensions,preprocessingVersion,status,active,updatedAt
+                FROM memory_embedding_indexes
+            """.trimIndent()
+            )
+            db.execSQL("DROP TABLE memory_embedding_indexes")
+            db.execSQL("ALTER TABLE memory_embedding_indexes_v51 RENAME TO memory_embedding_indexes")
+        }
+    }
+
+    val MIGRATION_51_52 = object : Migration(51, 52) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE memory_event_boxes ADD COLUMN personaKey TEXT NOT NULL DEFAULT 'unknown'")
+            // 只有全部成员证明同一角色、空间与身份，才补全旧盒子的身份；不按名称猜测。
+            db.execSQL(
+                """
+                UPDATE memory_event_boxes SET personaKey = (
+                    SELECT MIN(r.personaKey) FROM memory_event_members m
+                    JOIN memory_records r ON r.id = m.recordId WHERE m.eventId = memory_event_boxes.id
+                ) WHERE EXISTS (SELECT 1 FROM memory_event_members m WHERE m.eventId = memory_event_boxes.id)
+                AND NOT EXISTS (
+                    SELECT 1 FROM memory_event_members m LEFT JOIN memory_records r ON r.id = m.recordId
+                    WHERE m.eventId = memory_event_boxes.id AND (r.id IS NULL OR r.spaceId != memory_event_boxes.spaceId
+                        OR r.characterId != memory_event_boxes.characterId
+                        OR TRIM(r.personaKey, ' ' || CHAR(9) || CHAR(10) || CHAR(11) || CHAR(12) || CHAR(13)) IN ('', 'unknown'))
+                ) AND 1 = (
+                    SELECT COUNT(DISTINCT r.personaKey) FROM memory_event_members m
+                    JOIN memory_records r ON r.id = m.recordId WHERE m.eventId = memory_event_boxes.id
+                )
+            """.trimIndent()
+            )
+            db.execSQL("ALTER TABLE memory_processing_jobs ADD COLUMN eventId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("CREATE INDEX index_memory_processing_jobs_eventId_status ON memory_processing_jobs (eventId, status)")
+        }
+    }
+
+    val MIGRATION_52_53 = object : Migration(52, 53) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE memory_current_states ADD COLUMN editedByUser INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE memory_current_states ADD COLUMN observedAt INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                """
+                CREATE TABLE memory_knowledge_revisions (
+                    ownerKind TEXT NOT NULL, ownerId TEXT NOT NULL, revision INTEGER NOT NULL,
+                    spaceId TEXT NOT NULL, content TEXT NOT NULL, status TEXT NOT NULL, origin TEXT NOT NULL,
+                    subjective INTEGER NOT NULL, expiresAt INTEGER, endedAt INTEGER,
+                    recordRefsJson TEXT NOT NULL, createdAt INTEGER NOT NULL,
+                    PRIMARY KEY(ownerKind, ownerId, revision),
+                    FOREIGN KEY(spaceId) REFERENCES memory_spaces(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX index_memory_knowledge_revisions_spaceId ON memory_knowledge_revisions(spaceId)")
+            db.execSQL(
+                """
+                CREATE TABLE memory_knowledge_sources (
+                    ownerKind TEXT NOT NULL, ownerId TEXT NOT NULL, ownerRevision INTEGER NOT NULL,
+                    sourceId TEXT NOT NULL, sourceRevision INTEGER NOT NULL, spanStart INTEGER NOT NULL, spanEnd INTEGER NOT NULL,
+                    PRIMARY KEY(ownerKind, ownerId, ownerRevision, sourceId, sourceRevision, spanStart, spanEnd),
+                    FOREIGN KEY(ownerKind, ownerId, ownerRevision) REFERENCES memory_knowledge_revisions(ownerKind, ownerId, revision) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(sourceId) REFERENCES memory_source_evidence(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX index_memory_knowledge_sources_sourceId ON memory_knowledge_sources(sourceId)")
+            db.execSQL(
+                """
+                CREATE TABLE memory_knowledge_consumptions (
+                    jobId TEXT NOT NULL PRIMARY KEY, residentWrites INTEGER NOT NULL, stateWrites INTEGER NOT NULL,
+                    skippedActions INTEGER NOT NULL, reasonCodesJson TEXT NOT NULL, createdAt INTEGER NOT NULL,
+                    FOREIGN KEY(jobId) REFERENCES memory_processing_jobs(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+            """.trimIndent()
+            )
+            // 原认知/状态保持原样；不替旧来源补造可用的正文或修订证明。
+        }
+    }
+
+    val MIGRATION_53_54 = object : Migration(53, 54) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE memory_processing_jobs ADD COLUMN controlJobId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE memory_engine_state ADD COLUMN activationVersion INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                """
+                CREATE TABLE memory_processing_controls (
+                    spaceId TEXT NOT NULL, jobId TEXT NOT NULL, userPaused INTEGER NOT NULL,
+                    controlVersion INTEGER NOT NULL, updatedAt INTEGER NOT NULL,
+                    PRIMARY KEY(spaceId, jobId),
+                    FOREIGN KEY(spaceId) REFERENCES memory_spaces(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE memory_transfer_origins (
+                    id TEXT NOT NULL PRIMARY KEY, spaceId TEXT NOT NULL, kind TEXT NOT NULL,
+                    recordId TEXT, sourceId TEXT, eventId TEXT, residentId TEXT, stateId TEXT,
+                    localRevision INTEGER NOT NULL, originJson TEXT NOT NULL,
+                    FOREIGN KEY(spaceId) REFERENCES memory_spaces(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(recordId) REFERENCES memory_records(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(sourceId) REFERENCES memory_source_evidence(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(eventId) REFERENCES memory_event_boxes(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(residentId) REFERENCES memory_resident_entries(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(stateId) REFERENCES memory_current_states(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            listOf(
+                "spaceId",
+                "recordId",
+                "sourceId",
+                "eventId",
+                "residentId",
+                "stateId"
+            ).forEach { column ->
+                db.execSQL("CREATE INDEX index_memory_transfer_origins_$column ON memory_transfer_origins($column)")
+            }
+            db.execSQL(
+                """
+                CREATE TABLE memory_transfer_receipts (
+                    localPlanId TEXT NOT NULL PRIMARY KEY, bundleFingerprint TEXT NOT NULL,
+                    targetsFingerprint TEXT NOT NULL, resultJson TEXT NOT NULL, createdAt INTEGER NOT NULL
+                )
+            """.trimIndent()
+            )
+        }
+    }
+
+    val MIGRATION_54_55 = object : Migration(54, 55) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "messages", "companionTurnId")) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN companionTurnId TEXT NOT NULL DEFAULT ''")
+            }
+            if (!hasColumn(db, "messages", "companionMemoryState")) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN companionMemoryState TEXT NOT NULL DEFAULT 'legacy'")
+            }
+            db.execSQL(
+                """
+                CREATE TABLE companion_encounters (
+                    id TEXT NOT NULL PRIMARY KEY, conversationId TEXT NOT NULL,
+                    scenarioId TEXT NOT NULL, runId TEXT NOT NULL, spaceId TEXT NOT NULL,
+                    characterId TEXT NOT NULL, personaKey TEXT NOT NULL, generation INTEGER NOT NULL,
+                    openingMode TEXT NOT NULL, state TEXT NOT NULL, revision INTEGER NOT NULL,
+                    activeKey TEXT, createdAt INTEGER NOT NULL, endedAt INTEGER,
+                    FOREIGN KEY(conversationId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX index_companion_encounters_conversationId_createdAt_id ON companion_encounters(conversationId, createdAt, id)")
+            db.execSQL("CREATE UNIQUE INDEX index_companion_encounters_activeKey ON companion_encounters(activeKey)")
+            db.execSQL("CREATE INDEX index_companion_encounters_characterId_personaKey_createdAt_id ON companion_encounters(characterId, personaKey, createdAt, id)")
+            db.execSQL(
+                """
+                CREATE TABLE companion_turns (
+                    id TEXT NOT NULL PRIMARY KEY, encounterId TEXT NOT NULL, ordinal INTEGER NOT NULL,
+                    kind TEXT NOT NULL, inputMessageId TEXT, replyMessageId TEXT,
+                    inputRevision INTEGER, replyRevision INTEGER, mutationRevision INTEGER NOT NULL,
+                    committedRevision INTEGER NOT NULL, selectedAttemptId TEXT, activeAttemptId TEXT,
+                    createdAt INTEGER NOT NULL, editedAt INTEGER,
+                    FOREIGN KEY(encounterId) REFERENCES companion_encounters(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX index_companion_turns_encounterId_ordinal ON companion_turns(encounterId, ordinal)")
+            db.execSQL("CREATE UNIQUE INDEX index_companion_turns_inputMessageId ON companion_turns(inputMessageId)")
+            db.execSQL("CREATE UNIQUE INDEX index_companion_turns_replyMessageId ON companion_turns(replyMessageId)")
+            db.execSQL(
+                """
+                CREATE TABLE companion_attempts (
+                    id TEXT NOT NULL PRIMARY KEY, turnId TEXT NOT NULL,
+                    expectedTurnRevision INTEGER NOT NULL, expectedInputRevision INTEGER,
+                    expectedReplyRevision INTEGER, frozenRuntimeJson TEXT NOT NULL,
+                    requestDescriptorJson TEXT NOT NULL, requestFingerprint TEXT NOT NULL,
+                    state TEXT NOT NULL, claimToken TEXT, leaseUntil INTEGER, requestedAt INTEGER,
+                    receivedAt INTEGER, artifactJson TEXT, artifactHash TEXT,
+                    FOREIGN KEY(turnId) REFERENCES companion_turns(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX index_companion_attempts_turnId ON companion_attempts(turnId)")
+            db.execSQL("CREATE INDEX index_companion_attempts_state_leaseUntil ON companion_attempts(state, leaseUntil)")
+        }
+    }
+
+    val MIGRATION_55_56 = object : Migration(55, 56) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE companion_voice_resources (
+                    id TEXT NOT NULL PRIMARY KEY, requestKey TEXT NOT NULL, cacheKey TEXT,
+                    state TEXT NOT NULL, claimToken TEXT, leaseUntil INTEGER,
+                    path TEXT NOT NULL, mimeType TEXT NOT NULL, sha256 TEXT NOT NULL,
+                    sizeBytes INTEGER NOT NULL, clipJson TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL, lastUsedAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX index_companion_voice_resources_cacheKey ON companion_voice_resources(cacheKey)")
+            db.execSQL("CREATE INDEX index_companion_voice_resources_state_lastUsedAt_id ON companion_voice_resources(state, lastUsedAt, id)")
+            db.execSQL("""
+                CREATE TABLE companion_voice_favorites (
+                    id TEXT NOT NULL PRIMARY KEY, audioId TEXT NOT NULL, characterId TEXT NOT NULL,
+                    sourceMessageId TEXT NOT NULL, sourceRevision INTEGER NOT NULL,
+                    clipJson TEXT NOT NULL, createdAt INTEGER NOT NULL,
+                    FOREIGN KEY(audioId) REFERENCES companion_voice_resources(id) ON UPDATE NO ACTION ON DELETE RESTRICT
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX index_companion_voice_favorites_audioId ON companion_voice_favorites(audioId)")
+            db.execSQL("CREATE INDEX index_companion_voice_favorites_characterId_createdAt_id ON companion_voice_favorites(characterId, createdAt, id)")
+            db.execSQL("CREATE INDEX index_companion_voice_favorites_sourceMessageId_sourceRevision ON companion_voice_favorites(sourceMessageId, sourceRevision)")
+        }
+    }
+
+    val MIGRATION_56_57 = object : Migration(56, 57) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE context_transfer_operations (
+                    id TEXT NOT NULL PRIMARY KEY, planVersion INTEGER NOT NULL,
+                    kind TEXT NOT NULL, stage TEXT NOT NULL, revision INTEGER NOT NULL,
+                    planHash TEXT NOT NULL, settingsTargetCount INTEGER NOT NULL,
+                    completedSettingsJson TEXT NOT NULL, publishedImagesJson TEXT NOT NULL,
+                    memoryResultJson TEXT NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX index_context_transfer_operations_kind_stage_createdAt_id ON context_transfer_operations(kind, stage, createdAt, id)")
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -1171,6 +1769,15 @@ internal object ChatDbMigrations {
         MIGRATION_45_46,
         MIGRATION_46_47,
         MIGRATION_47_48,
+        MIGRATION_48_49,
+        MIGRATION_49_50,
+        MIGRATION_50_51,
+        MIGRATION_51_52,
+        MIGRATION_52_53,
+        MIGRATION_53_54,
+        MIGRATION_54_55,
+        MIGRATION_55_56,
+        MIGRATION_56_57,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

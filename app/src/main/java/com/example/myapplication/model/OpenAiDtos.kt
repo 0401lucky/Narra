@@ -105,6 +105,9 @@ data class AssistantMessageDto(
     val thinking: String? = null,
     @SerializedName("tool_calls")
     val toolCalls: List<ChatToolCallDto>? = null,
+    val refusal: String? = null,
+    @SerializedName("function_call")
+    val functionCall: ChatToolFunctionDto? = null,
 )
 
 data class ChatToolCallDto(

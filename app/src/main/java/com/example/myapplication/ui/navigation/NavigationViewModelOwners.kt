@@ -19,6 +19,8 @@ import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
 import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
 import com.example.myapplication.viewmodel.ContextTransferViewModel
 import com.example.myapplication.viewmodel.MemoryManagementViewModel
+import com.example.myapplication.viewmodel.MemoryArchiveTaskActions
+import com.example.myapplication.viewmodel.MemoryArchiveOverviewViewModel
 import com.example.myapplication.viewmodel.MailboxViewModel
 import com.example.myapplication.viewmodel.MomentsViewModel
 import com.example.myapplication.viewmodel.PhoneCheckViewModel
@@ -70,11 +72,13 @@ internal fun rememberRoleplayViewModel(
             roleplayScriptEngine = appGraph.roleplayScriptEngine,
             promptContextAssembler = appGraph.promptContextAssembler,
             memoryRepository = appGraph.memoryRepository,
+            durableMemoryExtractionCoordinator = if (offlineReplaySpec == null) appGraph.durableMemoryExtractionCoordinator else null,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
             phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
             buildEconomyPromptContext = { scenarioId ->
-                val eventNote = formatEconomyEventNote(appGraph.roleplayEconomyEventBus.consume(scenarioId))
+                val eventNote =
+                    formatEconomyEventNote(appGraph.roleplayEconomyEventBus.consume(scenarioId))
                 val baseContext = appGraph.roleplayEconomyRepository.buildPromptContext(scenarioId)
                 listOf(eventNote, baseContext).filter(String::isNotBlank).joinToString("\n\n")
             },
@@ -99,7 +103,10 @@ internal fun rememberRoleplayViewModel(
                     settings.resolvedAssistants().firstOrNull { it.id == assistantId }
                 } ?: settings.activeAssistant()
                 val userPersona = scenario?.let {
-                    com.example.myapplication.roleplay.RoleplayConversationSupport.resolveUserPersona(it, settings)
+                    com.example.myapplication.roleplay.RoleplayConversationSupport.resolveUserPersona(
+                        it,
+                        settings
+                    )
                 }
                 val characterName = scenario?.characterDisplayNameOverride.orEmpty().trim()
                     .ifBlank { assistant?.name?.trim().orEmpty() }
@@ -126,6 +133,7 @@ internal fun rememberRoleplayViewModel(
                     is com.example.myapplication.model.EconomyOperationResult.Success -> {
                         com.example.myapplication.model.EconomyOperationResult.Success(Unit)
                     }
+
                     is com.example.myapplication.model.EconomyOperationResult.Failure -> {
                         result
                     }
@@ -177,6 +185,51 @@ internal fun rememberMemoryManagementViewModel(
 }
 
 @Composable
+internal fun rememberMemoryArchiveOverviewViewModel(
+    navController: NavHostController,
+    appGraph: AppGraph,
+    backStackEntry: NavBackStackEntry,
+): MemoryArchiveOverviewViewModel {
+    val owner =
+        remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.SETTINGS_GRAPH) }
+    return viewModel(
+        viewModelStoreOwner = owner,
+        factory = MemoryArchiveOverviewViewModel.factory(appGraph.memoryArchiveRepository)
+    )
+}
+
+internal fun memoryArchiveTaskActions(appGraph: AppGraph) = MemoryArchiveTaskActions(
+    processSelection = { context, selection, reprocessExisting, retryUncertain ->
+        appGraph.durableMemoryExtractionCoordinator.processSelection(
+            context,
+            selection,
+            reprocessExisting,
+            retryUncertain
+        )
+    },
+    resumeExtraction = { context, jobId ->
+        appGraph.durableMemoryExtractionCoordinator.resumeJob(
+            context,
+            jobId
+        )
+    },
+    resumeEvent = { context, jobId ->
+        appGraph.memoryEventCoordinator.resumeEventJob(
+            context,
+            jobId
+        )
+    },
+    rebuildEvent = { context, eventId, generation, retryUncertain ->
+        appGraph.memoryEventCoordinator.rebuild(
+            context,
+            eventId,
+            generation,
+            retryUncertain
+        )
+    },
+)
+
+@Composable
 internal fun rememberContextTransferViewModel(
     navController: NavHostController,
     appGraph: AppGraph,
@@ -193,6 +246,8 @@ internal fun rememberContextTransferViewModel(
             settingsEditor = appGraph.aiSettingsEditor,
             worldBookRepository = appGraph.worldBookRepository,
             memoryRepository = appGraph.memoryRepository,
+            memoryTransferRepository = appGraph.memoryArchiveTransferRepository,
+            contextTransferRecoveryRepository = appGraph.contextTransferRecoveryRepository,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             presetRepository = appGraph.presetRepository,
             importedAssistantAvatarSaver = { importedAvatar ->

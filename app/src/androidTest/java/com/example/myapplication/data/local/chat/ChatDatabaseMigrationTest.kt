@@ -1,17 +1,25 @@
 package com.example.myapplication.data.local.chat
 
 import android.content.Context
+import android.content.ContentValues
+import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.example.myapplication.system.json.AppJson
+import com.google.gson.JsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 class ChatDatabaseMigrationTest {
@@ -237,6 +245,122 @@ class ChatDatabaseMigrationTest {
             )
         }
     }
+
+    @Test
+    fun fixed55To56_preservesAllLegacyRowsAndCreatesIndependentVoiceTables() {
+        val bytes = InstrumentationRegistry.getInstrumentation().context.assets
+            .open("com.example.myapplication.data.local.chat.ChatDatabase/55.json").use { it.readBytes() }
+        assertEquals("5b33ea781a198962487b9324f054d2a243e0903f49c65ce00bf93b853b696033", voiceSha256(bytes))
+        val schema = AppJson.gson.fromJson(bytes.toString(Charsets.UTF_8), JsonObject::class.java)
+            .getAsJsonObject("database")
+        assertEquals(55, schema.get("version").asInt)
+        assertEquals("949d159c39b12196f82d50b2efb5748a", schema.get("identityHash").asString)
+        val entities = schema.getAsJsonArray("entities").map { it.asJsonObject }
+        var before: Map<String, List<List<String?>>> = emptyMap()
+        createLegacyDatabase(55) { db ->
+            entities.forEach { entity ->
+                val table = entity.get("tableName").asString
+                db.execSQL(entity.get("createSql").asString.replace("\${TABLE_NAME}", table))
+                entity.getAsJsonArray("indices")?.forEach { index ->
+                    db.execSQL(index.asJsonObject.get("createSql").asString.replace("\${TABLE_NAME}", table))
+                }
+            }
+            schema.getAsJsonArray("views")?.forEach { element ->
+                val view = element.asJsonObject
+                db.execSQL(view.get("createSql").asString.replace("\${VIEW_NAME}", view.get("viewName").asString))
+            }
+            schema.getAsJsonArray("setupQueries").forEach { db.execSQL(it.asString) }
+            fun row(table: String, values: Map<String, Any?>) = voiceLegacyRow(db, entities.single { it.get("tableName").asString == table }, values)
+            row("conversations", mapOf("id" to "voice-c55", "title" to "保留旧会话", "assistantId" to "alice", "createdAt" to 11L))
+            row("messages", mapOf("id" to "legacy-m55", "conversationId" to "voice-c55", "role" to "USER",
+                "content" to " 保留 CRLF\r\n".repeat(180), "status" to "COMPLETED", "createdAt" to 12L,
+                "memoryRevision" to 9L, "companionTurnId" to "", "companionMemoryState" to "legacy"))
+            row("messages", mapOf("id" to "linked-m55", "conversationId" to "voice-c55", "role" to "ASSISTANT",
+                "content" to "<dialogue voice_emotion=\"calm\">旧原文🙂。</dialogue>", "status" to "COMPLETED",
+                "createdAt" to 13L, "speakerId" to "alice", "memoryRevision" to 17L,
+                "companionTurnId" to "turn55", "companionMemoryState" to "ready"))
+            row("companion_encounters", mapOf("id" to "enc55", "conversationId" to "voice-c55", "characterId" to "alice",
+                "scenarioId" to "scene55", "runId" to "run55", "spaceId" to "space55", "state" to "ACTIVE", "revision" to 1L))
+            row("companion_turns", mapOf("id" to "turn55", "encounterId" to "enc55", "ordinal" to 1L, "kind" to "INPUT",
+                "replyMessageId" to "linked-m55", "replyRevision" to 17L, "committedRevision" to 1L, "selectedAttemptId" to "attempt55"))
+            row("companion_attempts", mapOf("id" to "attempt55", "turnId" to "turn55", "state" to "COMMITTED",
+                "frozenRuntimeJson" to "{\"version\":\"preserved\"}", "requestDescriptorJson" to "{\"protocolVersion\":1}",
+                "artifactJson" to "{\"rawReply\":\"旧产物\"}", "artifactHash" to "old-artifact-hash"))
+            row("memory_spaces", mapOf("id" to "space55", "identityKey" to "fixed55-space", "characterId" to "alice", "status" to "ACTIVE"))
+            row("memory_records", mapOf("id" to "memory55", "spaceId" to "space55", "characterId" to "alice",
+                "content" to "旧记忆保持", "revision" to 3L, "status" to "ACTIVE"))
+            before = voiceLegacySnapshot(db, entities)
+        }
+        migrateToLatest()
+        openReadableDatabase().use { db ->
+            assertEquals(ChatDatabase.CURRENT_VERSION.toLong(), queryLong(db, "PRAGMA user_version"))
+            assertEquals(before, voiceLegacySnapshot(db, entities))
+            assertEquals(0L, queryLong(db, "SELECT COUNT(*) FROM companion_voice_resources"))
+            assertEquals(0L, queryLong(db, "SELECT COUNT(*) FROM companion_voice_favorites"))
+            assertTrue(hasIndex(db, "companion_voice_resources", "index_companion_voice_resources_cacheKey"))
+            assertTrue(hasIndex(db, "companion_voice_favorites", "index_companion_voice_favorites_sourceMessageId_sourceRevision"))
+            db.rawQuery("PRAGMA foreign_key_check", null).use { assertFalse(it.moveToFirst()) }
+        }
+        // 再次打开验证 Room identity/schema，旧库数据仍逐字段不变。
+        migrateToLatest()
+        openReadableDatabase().use { assertEquals(before, voiceLegacySnapshot(it, entities)) }
+        SQLiteDatabase.openDatabase(databaseFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            db.execSQL("PRAGMA foreign_keys = ON")
+            fun audio(id: String, key: String?) = db.execSQL("""
+                INSERT INTO companion_voice_resources(id, requestKey, cacheKey, state, path, mimeType, sha256,
+                    sizeBytes, clipJson, createdAt, lastUsedAt) VALUES (?, 'synthetic', ?, 'READY', '', '', '', 0, '{}', 1, 1)
+            """.trimIndent(), arrayOf(id, key))
+            audio("audio55", "same-key")
+            audio("nullable-a", null)
+            audio("nullable-b", null)
+            try {
+                audio("duplicate", "same-key")
+                fail("同一 cache key 应只有一个当前资源")
+            } catch (_: SQLiteConstraintException) { }
+            db.execSQL("""
+                INSERT INTO companion_voice_favorites(id, audioId, characterId, sourceMessageId, sourceRevision, clipJson, createdAt)
+                VALUES ('favorite55', 'audio55', 'alice', 'linked-m55', 17, '{}', 1)
+            """.trimIndent())
+            db.execSQL("DELETE FROM messages WHERE id = 'linked-m55'")
+            assertEquals(1L, queryLong(db, "SELECT COUNT(*) FROM companion_voice_favorites"))
+            try {
+                db.execSQL("DELETE FROM companion_voice_resources WHERE id = 'audio55'")
+                fail("收藏仍引用的音频不可被删除")
+            } catch (_: SQLiteConstraintException) { }
+        }
+    }
+
+    private fun voiceLegacyRow(db: SQLiteDatabase, entity: JsonObject, overrides: Map<String, Any?>) {
+        val values = ContentValues()
+        entity.getAsJsonArray("fields").forEach { fieldElement ->
+            val field = fieldElement.asJsonObject
+            val column = field.get("columnName").asString
+            val value = if (column in overrides) overrides[column]
+                else if (field.get("notNull")?.asBoolean != true) null
+                else if (field.get("affinity").asString == "TEXT") "" else 0L
+            when (value) {
+                null -> values.putNull(column)
+                is String -> values.put(column, value)
+                is Long -> values.put(column, value)
+                else -> error("固定55夹具字段类型无效")
+            }
+        }
+        assertTrue(db.insertOrThrow(entity.get("tableName").asString, null, values) != -1L)
+    }
+
+    private fun voiceLegacySnapshot(db: SQLiteDatabase, entities: List<JsonObject>): Map<String, List<List<String?>>> =
+        entities.associate { entity ->
+            val table = entity.get("tableName").asString
+            val columns = entity.getAsJsonArray("fields").map { it.asJsonObject.get("columnName").asString }
+            val select = columns.joinToString(",") { "`$it`" }
+            val rows = db.rawQuery("SELECT $select FROM `$table` ORDER BY $select", null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(columns.indices.map { if (cursor.isNull(it)) null else cursor.getString(it) }) }
+            }
+            table to rows
+        }
+
+    private fun voiceSha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes).joinToString("") { "%02x".format(it) }
 
     private fun assertLatestSchemaShape(db: SQLiteDatabase) {
         assertEquals(ChatDatabase.CURRENT_VERSION.toLong(), queryLong(db, "PRAGMA user_version"))

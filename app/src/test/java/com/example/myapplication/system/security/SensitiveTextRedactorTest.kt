@@ -1,6 +1,7 @@
 package com.example.myapplication.system.security
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -49,6 +50,32 @@ class SensitiveTextRedactorTest {
 
         assertTrue(pathMessage == fallback)
         assertTrue(sqlMessage == fallback)
+    }
+
+    @Test
+    fun throwableMessageForUi_androidPrivateAliasesDoNotExposeFileLocations() {
+        val fallback = "资料文件暂不可读取，请重新选择资料包"
+        listOf(
+            "/data/data",
+            "/data/user/0",
+            "/data/user/12",
+            "/data/user_de/12"
+        ).forEach { prefix ->
+            val path =
+                "$prefix/com.narra.app.dev/files/companion_transfers/plans/synthetic-plan.json"
+            assertEquals(
+                prefix,
+                fallback,
+                SensitiveTextRedactor.throwableMessageForUi(
+                    java.nio.file.AccessDeniedException(
+                        path,
+                        "$path.tmp",
+                        "synthetic permission failure"
+                    ),
+                    fallback,
+                ),
+            )
+        }
     }
 
     @Test

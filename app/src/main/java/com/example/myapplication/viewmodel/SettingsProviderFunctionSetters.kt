@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderFunctionModelMode
+import com.example.myapplication.model.ProviderApiProtocol
 
 /**
  * T7.3 — 从 SettingsViewModel 抽出的 14 个 provider function-model setter
@@ -12,18 +13,31 @@ import com.example.myapplication.model.ProviderFunctionModelMode
  */
 private val CUSTOM = ProviderFunctionModelMode.CUSTOM
 
-private fun SettingsViewModel.selectFunctionProvider(function: ProviderFunction, providerId: String) {
+private fun SettingsViewModel.selectFunctionProvider(
+    function: ProviderFunction,
+    providerId: String
+) {
     updateFunctionModelProviderIds { it.withProviderId(function, providerId) }
 }
 
 fun SettingsViewModel.updateProviderTitleSummaryModel(providerId: String, modelId: String) {
     selectFunctionProvider(ProviderFunction.TITLE_SUMMARY, providerId)
-    updateProvider(providerId) { it.copy(titleSummaryModel = modelId, titleSummaryModelMode = CUSTOM) }
+    updateProvider(providerId) {
+        it.copy(
+            titleSummaryModel = modelId,
+            titleSummaryModelMode = CUSTOM
+        )
+    }
 }
 
 fun SettingsViewModel.updateProviderChatSuggestionModel(providerId: String, modelId: String) {
     selectFunctionProvider(ProviderFunction.CHAT_SUGGESTION, providerId)
-    updateProvider(providerId) { it.copy(chatSuggestionModel = modelId, chatSuggestionModelMode = CUSTOM) }
+    updateProvider(providerId) {
+        it.copy(
+            chatSuggestionModel = modelId,
+            chatSuggestionModelMode = CUSTOM
+        )
+    }
 }
 
 fun SettingsViewModel.updateProviderMemoryModel(providerId: String, modelId: String) {
@@ -31,14 +45,41 @@ fun SettingsViewModel.updateProviderMemoryModel(providerId: String, modelId: Str
     updateProvider(providerId) { it.copy(memoryModel = modelId, memoryModelMode = CUSTOM) }
 }
 
+fun SettingsViewModel.updateProviderEmbeddingModel(providerId: String, modelId: String) {
+    updateUiState { current ->
+        val model = modelId.trim()
+        val provider = current.providers.firstOrNull { it.id == providerId && it.enabled }
+        if (model.isBlank() || provider?.resolvedApiProtocol() != ProviderApiProtocol.OPENAI_COMPATIBLE) {
+            return@updateUiState current.copy(message = "请选择已启用的 OpenAI 兼容提供商与向量模型")
+        }
+        val updated = SettingsDraftStateSupport.updateProvider(current, providerId) {
+            it.copy(embeddingModel = model, embeddingModelMode = CUSTOM)
+        }
+        updated.copy(
+            functionModelProviderIds = updated.functionModelProviderIds
+                .withProviderId(ProviderFunction.EMBEDDING, providerId),
+        )
+    }
+}
+
 fun SettingsViewModel.updateProviderTranslationModel(providerId: String, modelId: String) {
     selectFunctionProvider(ProviderFunction.TRANSLATION, providerId)
-    updateProvider(providerId) { it.copy(translationModel = modelId, translationModelMode = CUSTOM) }
+    updateProvider(providerId) {
+        it.copy(
+            translationModel = modelId,
+            translationModelMode = CUSTOM
+        )
+    }
 }
 
 fun SettingsViewModel.updateProviderPhoneSnapshotModel(providerId: String, modelId: String) {
     selectFunctionProvider(ProviderFunction.PHONE_SNAPSHOT, providerId)
-    updateProvider(providerId) { it.copy(phoneSnapshotModel = modelId, phoneSnapshotModelMode = CUSTOM) }
+    updateProvider(providerId) {
+        it.copy(
+            phoneSnapshotModel = modelId,
+            phoneSnapshotModelMode = CUSTOM
+        )
+    }
 }
 
 fun SettingsViewModel.updateProviderMomentsModel(providerId: String, modelId: String) {
@@ -56,58 +97,123 @@ fun SettingsViewModel.updateProviderGiftImageModel(providerId: String, modelId: 
     updateProvider(providerId) { it.copy(giftImageModel = modelId, giftImageModelMode = CUSTOM) }
 }
 
-fun SettingsViewModel.updateProviderTitleSummaryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderTitleSummaryModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.TITLE_SUMMARY, providerId)
     updateProvider(providerId) {
-        it.copy(titleSummaryModelMode = mode, titleSummaryModel = if (mode == CUSTOM) it.titleSummaryModel else "")
+        it.copy(
+            titleSummaryModelMode = mode,
+            titleSummaryModel = if (mode == CUSTOM) it.titleSummaryModel else ""
+        )
     }
 }
 
-fun SettingsViewModel.updateProviderChatSuggestionModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderChatSuggestionModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.CHAT_SUGGESTION, providerId)
     updateProvider(providerId) {
-        it.copy(chatSuggestionModelMode = mode, chatSuggestionModel = if (mode == CUSTOM) it.chatSuggestionModel else "")
+        it.copy(
+            chatSuggestionModelMode = mode,
+            chatSuggestionModel = if (mode == CUSTOM) it.chatSuggestionModel else ""
+        )
     }
 }
 
-fun SettingsViewModel.updateProviderMemoryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderMemoryModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.MEMORY, providerId)
     updateProvider(providerId) {
         it.copy(memoryModelMode = mode, memoryModel = if (mode == CUSTOM) it.memoryModel else "")
     }
 }
 
-fun SettingsViewModel.updateProviderTranslationModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderEmbeddingModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
+    updateUiState { current ->
+        val provider = current.providers.firstOrNull { it.id == providerId }
+        val selectedMode = if (
+            mode == CUSTOM && provider?.enabled == true &&
+            provider.resolvedApiProtocol() == ProviderApiProtocol.OPENAI_COMPATIBLE &&
+            provider.resolveExplicitFunctionModel(ProviderFunction.EMBEDDING).isNotBlank()
+        ) CUSTOM else ProviderFunctionModelMode.DISABLED
+        val updated = SettingsDraftStateSupport.updateProvider(current, providerId) {
+            it.copy(
+                embeddingModelMode = selectedMode,
+                embeddingModel = if (selectedMode == CUSTOM) it.embeddingModel else "",
+            )
+        }
+        updated.copy(
+            functionModelProviderIds = updated.functionModelProviderIds.withProviderId(
+                ProviderFunction.EMBEDDING,
+                provider?.id.orEmpty(),
+            ),
+        )
+    }
+}
+
+fun SettingsViewModel.updateProviderTranslationModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.TRANSLATION, providerId)
     updateProvider(providerId) {
-        it.copy(translationModelMode = mode, translationModel = if (mode == CUSTOM) it.translationModel else "")
+        it.copy(
+            translationModelMode = mode,
+            translationModel = if (mode == CUSTOM) it.translationModel else ""
+        )
     }
 }
 
-fun SettingsViewModel.updateProviderPhoneSnapshotModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderPhoneSnapshotModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.PHONE_SNAPSHOT, providerId)
     updateProvider(providerId) {
-        it.copy(phoneSnapshotModelMode = mode, phoneSnapshotModel = if (mode == CUSTOM) it.phoneSnapshotModel else "")
+        it.copy(
+            phoneSnapshotModelMode = mode,
+            phoneSnapshotModel = if (mode == CUSTOM) it.phoneSnapshotModel else ""
+        )
     }
 }
 
-fun SettingsViewModel.updateProviderMomentsModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderMomentsModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.MOMENTS, providerId)
     updateProvider(providerId) {
         it.copy(momentsModelMode = mode, momentsModel = if (mode == CUSTOM) it.momentsModel else "")
     }
 }
 
-fun SettingsViewModel.updateProviderSearchModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderSearchModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.SEARCH, providerId)
     updateProvider(providerId) {
         it.copy(searchModelMode = mode, searchModel = if (mode == CUSTOM) it.searchModel else "")
     }
 }
 
-fun SettingsViewModel.updateProviderGiftImageModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+fun SettingsViewModel.updateProviderGiftImageModelMode(
+    providerId: String,
+    mode: ProviderFunctionModelMode
+) {
     selectFunctionProvider(ProviderFunction.GIFT_IMAGE, providerId)
     updateProvider(providerId) {
-        it.copy(giftImageModelMode = mode, giftImageModel = if (mode == CUSTOM) it.giftImageModel else "")
+        it.copy(
+            giftImageModelMode = mode,
+            giftImageModel = if (mode == CUSTOM) it.giftImageModel else ""
+        )
     }
 }

@@ -101,6 +101,7 @@ class RoleplayScenarioEditScreenTest {
             assertEquals(false, saved?.longformModeEnabled)
             assertEquals(true, saved?.enableRoleplayProtocol)
             assertEquals(title, saved?.title)
+            assertEquals(com.example.myapplication.model.MemoryPurpose.INDEPENDENT, saved?.memoryPurpose)
             assertEquals(description, saved?.description)
             assertEquals(openingNarration, saved?.openingNarration)
             assertEquals(userPersona, saved?.userPersonaOverride)
@@ -243,6 +244,33 @@ class RoleplayScenarioEditScreenTest {
         composeRule.runOnIdle {
             assertEquals(listOf("scenario-delete"), deletedScenarioIds)
         }
+    }
+
+    @Test
+    fun legacyPurpose_isPreservedUntilExplicitChoice() {
+        val saved = mutableListOf<RoleplayScenario>()
+        composeRule.setContent {
+            ChatAppTheme {
+                CompositionLocalProvider(LocalImagePersister provides LocalImageStore(composeRule.activity)) {
+                    RoleplayScenarioEditScreen(
+                        scenario = RoleplayScenario(id = "legacy-purpose", memoryPurpose = com.example.myapplication.model.MemoryPurpose.LEGACY_COMPAT),
+                        settings = AppSettings(), assistants = emptyList(),
+                        onSave = { scenario, _ -> saved += scenario }, onDelete = null,
+                        noticeMessage = null, errorMessage = null, onClearNoticeMessage = {}, onClearErrorMessage = {}, onNavigateBack = {},
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST).performScrollToNode(hasText("保存会话资料"))
+        composeRule.onNodeWithText("保存会话资料").performClick()
+        composeRule.runOnIdle { assertEquals(com.example.myapplication.model.MemoryPurpose.LEGACY_COMPAT, saved.single().memoryPurpose) }
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST).performScrollToNode(hasTestTag("memory_purpose_independent"))
+        composeRule.onNodeWithTag("memory_purpose_independent").performClick()
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST).performScrollToNode(hasText("保存后使用新会话和对应档案；原对话与旧档案会保留。"))
+        composeRule.onNodeWithText("保存后使用新会话和对应档案；原对话与旧档案会保留。").assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST).performScrollToNode(hasText("保存会话资料"))
+        composeRule.onNodeWithText("保存会话资料").performClick()
+        composeRule.runOnIdle { assertEquals(com.example.myapplication.model.MemoryPurpose.INDEPENDENT, saved.last().memoryPurpose) }
     }
 
     private fun assertDraftFields(

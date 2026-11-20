@@ -4,12 +4,15 @@ import com.example.myapplication.data.remote.AnthropicApi
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.model.ChatCompletionRequest
+import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.PromptCompletionResult
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ResponseApiResponse
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -66,8 +69,28 @@ internal class PromptExtrasCore(
         provider: ProviderSettings?,
         allowRoleplaySamplingFallback: Boolean = false,
     ): String {
+        return requestCompletionResult(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = operation,
+            request = request,
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = allowRoleplaySamplingFallback,
+        ).content
+    }
+
+    suspend fun requestCompletionResult(
+        baseUrl: String,
+        apiKey: String,
+        operation: String,
+        request: ChatCompletionRequest,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+        allowRoleplaySamplingFallback: Boolean = false,
+    ): PromptCompletionResult {
         return when (apiProtocol) {
-            ProviderApiProtocol.OPENAI_COMPATIBLE -> requestOpenAiCompletionContent(
+            ProviderApiProtocol.OPENAI_COMPATIBLE -> requestOpenAiCompletionResult(
                 baseUrl = baseUrl,
                 apiKey = apiKey,
                 operation = operation,
@@ -75,7 +98,8 @@ internal class PromptExtrasCore(
                 provider = provider,
                 allowRoleplaySamplingFallback = allowRoleplaySamplingFallback,
             )
-            ProviderApiProtocol.ANTHROPIC -> requestAnthropicCompletionContent(
+
+            ProviderApiProtocol.ANTHROPIC -> requestAnthropicCompletionResult(
                 baseUrl = baseUrl,
                 apiKey = apiKey,
                 operation = operation,
@@ -165,14 +189,14 @@ internal class PromptExtrasCore(
         return null
     }
 
-    private suspend fun requestOpenAiCompletionContent(
+    private suspend fun requestOpenAiCompletionResult(
         baseUrl: String,
         apiKey: String,
         operation: String,
         request: ChatCompletionRequest,
         provider: ProviderSettings?,
         allowRoleplaySamplingFallback: Boolean,
-    ): String {
+    ): PromptCompletionResult {
         val normalizedApiKey = apiKey.trim()
         var currentRequest = request
         val apiMode = provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
@@ -224,24 +248,27 @@ internal class PromptExtrasCore(
             )
         }
         return if (apiMode == OpenAiTextApiMode.RESPONSES) {
-            val body = response.body() as? com.example.myapplication.model.ResponseApiResponse
+            val body = response.body() as? ResponseApiResponse
                 ?: throw IllegalStateException("$operation：响应体为空")
-            ResponseApiSupport.parseResponse(body).content.trim()
+            responseApiCompletionResult(body)
         } else {
-            val body = response.body() as? com.example.myapplication.model.ChatCompletionResponse
+            val body = response.body() as? ChatCompletionResponse
                 ?: throw IllegalStateException("$operation：响应体为空")
-            PromptExtrasResponseSupport.extractContentText(
-                body.choices.firstOrNull()?.message?.content,
-            ).trim()
+            val choice = body.choices.firstOrNull()
+            val message = choice?.message
+            CompletionEvidenceSupport.result(
+                content = PromptExtrasResponseSupport.extractContentText(message?.content).trim(),
+                evidence = CompletionEvidenceSupport.chat(message, choice?.finishReason),
+            )
         }
     }
 
-    private suspend fun requestAnthropicCompletionContent(
+    private suspend fun requestAnthropicCompletionResult(
         baseUrl: String,
         apiKey: String,
         operation: String,
         request: ChatCompletionRequest,
-    ): String {
+    ): PromptCompletionResult {
         val response = anthropicApiProvider(baseUrl, apiKey.trim()).createMessage(
             AnthropicProtocolSupport.buildMessageRequest(request),
         )
@@ -254,8 +281,17 @@ internal class PromptExtrasCore(
             )
         }
         val body = response.body() ?: throw IllegalStateException("$operation：响应体为空")
-        return AnthropicProtocolSupport.extractContentText(body).trim()
+        return CompletionEvidenceSupport.result(
+            content = AnthropicProtocolSupport.extractContentText(body).trim(),
+            evidence = CompletionEvidenceSupport.anthropic(body),
+        )
     }
+
+    private fun responseApiCompletionResult(body: ResponseApiResponse): PromptCompletionResult =
+        CompletionEvidenceSupport.result(
+            content = ResponseApiSupport.parseResponse(body).content.trim(),
+            evidence = CompletionEvidenceSupport.responses(body),
+        )
 
     private fun resolveRoleplaySampling(
         baseUrl: String,
@@ -302,11 +338,15 @@ internal class PromptExtrasCore(
         baseUrl: String,
         provider: ProviderSettings?,
     ): String {
-        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
-        val path = when (provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
-            OpenAiTextApiMode.CHAT_COMPLETIONS -> provider?.resolvedChatCompletionsPath() ?: DEFAULT_CHAT_COMPLETIONS_PATH
-            OpenAiTextApiMode.RESPONSES -> "/responses"
-        }
+        val normalizedBaseUrl =
+            apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+        val path =
+            when (provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
+                OpenAiTextApiMode.CHAT_COMPLETIONS -> provider?.resolvedChatCompletionsPath()
+                    ?: DEFAULT_CHAT_COMPLETIONS_PATH
+
+                OpenAiTextApiMode.RESPONSES -> "/responses"
+            }
         return normalizedBaseUrl.removeSuffix("/") + path
     }
 }

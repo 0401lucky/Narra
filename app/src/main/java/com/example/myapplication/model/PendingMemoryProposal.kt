@@ -11,4 +11,6 @@ data class PendingMemoryProposal(
     val reason: String = "",
     val importance: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
+    val memoryContext: MemoryRuntimeContext? = null,
+    val sourceRefs: List<MemorySourceRef> = emptyList(),
 )

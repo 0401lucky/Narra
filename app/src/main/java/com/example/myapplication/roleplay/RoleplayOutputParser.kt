@@ -14,7 +14,7 @@ data class RoleplayParsedSegment(
     val emotion: String = "",
 )
 
-class RoleplayOutputParser {
+class RoleplayOutputParser(private val preserveCompanionText: Boolean = false) {
     private val tagPattern = Regex(
         """(?is)<narration\b[^>]*>(.*?)</narration>|<thought\b[^>]*>(.*?)</thought>|<dialogue\b([^>]*)>(.*?)</dialogue>""",
     )
@@ -27,7 +27,8 @@ class RoleplayOutputParser {
     private val llmControlWordPattern = Regex(
         """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
     )
-    private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration|thought)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
+    private val protocolHintPattern =
+        Regex("""(?is)</?(dialogue|narration|thought)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
     private val specialPlayProtocolHintPattern = Regex(
         """(?im)^\s*(?:</?play(?:-update)?\b|(?:id|type|target|place|time|note|description|content|title|objective|reward|deadline|method|count|intensity|reason|item|counterparty|amount|direction|status|ref)\s*=|/?>|/)\s*$""",
     )
@@ -72,7 +73,7 @@ class RoleplayOutputParser {
         val hasTaggedDialogue = matches.any { it.groups[4]?.value.orEmpty().trim().isNotBlank() }
         val hasTaggedNarration = matches.any {
             it.groups[1]?.value.orEmpty().trim().isNotBlank() ||
-                it.groups[2]?.value.orEmpty().trim().isNotBlank()
+                    it.groups[2]?.value.orEmpty().trim().isNotBlank()
         }
         val segments = mutableListOf<RoleplayParsedSegment>()
         var cursor = 0
@@ -151,7 +152,7 @@ class RoleplayOutputParser {
     }
 
     fun stripMarkup(rawContent: String): String {
-        return sanitizeMalformedProtocolText(
+        val stripped = sanitizeMalformedProtocolText(
             stripControlArtifacts(
                 normalizeRoleplayProtocolAliases(rawContent),
             ),
@@ -161,13 +162,15 @@ class RoleplayOutputParser {
             .replace(Regex("""[ \t]{2,}"""), " ")
             .replace(Regex("""\n{3,}"""), "\n\n")
             .trim()
+        if (preserveCompanionText) return RoleplayXmlEntities.decodeOnce(stripped)
+        return stripped
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&quot;", "\"")
             .replace("&amp;", "&")
     }
 
-    private fun parseAttributes(rawAttributes: String): Map<String, String> {
+    internal fun parseAttributes(rawAttributes: String): Map<String, String> {
         return attributePattern.findAll(rawAttributes)
             .associate { match ->
                 val value = (2..6).firstNotNullOfOrNull { index ->
@@ -263,13 +266,15 @@ class RoleplayOutputParser {
             normalizeInlineQuotedDialogueCandidates(explicitSegments),
         )
         val hasExplicitDialogue = normalizedCandidates.any { it.kind == PlainSegmentKind.DIALOGUE }
-        val hasExplicitNarration = normalizedCandidates.any { it.kind == PlainSegmentKind.NARRATION }
+        val hasExplicitNarration =
+            normalizedCandidates.any { it.kind == PlainSegmentKind.NARRATION }
         if (!hasExplicitDialogue && !hasExplicitNarration) {
-            val fallbackKind = if (defaultFallbackKind == PlainSegmentKind.NARRATION && allowNarration) {
-                RoleplayContentType.NARRATION to RoleplaySpeaker.NARRATOR
-            } else {
-                RoleplayContentType.DIALOGUE to RoleplaySpeaker.CHARACTER
-            }
+            val fallbackKind =
+                if (defaultFallbackKind == PlainSegmentKind.NARRATION && allowNarration) {
+                    RoleplayContentType.NARRATION to RoleplaySpeaker.NARRATOR
+                } else {
+                    RoleplayContentType.DIALOGUE to RoleplaySpeaker.CHARACTER
+                }
             return listOf(
                 RoleplayParsedSegment(
                     contentType = fallbackKind.first,
@@ -517,14 +522,16 @@ class RoleplayOutputParser {
     private fun stripVariableUpdateArtifacts(rawContent: String): String {
         val withoutBlocks = rawContent.replace(variableUpdateBlockPattern, "\n")
             .replace(variableUpdateClosingTagPattern, "\n")
+        if (preserveCompanionText) return withoutBlocks
         val lines = withoutBlocks.lines()
         val artifactStart = lines.indices.firstOrNull { index ->
             val line = lines[index].trim()
             line.looksLikeVariableUpdateArtifactLine() ||
-                (
-                    line.startsWith("[") &&
-                        lines.drop(index).take(10).any { jsonPatchMarkerPattern.containsMatchIn(it) }
-                    )
+                    (
+                            line.startsWith("[") &&
+                                    lines.drop(index).take(10)
+                                        .any { jsonPatchMarkerPattern.containsMatchIn(it) }
+                            )
         } ?: return withoutBlocks
         return lines.take(artifactStart).joinToString(separator = "\n")
     }
@@ -534,7 +541,10 @@ class RoleplayOutputParser {
         if (raw.isBlank()) {
             return false
         }
-        if (variableUpdateLinePattern.containsMatchIn(raw) || jsonPatchMarkerPattern.containsMatchIn(raw)) {
+        if (variableUpdateLinePattern.containsMatchIn(raw) || jsonPatchMarkerPattern.containsMatchIn(
+                raw
+            )
+        ) {
             return true
         }
         val compact = raw

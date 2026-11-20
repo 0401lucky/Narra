@@ -95,6 +95,50 @@ class ContextLogStoreTest {
         assertFalse(current.any { it.id == "s0" })
     }
 
+    @Test
+    fun receiptOnlyAttachesToItsRequest_previewAndOtherRoundsStayMissing() {
+        val store = ContextLogStore()
+        store.push(
+            snapshot("previous").copy(
+                memoryRecallRequestId = "old",
+                hasMemoryRecallPlan = true
+            )
+        )
+        store.push(
+            snapshot("current").copy(
+                memoryRecallRequestId = "current",
+                hasMemoryRecallPlan = true
+            )
+        )
+        store.push(snapshot("preview").copy(hasMemoryRecallPlan = true))
+        val receipt = com.example.myapplication.model.MemoryRecallReceipt(
+            "old",
+            com.example.myapplication.model.MemoryRuntimeContext("a", "space", "conversation"),
+            "anchor",
+            "user",
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            "fingerprint",
+            com.example.myapplication.model.MemoryRecallStatus.SENT,
+            1
+        )
+        store.attachMemoryReceipt(receipt)
+        assertEquals(receipt, store.findById("previous")!!.memoryRecallReceipt)
+        assertEquals("本轮发送回执缺失", store.findById("current")!!.memoryRecallSummary)
+        assertEquals("预览材料，尚无本轮发送回执", store.findById("preview")!!.memoryRecallSummary)
+        store.setEnabled(false)
+        store.attachMemoryReceipt(
+            receipt.copy(
+                requestId = "current",
+                status = com.example.myapplication.model.MemoryRecallStatus.FAILED,
+                failureCode = "NOT_STARTED"
+            )
+        )
+        assertEquals("请求未发起", store.findById("current")!!.memoryRecallSummary)
+        assertEquals(3, store.snapshots.value.size)
+    }
+
     private fun snapshot(id: String, payload: String = ""): ContextGovernanceSnapshot {
         return ContextGovernanceSnapshot(
             id = id,

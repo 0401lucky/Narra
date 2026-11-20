@@ -5,6 +5,7 @@ import com.google.gson.Gson
 
 class GetConversationSummaryTool(
     private val gson: Gson = AppJson.gson,
+    private val memoryArchiveRepository: com.example.myapplication.data.repository.context.MemoryArchiveRepository? = null,
 ) : AppTool {
     override val name: String = NAME
 
@@ -24,8 +25,33 @@ class GetConversationSummaryTool(
         if (conversationId.isBlank()) {
             return errorResult("当前没有可用会话，无法读取摘要")
         }
-        val summary = context.conversationSummaryRepository.getSummary(conversationId)
-            ?: return errorResult("当前会话暂无缓存摘要")
+        val memoryContext = context.runtimeContext?.memoryContext
+        if (memoryContext != null && (memoryContext.characterId != context.runtimeContext?.assistant?.id ||
+                    memoryContext.conversationId != conversationId)
+        ) return errorResult("摘要归属与当前请求角色不符")
+        if (memoryContext != null && memoryArchiveRepository != null &&
+            memoryArchiveRepository.getRuntimeContext(
+                conversationId,
+                memoryContext.characterId
+            ) != memoryContext
+        ) return errorResult("当前摘要的角色或运行归属已改变")
+        if (context.runtimeContext?.promptMode == com.example.myapplication.model.PromptMode.ROLEPLAY && memoryContext == null) return errorResult(
+            "当前摘要缺少运行归属"
+        )
+        val stored = if (memoryContext == null) context.conversationSummaryRepository.getSummary(
+            conversationId
+        )
+        else context.conversationSummaryRepository.getSummaryForContext(memoryContext)
+        val messages =
+            context.conversationSummaryRepository.getSummarySourceMessages(conversationId)
+                ?: context.runtimeContext?.recentMessages.orEmpty()
+        val summary =
+            com.example.myapplication.conversation.ConversationSummaryCoverageSupport.usableSummary(
+                stored,
+                messages,
+                memoryContext
+            )
+                ?: return errorResult("当前会话暂无缓存摘要或缓存已不适用于本次运行")
         return ToolExecutionResult(
             payload = gson.toJson(
                 mapOf(

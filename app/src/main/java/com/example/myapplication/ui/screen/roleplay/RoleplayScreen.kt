@@ -2,27 +2,32 @@ package com.example.myapplication.ui.screen.roleplay
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import com.example.myapplication.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.KeyboardVoice
-import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.composables.icons.lucide.ArrowDownUp
+import com.composables.icons.lucide.Compass
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.FileText
+import com.composables.icons.lucide.Heart
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Mail
+import com.composables.icons.lucide.MessageCircleMore
+import com.composables.icons.lucide.Mic
+import com.composables.icons.lucide.NotebookPen
+import com.composables.icons.lucide.Sparkles
+import com.composables.icons.lucide.TriangleAlert
+import com.composables.icons.lucide.Video
+import com.composables.icons.lucide.Wallet
+import dev.chrisbanes.haze.HazeState
+import com.example.myapplication.ui.component.roleplay.LocalImmersiveHazeState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +64,7 @@ import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.VoiceMessageDraft
+import com.example.myapplication.model.companionSettings
 import com.example.myapplication.model.toChatMessagePart
 import com.example.myapplication.system.performance.BenchmarkActionIds
 import com.example.myapplication.system.performance.BenchmarkContract
@@ -111,6 +117,10 @@ fun RoleplayScreen(
     suggestionErrorMessage: String?,
     pendingMemoryProposal: PendingMemoryProposal?,
     callbacks: RoleplayScreenCallbacks,
+    companionState: com.example.myapplication.viewmodel.RoleplayCompanionUiState? = null,
+    companionSceneCallbacks: CompanionSceneCallbacks? = null,
+    onStartCompanion: (() -> Unit)? = null,
+    companionDisplay: CompanionDisplayBinding? = null,
 ) {
     // 解构 callbacks 为局部变量，保持内部代码不变
     val onClearNoticeMessage = callbacks.ui.onClearNoticeMessage
@@ -166,7 +176,7 @@ fun RoleplayScreen(
         BenchmarkScenarioId.S3_UPGRADE_STARTUP,
         BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
         BenchmarkScenarioId.P1_BASELINE_PROFILE,
-        -> true
+            -> true
 
         else -> false
     }
@@ -180,19 +190,19 @@ fun RoleplayScreen(
         0
     }
     val benchmarkReturningReady = benchmarkReturningScenario &&
-        scenario?.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID &&
-        assistant != null &&
-        hasActiveSession &&
-        groupParticipants.isNotEmpty() &&
-        benchmarkSourceMessageCount == benchmarkScenarioId?.fixtureId?.roleplayMessageCount &&
-        !isScenarioLoading
-    val hasLoadedOfflineReplayFixture =
-        isOfflineReplayFixtureSession &&
             scenario?.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID &&
             assistant != null &&
             hasActiveSession &&
             groupParticipants.isNotEmpty() &&
+            benchmarkSourceMessageCount == benchmarkScenarioId?.fixtureId?.roleplayMessageCount &&
             !isScenarioLoading
+    val hasLoadedOfflineReplayFixture =
+        isOfflineReplayFixtureSession &&
+                scenario?.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID &&
+                assistant != null &&
+                hasActiveSession &&
+                groupParticipants.isNotEmpty() &&
+                !isScenarioLoading
     val isOfflineReplayFixtureReady = remember(
         hasLoadedOfflineReplayFixture,
         isOfflineReplayFixtureSession,
@@ -200,16 +210,16 @@ fun RoleplayScreen(
         messages,
     ) {
         hasLoadedOfflineReplayFixture &&
-            when (offlineReplayPhase) {
-                RoleplayOfflineReplayPhase.READY,
-                RoleplayOfflineReplayPhase.COMPLETED,
-                -> hasExpectedOfflineReplayFixtureSources(messages)
+                when (offlineReplayPhase) {
+                    RoleplayOfflineReplayPhase.READY,
+                    RoleplayOfflineReplayPhase.COMPLETED,
+                        -> hasExpectedOfflineReplayFixtureSources(messages)
 
-                RoleplayOfflineReplayPhase.DISABLED,
-                RoleplayOfflineReplayPhase.RUNNING,
-                RoleplayOfflineReplayPhase.FAILED,
-                -> false
-            }
+                    RoleplayOfflineReplayPhase.DISABLED,
+                    RoleplayOfflineReplayPhase.RUNNING,
+                    RoleplayOfflineReplayPhase.FAILED,
+                        -> false
+                }
     }
     val benchmarkRoleplaySettingsVisited = if (
         benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE
@@ -251,8 +261,17 @@ fun RoleplayScreen(
         )
     }
     val sendCurrentInput = {
-        clearPendingImagesOnAcceptedSend = pendingImageParts.isNotEmpty()
-        onSend(pendingImageParts)
+        val sendWithInputSaved = callbacks.message.onSendWithInputSaved
+        if (sendWithInputSaved != null) {
+            clearPendingImagesOnAcceptedSend = false
+            val submittedImages = pendingImageParts
+            sendWithInputSaved(submittedImages) {
+                if (pendingImageParts == submittedImages) pendingImageParts = emptyList()
+            }
+        } else {
+            clearPendingImagesOnAcceptedSend = pendingImageParts.isNotEmpty()
+            onSend(pendingImageParts)
+        }
     }
 
     LaunchedEffect(scenario?.id) {
@@ -303,7 +322,8 @@ fun RoleplayScreen(
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
         .ifBlank { stringResource(id = R.string.roleplay_character_fallback) }
-    val effectiveHighContrast = settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
+    val effectiveHighContrast =
+        settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
     val backdropState = rememberImmersiveBackdropState(
         backgroundUri = scenario.backgroundUri,
         highContrast = effectiveHighContrast,
@@ -364,13 +384,15 @@ fun RoleplayScreen(
 
             ChatSpecialType.TASK,
             ChatSpecialType.PUNISH,
-            -> Unit
+                -> Unit
         }
     }
 
     fun resetSpecialPlayDraft(type: ChatSpecialType) {
         when (type) {
-            ChatSpecialType.TRANSFER -> transferDraft = TransferPlayDraft(counterparty = characterName)
+            ChatSpecialType.TRANSFER -> transferDraft =
+                TransferPlayDraft(counterparty = characterName)
+
             ChatSpecialType.INVITE -> inviteDraft = InvitePlayDraft(target = characterName)
             ChatSpecialType.GIFT -> giftDraft = GiftPlayDraft(target = characterName)
             ChatSpecialType.TASK -> taskDraft = TaskPlayDraft()
@@ -390,12 +412,23 @@ fun RoleplayScreen(
         onOpenVideoCall,
         onOpenMailbox,
         onOpenWallet,
+        onStartCompanion,
     ) {
         buildList {
+            onStartCompanion?.let { start ->
+                add(
+                    RoleplayInputQuickAction(
+                        "开始新一场",
+                        Lucide.Sparkles,
+                        colorScheme.primary,
+                        start
+                    )
+                )
+            }
             add(
                 RoleplayInputQuickAction(
                     label = "日记",
-                    icon = Icons.Default.AutoStories,
+                    icon = Lucide.NotebookPen,
                     accentColor = colorScheme.secondary,
                     onClick = onOpenDiary,
                 ),
@@ -403,7 +436,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "语音",
-                    icon = Icons.Default.KeyboardVoice,
+                    icon = Lucide.Mic,
                     accentColor = colorScheme.primary,
                     onClick = { showVoiceMessageSheet = true },
                 ),
@@ -411,7 +444,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "查手机",
-                    icon = Icons.Default.Visibility,
+                    icon = Lucide.Eye,
                     accentColor = colorScheme.primary,
                     onClick = { showPhoneOwnerPicker = true },
                 ),
@@ -419,7 +452,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "转账",
-                    icon = Icons.Default.Share,
+                    icon = Lucide.ArrowDownUp,
                     accentColor = colorScheme.tertiary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.TRANSFER)
@@ -430,7 +463,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "邀约",
-                    icon = Icons.Default.Event,
+                    icon = Lucide.Compass,
                     accentColor = colorScheme.primary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.INVITE)
@@ -441,7 +474,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "礼物",
-                    icon = Icons.Default.CardGiftcard,
+                    icon = Lucide.Heart,
                     accentColor = colorScheme.tertiary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.GIFT)
@@ -452,7 +485,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "委托",
-                    icon = Icons.AutoMirrored.Filled.Assignment,
+                    icon = Lucide.FileText,
                     accentColor = colorScheme.secondary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.TASK)
@@ -463,7 +496,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "惩罚",
-                    icon = Icons.Default.Gavel,
+                    icon = Lucide.TriangleAlert,
                     accentColor = colorScheme.error,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.PUNISH)
@@ -474,7 +507,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "动态",
-                    icon = Icons.Default.Forum,
+                    icon = Lucide.MessageCircleMore,
                     accentColor = colorScheme.secondary,
                     onClick = onOpenMoments,
                 ),
@@ -482,7 +515,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "信箱",
-                    icon = Icons.Default.Mail,
+                    icon = Lucide.Mail,
                     accentColor = colorScheme.tertiary,
                     onClick = onOpenMailbox,
                 ),
@@ -490,7 +523,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "钱包",
-                    icon = Icons.Default.AccountBalanceWallet,
+                    icon = Lucide.Wallet,
                     accentColor = colorScheme.tertiary,
                     onClick = onOpenWallet,
                 ),
@@ -498,7 +531,7 @@ fun RoleplayScreen(
             add(
                 RoleplayInputQuickAction(
                     label = "视频",
-                    icon = Icons.Default.Videocam,
+                    icon = Lucide.Video,
                     accentColor = colorScheme.primary,
                     onClick = onOpenVideoCall,
                 ),
@@ -506,8 +539,18 @@ fun RoleplayScreen(
         }
     }
 
+    val immersiveHazeState = remember {
+        if (Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
+            null
+        } else {
+            HazeState()
+        }
+    }
+
+    CompositionLocalProvider(LocalImmersiveHazeState provides immersiveHazeState) {
     if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
         RoleplayOnlinePhoneContent(
+            onStartCompanion = onStartCompanion,
             scenario = scenario,
             assistant = assistant,
             settings = settings,
@@ -595,7 +638,7 @@ fun RoleplayScreen(
             }
 
             benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE &&
-                benchmarkRoleplaySettingsVisited?.value != true -> {
+                    benchmarkRoleplaySettingsVisited?.value != true -> {
                 BenchmarkActionIds.OPEN_SETTINGS
             }
 
@@ -633,6 +676,17 @@ fun RoleplayScreen(
             onDeleteMessage = onRequestDeleteMessage,
             onOpenSpecialPlay = { showSpecialPlaySheet = true },
             quickActions = offlineQuickActions,
+            companionActions = if (companionState != null && companionSceneCallbacks != null) {
+                {
+                    CompanionSceneActions(
+                        companionState, companionSceneCallbacks,
+                        reply = messages.lastOrNull { it.sourceMessageId == companionState.turn?.replyMessageId }?.companionReply,
+                        observationEnabled = companionDisplay?.state?.mode != com.example.myapplication.model.CompanionDisplayMode.STAGE &&
+                            settings.companionSettings(companionState.encounter?.context?.characterId.orEmpty()).writing.observation.enabled,
+                    )
+                }
+            } else null,
+            companionDisplay = companionDisplay,
             pendingImageParts = pendingImageParts,
             onPickImage = pickRoleplayImage,
             onRemovePendingImagePart = { part ->
@@ -692,6 +746,7 @@ fun RoleplayScreen(
                 }
             },
         )
+    }
     }
 
     RoleplayAssistantMismatchDialog(
@@ -813,7 +868,7 @@ private fun hasExpectedOfflineReplayFixtureSources(
         .distinct()
         .toList()
     return persistedSourceIds.size == persistedMessageCount &&
-        persistedSourceIds.all(BenchmarkFixtureIds::isRoleplayMessageId)
+            persistedSourceIds.all(BenchmarkFixtureIds::isRoleplayMessageId)
 }
 
 @Composable

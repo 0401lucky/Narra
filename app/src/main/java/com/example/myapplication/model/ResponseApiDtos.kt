@@ -38,6 +38,18 @@ data class ResponseApiToolDto(
 data class ResponseApiResponse(
     val id: String = "",
     val output: List<ResponseApiOutputItemDto> = emptyList(),
+    val status: String? = null,
+    @SerializedName("incomplete_details")
+    val incompleteDetails: ResponseApiIncompleteDetailsDto? = null,
+    val error: ResponseApiErrorDto? = null,
+)
+
+data class ResponseApiIncompleteDetailsDto(
+    val reason: String? = null,
+)
+
+data class ResponseApiErrorDto(
+    val code: String? = null,
 )
 
 data class ResponseApiOutputItemDto(
@@ -48,11 +60,13 @@ data class ResponseApiOutputItemDto(
     val callId: String? = null,
     val name: String? = null,
     val arguments: String? = null,
+    val status: String? = null,
 )
 
 data class ResponseApiOutputContentDto(
     val type: String = "",
     val text: String? = null,
+    val refusal: String? = null,
 )
 
 data class ResponseApiSummaryContentDto(

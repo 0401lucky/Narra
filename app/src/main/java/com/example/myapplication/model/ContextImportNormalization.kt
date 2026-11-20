@@ -34,6 +34,10 @@ fun ContextDataBundle.normalizedForContextImport(
             .take(CONTEXT_IMPORT_MAX_ASSISTANTS)
             .map { assistant -> assistant.normalizedForContextImport() },
         worldBookEntries = worldBookEntries.normalizedWorldBookEntriesForContextImport(gson),
+        companions = companions?.filter { entry ->
+            assistants.none { it.id == entry.assistantId } ||
+                assistants.take(CONTEXT_IMPORT_MAX_ASSISTANTS).any { it.id == entry.assistantId }
+        },
     )
 }
 

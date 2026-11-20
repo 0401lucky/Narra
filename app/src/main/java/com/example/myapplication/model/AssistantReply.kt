@@ -6,6 +6,9 @@ data class AssistantReply(
     val reasoningSteps: List<ChatReasoningStep> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
     val citations: List<MessageCitation> = emptyList(),
+    val completionEvidence: ChatStreamEvent.CompletionEvidence = ChatStreamEvent.CompletionEvidence(
+        status = PromptCompletionStatus.UNKNOWN,
+    ),
 )
 
 data class GatewayToolingOptions(
@@ -68,6 +71,13 @@ sealed interface ChatStreamEvent {
     data class ImageDelta(val part: ChatMessagePart) : ChatStreamEvent
 
     data class Citations(val items: List<MessageCitation>) : ChatStreamEvent
+
+    /** 与传输结束分离；缺少供应商结束字段时保持 UNKNOWN。 */
+    data class CompletionEvidence(
+        val status: PromptCompletionStatus,
+        val rawFinishReason: String? = null,
+        val rawStatus: String? = null,
+    ) : ChatStreamEvent
 
     data object Completed : ChatStreamEvent
 }

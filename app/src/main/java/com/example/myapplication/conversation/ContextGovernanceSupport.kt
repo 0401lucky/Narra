@@ -74,12 +74,13 @@ object ContextGovernanceSupport {
             triggerMessageCount = triggerMessageCount,
             recentWindow = recentWindow,
         )
-        val contextSections = promptContext.contextSections + extraContextSections + buildTrimmingLogSection(
-            requestMessageCountBeforeTrim = requestMessages.size,
-            sentMessageCount = effectiveRequestMessages.size,
-            recentWindow = recentWindow,
-            summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
-        )
+        val contextSections =
+            promptContext.contextSections + extraContextSections + buildTrimmingLogSection(
+                requestMessageCountBeforeTrim = requestMessages.size,
+                sentMessageCount = effectiveRequestMessages.size,
+                recentWindow = recentWindow,
+                summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
+            )
         return ContextGovernanceSnapshot(
             pressureLevel = resolvePressureLevel(
                 requestMessages = requestMessages,
@@ -113,6 +114,7 @@ object ContextGovernanceSupport {
             ),
             summaryPreview = promptContext.summaryPreview,
             memoryItems = promptContext.memoryItems,
+            hasMemoryRecallPlan = promptContext.memoryRecallPlan != null,
             worldBookItems = promptContext.worldBookItems,
             rawDebugDump = rawDebugDump,
             providerLabel = resolveProviderLabel(settings),
@@ -135,7 +137,8 @@ object ContextGovernanceSupport {
         recentWindow: Int,
         summaryCoveredMessageCount: Int,
     ): ContextLogSection {
-        val oldMessagesCovered = summaryCoveredMessageCount > 0 && sentMessageCount < requestMessageCountBeforeTrim
+        val oldMessagesCovered =
+            summaryCoveredMessageCount > 0 && sentMessageCount < requestMessageCountBeforeTrim
         return ContextLogSection(
             sourceType = ContextLogSourceType.SUMMARY,
             title = "上下文裁剪",
@@ -215,7 +218,7 @@ object ContextGovernanceSupport {
         }
         val attachmentCount = requestMessages.sumOf { message ->
             message.attachments.size +
-                message.parts.count { part -> part.type != ChatMessagePartType.TEXT }
+                    message.parts.count { part -> part.type != ChatMessagePartType.TEXT }
         }
         var score = 0
         if (promptContext.systemPrompt.length > 1_500) score += 1
@@ -277,7 +280,8 @@ object ContextGovernanceSupport {
             return provider.name
         }
         return try {
-            val normalized = if ("://" in trimmedBaseUrl) trimmedBaseUrl else "https://$trimmedBaseUrl"
+            val normalized =
+                if ("://" in trimmedBaseUrl) trimmedBaseUrl else "https://$trimmedBaseUrl"
             java.net.URI(normalized).host?.ifBlank { provider.name } ?: provider.name
         } catch (_: Exception) {
             trimmedBaseUrl

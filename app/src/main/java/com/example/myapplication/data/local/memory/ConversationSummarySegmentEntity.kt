@@ -1,6 +1,7 @@
 package com.example.myapplication.data.local.memory
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -21,7 +22,11 @@ import com.example.myapplication.data.local.chat.ConversationEntity
         Index(value = ["assistantId"]),
         Index(value = ["conversationId", "startCreatedAt"]),
         Index(value = ["conversationId", "endCreatedAt"]),
-        Index(value = ["conversationId", "startMessageId", "endMessageId"], unique = true),
+        Index(
+            name = "index_conversation_summary_segments_conversationId_startMessageId_endMessageId",
+            value = ["conversationId", "startMessageId", "endMessageId", "memoryContextJson", "isAggregate"],
+            unique = true,
+        ),
     ],
 )
 data class ConversationSummarySegmentEntity(
@@ -36,4 +41,8 @@ data class ConversationSummarySegmentEntity(
     val summary: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    @ColumnInfo(defaultValue = "'[]'") val sourceSnapshotJson: String = "[]",
+    @ColumnInfo(defaultValue = "'unknown'") val completionStatus: String = "unknown",
+    @ColumnInfo(defaultValue = "''") val memoryContextJson: String = "",
+    @ColumnInfo(defaultValue = "0") val isAggregate: Boolean = false,
 )

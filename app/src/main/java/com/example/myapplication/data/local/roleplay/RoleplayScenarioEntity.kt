@@ -1,5 +1,6 @@
 package com.example.myapplication.data.local.roleplay
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -44,4 +45,6 @@ data class RoleplayScenarioEntity(
     val isMuted: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long,
+    @ColumnInfo(defaultValue = "'legacy_compat'")
+    val memoryPurpose: String = "legacy_compat",
 )

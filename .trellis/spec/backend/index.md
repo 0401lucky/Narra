@@ -34,6 +34,15 @@ Store / Room DAO / Retrofit / Android system adapter
 - [网络与协议](./network-guidelines.md)：Provider、Retrofit、流式响应与 URL 安全。
 - [dev 云端发布与更新](./dev-release-guidelines.md)：Actions、原签名、桶级 S3、清单门禁与 Pages 发布重试。
 - [持久化规范](./database-guidelines.md)：Room、DataStore、Keystore 与迁移。
+- [陪伴场次与可靠回合](./companion-foundation-guidelines.md)：场次/请求、产物补存、完成证据、CAS、来源资格与旧路径兼容。
+- [陪伴入口与授权上下文](./companion-entry-context-guidelines.md)：三开场、持久选择/返回、逐请求历史/记忆、最后发送校验和时区快照。
+- [陪伴正文、表现与观测](./companion-presentation-guidelines.md)：raw保真、历史配置快照、版本化投影、文风/人称与设置CAS。
+- [陪伴演出、素材与连续阅读](./companion-stage-reading-guidelines.md)：本地播放器、素材引用/CAS/取消、独立阅读/keyset/锚点与声音选段。
+- [陪伴语音、翻译与独立收藏](./companion-voice-guidelines.md)：独立开关/冻结请求键、唯一声音owner、文件/Room回执、收藏及有限音频缓存。
+- [陪伴历史、原文与资料恢复](./companion-history-transfer-guidelines.md)：完整授权查询/原文资格、批次CAS、TXT/SAF、公开白名单、私人v3及分阶段恢复。
+- [RP 记忆空间与持久任务](./memory-system-guidelines.md)：运行/身份、来源版本、事务、恢复、长期认知、时效状态与档案生命周期。
+- [记忆档案管理与处理控制](./memory-management-guidelines.md)：真实管理入口、历史回执、暂停/继续、CAS、一次激活与上层重开。
+- [记忆资料导入导出](./memory-transfer-guidelines.md)：完整图、目标/出处、幂等与外层事务、删除闭包和向量授权。
 - [错误处理](./error-handling.md)：异常传播、协程取消、UI 反馈与脱敏。
 - [合规门禁](./compliance-guidelines.md)：18+ 条款确认、DataStore 契约和后台 AI 守卫。
 - [日志规范](./logging-guidelines.md)：`AppLogger`、日志级别和敏感信息。
@@ -55,6 +64,16 @@ Store / Room DAO / Retrofit / Android system adapter
 - 默认令牌、皮肤配色、玻璃缓存或试点无障碍：`ui-token-contract.md`、`roleplay-theme-settings.md`
 - 系统悬浮翻译窗口、服务或截屏授权：`floating-translation-ui-guidelines.md`、`error-handling.md`
 - Room、DataStore、导入导出：`database-guidelines.md`、`error-handling.md`
+- RP 记忆、剧情运行、提取/召回或管理：`memory-system-guidelines.md`、
+  `database-guidelines.md`、`error-handling.md`
+- 单角色陪伴场次、主回复恢复或 linked 消息：`companion-foundation-guidelines.md`
+- 陪伴开场/导航、上下文、时区或请求表现扩展：`companion-entry-context-guidelines.md`
+- 陪伴正文/观测、表现配置、解析投影或后续演出/声音消费：`companion-presentation-guidelines.md`
+- 陪伴播放器、素材、跨场阅读或声音选段接线：`companion-stage-reading-guidelines.md`
+- 陪伴朗读、翻译/MiMo参数、声音发布恢复、收藏或缓存：`companion-voice-guidelines.md`
+- 陪伴历史/原文改删、TXT/SAF、装扮与私人资料恢复：`companion-history-transfer-guidelines.md`
+- 记忆管理、暂停/继续、用途或生命周期：`memory-management-guidelines.md`
+- 记忆资料/目标映射、恢复或导入向量：`memory-transfer-guidelines.md`
 - Provider、AI、搜索、更新、TTS：`network-guidelines.md`、
   `logging-guidelines.md`、`error-handling.md`
 - dev 发版工作流、签名、R2、Pages 或发布工具：`dev-release-guidelines.md`、

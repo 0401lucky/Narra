@@ -28,25 +28,34 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.KeyboardVoice
-import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import com.composables.icons.lucide.ArrowDown
+import com.composables.icons.lucide.ArrowDownUp
+import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.Compass
+import com.composables.icons.lucide.EllipsisVertical
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.FileText
+import com.composables.icons.lucide.Heart
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Mail
+import com.composables.icons.lucide.MessageCircleMore
+import com.composables.icons.lucide.Mic
+import com.composables.icons.lucide.NotebookPen
+import com.composables.icons.lucide.Smartphone
+import com.composables.icons.lucide.TriangleAlert
+import com.composables.icons.lucide.Video
+import com.composables.icons.lucide.Wallet
+import com.composables.icons.lucide.X
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -177,6 +186,7 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenWallet: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
+    onStartCompanion: (() -> Unit)? = null,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val immersiveMode = settings.roleplayImmersiveMode
@@ -198,7 +208,8 @@ internal fun RoleplayOnlinePhoneContent(
         noBackgroundSkin = settings.roleplayNoBackgroundSkin,
         useGlassColors = useGlassBubble,
     )
-    val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
+    val noBackgroundSkinSpec =
+        rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
     val palette = backdropState.palette
     val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
         0.dp
@@ -241,7 +252,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "日记",
-                    icon = Icons.Default.AutoStories,
+                    icon = Lucide.NotebookPen,
                     accentColor = colorScheme.secondary,
                     onClick = onOpenDiary,
                 ),
@@ -249,7 +260,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "语音",
-                    icon = Icons.Default.KeyboardVoice,
+                    icon = Lucide.Mic,
                     accentColor = colorScheme.primary,
                     onClick = onOpenVoiceMessage,
                 ),
@@ -257,7 +268,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "查手机",
-                    icon = Icons.Default.Visibility,
+                    icon = Lucide.Eye,
                     accentColor = colorScheme.primary,
                     onClick = onOpenPhoneCheck,
                 ),
@@ -265,7 +276,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "转账",
-                    icon = Icons.Default.Share,
+                    icon = Lucide.ArrowDownUp,
                     accentColor = colorScheme.primary,
                     onClick = onOpenTransferPlay,
                 ),
@@ -273,7 +284,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "邀约",
-                    icon = Icons.Default.Event,
+                    icon = Lucide.Compass,
                     accentColor = colorScheme.primary,
                     onClick = onOpenInvitePlay,
                 ),
@@ -281,7 +292,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "礼物",
-                    icon = Icons.Default.CardGiftcard,
+                    icon = Lucide.Heart,
                     accentColor = colorScheme.tertiary,
                     onClick = onOpenGiftPlay,
                 ),
@@ -289,7 +300,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "委托",
-                    icon = Icons.AutoMirrored.Filled.Assignment,
+                    icon = Lucide.FileText,
                     accentColor = colorScheme.secondary,
                     onClick = onOpenTaskPlay,
                 ),
@@ -297,7 +308,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "惩罚",
-                    icon = Icons.Default.Gavel,
+                    icon = Lucide.TriangleAlert,
                     accentColor = colorScheme.error,
                     onClick = onOpenPunishPlay,
                 ),
@@ -305,7 +316,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "动态",
-                    icon = Icons.Default.Forum,
+                    icon = Lucide.MessageCircleMore,
                     accentColor = colorScheme.tertiary,
                     onClick = onOpenMoments,
                 ),
@@ -313,7 +324,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "信箱",
-                    icon = Icons.Default.Mail,
+                    icon = Lucide.Mail,
                     accentColor = colorScheme.primary,
                     onClick = onOpenMailbox,
                 ),
@@ -321,7 +332,7 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "钱包",
-                    icon = Icons.Default.AccountBalanceWallet,
+                    icon = Lucide.Wallet,
                     accentColor = colorScheme.primary,
                     onClick = onOpenWallet,
                 ),
@@ -329,20 +340,25 @@ internal fun RoleplayOnlinePhoneContent(
             add(
                 RoleplayInputQuickAction(
                     label = "视频",
-                    icon = Icons.Default.Videocam,
+                    icon = Lucide.Video,
                     accentColor = colorScheme.primary,
                     onClick = onOpenVideoCall,
                 ),
             )
         }
     }
-    val characterName = remember(scenario.title, scenario.characterDisplayNameOverride, assistant?.name, scenario.chatType) {
+    val characterName = remember(
+        scenario.title,
+        scenario.characterDisplayNameOverride,
+        assistant?.name,
+        scenario.chatType
+    ) {
         if (scenario.isGroupChat) {
             scenario.title.ifBlank { "群聊" }
         } else {
             scenario.characterDisplayNameOverride.trim()
                 .ifBlank { assistant?.name?.trim().orEmpty() }
-            .ifBlank { "角色" }
+                .ifBlank { "角色" }
         }
     }
     val groupMentionCandidates = remember(groupParticipants, settings, scenario.chatType) {
@@ -353,7 +369,8 @@ internal fun RoleplayOnlinePhoneContent(
             groupParticipants
                 .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
                 .map { participant ->
-                    val memberAssistant = assistants.firstOrNull { it.id == participant.assistantId }
+                    val memberAssistant =
+                        assistants.firstOrNull { it.id == participant.assistantId }
                     RoleplayMentionCandidate(
                         id = participant.id,
                         displayName = participant.displayNameOverride.ifBlank {
@@ -370,10 +387,10 @@ internal fun RoleplayOnlinePhoneContent(
     }
     val visibleMessages = messages.filter { message ->
         message.contentType != RoleplayContentType.SYSTEM &&
-            (
-                settings.showOnlineRoleplayNarration ||
-                    message.contentType != RoleplayContentType.THOUGHT
-                )
+                (
+                        settings.showOnlineRoleplayNarration ||
+                                message.contentType != RoleplayContentType.THOUGHT
+                        )
     }
     val lastVisibleMessage = visibleMessages.lastOrNull()
     RoleplayStreamingAutoScrollEffect(
@@ -390,7 +407,7 @@ internal fun RoleplayOnlinePhoneContent(
     val isAtTop by remember(listState, visibleMessages.size) {
         derivedStateOf {
             visibleMessages.isEmpty() ||
-                (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 8)
+                    (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 8)
         }
     }
     val isAtBottomExact by remember(listState, visibleMessages.size) {
@@ -398,17 +415,17 @@ internal fun RoleplayOnlinePhoneContent(
             val layoutInfo = listState.layoutInfo
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
             visibleMessages.isEmpty() || (
-                lastVisibleItem != null &&
-                    lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
-                    !listState.canScrollForward &&
-                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
-                )
+                    lastVisibleItem != null &&
+                            lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                            !listState.canScrollForward &&
+                            (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
+                    )
         }
     }
     val showJumpButtons = visibleMessages.size > OnlinePhoneJumpButtonMessageThreshold
     val hasAiHelperActivity = suggestions.isNotEmpty() ||
-        isGeneratingSuggestions ||
-        !suggestionErrorMessage.isNullOrBlank()
+            isGeneratingSuggestions ||
+            !suggestionErrorMessage.isNullOrBlank()
     val showAiHelperEntry = settings.showRoleplayAiHelper
     val showAiHelperContent = showAiHelperEntry && showAiHelperPanel
 
@@ -434,14 +451,20 @@ internal fun RoleplayOnlinePhoneContent(
                 .imePadding()
                 .roleplayNavigationBarPadding(immersiveMode),
         ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth().testTag("roleplay_online_header")) {
-                val compactHeader = maxWidth < NarraMinimumTouchTarget * 7 || LocalDensity.current.fontScale >= 1.5f
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth().testTag("roleplay_online_header")
+            ) {
+                val compactHeader =
+                    maxWidth < NarraMinimumTouchTarget * 7 || LocalDensity.current.fontScale >= 1.5f
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = NarraUi.space12)
-                        .padding(top = statusBarTopPadding + NarraUi.space8, bottom = NarraUi.space8),
+                        .padding(
+                            top = statusBarTopPadding + NarraUi.space8,
+                            bottom = NarraUi.space8
+                        ),
                     shape = NarraShapes.large,
                     blurRadius = 22.dp,
                     overlayColor = chromeSurfaceColor,
@@ -454,7 +477,7 @@ internal fun RoleplayOnlinePhoneContent(
                     ) {
                         OnlinePhoneHeaderButton(
                             onClick = onNavigateBack,
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            icon = Lucide.ArrowLeft,
                             contentDescription = "返回",
                             colors = colors,
                         )
@@ -478,9 +501,10 @@ internal fun RoleplayOnlinePhoneContent(
                                     if (scenario.isGroupChat) append(" · ${scenario.groupReplyMode.displayName}")
                                     if (contextStatus.isContinuingSession) append(" · 继续会话")
                                     if (isSending) append(" · 正在输入")
-                                    contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }?.let { count ->
-                                        append(" · 摘要 $count")
-                                    }
+                                    contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }
+                                        ?.let { count ->
+                                            append(" · 摘要 $count")
+                                        }
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.panelMutedText,
@@ -489,23 +513,23 @@ internal fun RoleplayOnlinePhoneContent(
                             )
                         }
                         if (!compactHeader) {
-                        OnlinePhoneHeaderButton(
-                            onClick = onOpenMoments,
-                            icon = Icons.Default.Forum,
-                            contentDescription = "动态",
-                            colors = colors,
-                        )
-                        OnlinePhoneHeaderButton(
-                            onClick = onOpenPhoneCheck,
-                            icon = Icons.Default.PhoneAndroid,
-                            contentDescription = "查手机",
-                            colors = colors,
-                        )
+                            OnlinePhoneHeaderButton(
+                                onClick = onOpenMoments,
+                                icon = Lucide.MessageCircleMore,
+                                contentDescription = "动态",
+                                colors = colors,
+                            )
+                            OnlinePhoneHeaderButton(
+                                onClick = onOpenPhoneCheck,
+                                icon = Lucide.Smartphone,
+                                contentDescription = "查手机",
+                                colors = colors,
+                            )
                         }
                         if (isSending) {
                             OnlinePhoneHeaderButton(
                                 onClick = onCancelSending,
-                                icon = Icons.Default.Close,
+                                icon = Lucide.X,
                                 contentDescription = "停止生成",
                                 colors = colors,
                                 containerColor = colors.errorBackgroundStrong.copy(alpha = 0.72f),
@@ -515,11 +539,19 @@ internal fun RoleplayOnlinePhoneContent(
                         Box {
                             OnlinePhoneHeaderButton(
                                 onClick = { showMenu = true },
-                                icon = Icons.Default.MoreVert,
+                                icon = Lucide.EllipsisVertical,
                                 contentDescription = "更多",
                                 colors = colors,
                             )
-                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }) {
+                                onStartCompanion?.let { start ->
+                                    DropdownMenuItem(text = { Text("开始见面") }, onClick = {
+                                        showMenu = false
+                                        start()
+                                    })
+                                }
                                 if (compactHeader) {
                                     DropdownMenuItem(text = { Text("动态") }, onClick = {
                                         showMenu = false
@@ -550,285 +582,360 @@ internal fun RoleplayOnlinePhoneContent(
                 }
             }
 
-        pendingMemoryProposal?.let { proposal ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
-                color = chromeSurfaceColor,
-                shape = NarraShapes.medium,
-            ) {
-                Column(
-                    modifier = Modifier.padding(NarraUi.space16),
-                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
-                ) {
-                    Text("建议记住一条长期设定", fontWeight = FontWeight.SemiBold, color = colors.characterAccent)
-                    Text(proposal.content, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
-                        androidx.compose.material3.TextButton(onClick = onApprovePendingMemoryProposal) { Text("记住") }
-                        androidx.compose.material3.TextButton(onClick = onRejectPendingMemoryProposal) { Text("忽略") }
-                    }
-                }
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("roleplay_online_message_list")
-                    .nestedScroll(autoFollowScrollConnection),
-                contentPadding = PaddingValues(horizontal = NarraUi.space12, vertical = NarraUi.space16),
-                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
-            ) {
-                itemsIndexed(
-                    items = visibleMessages,
-                    key = { _, message -> message.uiItemId },
-                    contentType = { _, message -> roleplayLazyContentType(message) },
-                ) { index, message ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                    ) {
-                        val previous = visibleMessages.getOrNull(index - 1)
-                        if (scenario.enableTimeAwareness && shouldShowOnlineTimestamp(previous, message)) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Surface(
-                                    color = colors.systemBackground,
-                                    shape = NarraShapes.pill,
-                                ) {
-                                    Text(
-                                        text = formatOnlineTime(message.createdAt),
-                                        modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = colors.systemText,
-                                    )
-                                }
-                            }
-                        }
-                        RoleplayMessageItem(
-                            message = message,
-                            colors = messageColors,
-                            backdropState = backdropState,
-                            onRetryTurn = onRetryTurn,
-                            onRetryAiPhoto = onRetryAiPhoto,
-                            onEditUserMessage = onEditUserMessage,
-                            onQuoteMessage = onQuoteMessage,
-                            onPokeMessageAvatar = onPokeMessageAvatar,
-                            onRecallMessage = onRecallMessage,
-                            onDeleteMessage = onDeleteMessage,
-                            onOpenQuotedMessage = { quotedMessageId ->
-                                val targetIndex = visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
-                                if (targetIndex >= 0) {
-                                    scope.launch {
-                                        listState.animateScrollToItem(targetIndex)
-                                    }
-                                }
-                            },
-                            onConfirmTransferReceipt = onConfirmTransferReceipt,
-                            onOpenVideoCall = onOpenVideoCall,
-                            bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
-                            noBackgroundSkin = settings.roleplayNoBackgroundSkin,
-                        )
-                    }
-                }
-            }
-
-            if (showJumpButtons && !isAtTop) {
-                NarraIconButton(
-                    onClick = {
-                        scope.launch {
-                            listState.animateScrollToItem(0)
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = NarraUi.space8, end = NarraUi.space8)
-                        .size(OnlinePhoneJumpButtonSize),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
-                        contentColor = colors.textPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowUpward,
-                        contentDescription = "跳到顶部",
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-
-            if (showJumpButtons && !isAtBottomExact) {
-                NarraIconButton(
-                    onClick = {
-                        scope.launch {
-                            autoScrollState.scrollToEnd(
-                                listState = listState,
-                                lastIndex = visibleMessages.lastIndex,
-                                animated = true,
-                                resumeAutoFollow = true,
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = NarraUi.space8, bottom = NarraUi.space12)
-                        .size(OnlinePhoneJumpButtonSize),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = colorScheme.primary,
-                        contentColor = colorScheme.onPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDownward,
-                        contentDescription = "跳到底部",
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            AppSnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = NarraUi.space8),
-            )
-            }
-
-        if (showAiHelperContent) {
-            RoleplayOnlineAiHelperBar(
-                modifier = Modifier
-                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8)
-                    .heightIn(max = expandedPanelMaxHeight)
-                    .verticalScroll(rememberScrollState()),
-                backdropState = backdropState,
-                colors = colors,
-                suggestions = suggestions,
-                isGeneratingSuggestions = isGeneratingSuggestions,
-                suggestionErrorMessage = suggestionErrorMessage,
-                isSending = isSending,
-                onGenerateSuggestions = onGenerateSuggestions,
-                onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = {
-                    onClearSuggestions()
-                    showAiHelperPanel = false
-                },
-            )
-        }
-
-        if (replyToMessageId.isNotBlank()) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
-                color = chromeSurfaceColor,
-                shape = NarraShapes.medium,
-            ) {
-                Row(
+            pendingMemoryProposal?.let { proposal ->
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
-                    verticalAlignment = Alignment.CenterVertically,
+                    color = chromeSurfaceColor,
+                    shape = NarraShapes.medium,
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .width(3.dp)
-                            .height(36.dp),
-                        shape = NarraShapes.pill,
-                        color = colors.characterAccent.copy(alpha = 0.68f),
-                    ) {}
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = NarraUi.space8),
-                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                        modifier = Modifier.padding(NarraUi.space16),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     ) {
                         Text(
-                            text = "回复 ${replyToSpeakerName.ifBlank { "对方" }}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = colors.characterAccent,
+                            "建议记住一条长期设定",
                             fontWeight = FontWeight.SemiBold,
+                            color = colors.characterAccent
                         )
-                        Text(
-                            text = replyToPreview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.textMuted,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    androidx.compose.material3.TextButton(onClick = onClearQuotedMessage) {
-                        Text("取消")
-                    }
-                }
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("roleplay_online_input")
-                .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
-        ) {
-            RoleplayInputBar(
-                colors = colors,
-                backdropState = backdropState,
-                input = input,
-                inputFocusToken = inputFocusToken,
-                isSending = isSending,
-                onInputChange = onInputChange,
-                onSend = onSend,
-                onRequestMentionCandidateReply = if (scenario.isGroupChat) {
-                    { candidate -> onRequestGroupParticipantReply(candidate.id) }
-                } else {
-                    null
-                },
-                showAiHelperButton = showAiHelperEntry,
-                aiHelperActive = showAiHelperContent || hasAiHelperActivity,
-                onToggleAiHelper = if (showAiHelperEntry) {
-                    {
-                        if (showAiHelperPanel) {
-                            showAiHelperPanel = false
-                        } else {
-                            showAiHelperPanel = true
-                            if (!hasAiHelperActivity) {
-                                onGenerateSuggestions()
+                        Text(proposal.content, color = colors.textPrimary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+                            androidx.compose.material3.TextButton(onClick = onApprovePendingMemoryProposal) {
+                                Text(
+                                    "记住"
+                                )
+                            }
+                            androidx.compose.material3.TextButton(onClick = onRejectPendingMemoryProposal) {
+                                Text(
+                                    "忽略"
+                                )
                             }
                         }
                     }
-                } else {
-                    null
-                },
-                onCancel = onCancelSending,
-                onOpenSpecialPlay = onOpenTransferPlay,
-                quickActions = quickActions,
-                mentionCandidates = groupMentionCandidates,
-                pendingImageParts = pendingImageParts,
-                onPickImage = onPickImage,
-                onRemovePendingImagePart = onRemovePendingImagePart,
-                expandedPanelMaxHeight = expandedPanelMaxHeight,
-            )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("roleplay_online_message_list")
+                        .nestedScroll(autoFollowScrollConnection),
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space12,
+                        vertical = NarraUi.space16
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                ) {
+                    itemsIndexed(
+                        items = visibleMessages,
+                        key = { _, message -> message.uiItemId },
+                        contentType = { _, message -> roleplayLazyContentType(message) },
+                    ) { index, message ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                        ) {
+                            val previous = visibleMessages.getOrNull(index - 1)
+                            val next = visibleMessages.getOrNull(index + 1)
+                            val showTimestamp = scenario.enableTimeAwareness && shouldShowOnlineTimestamp(
+                                previous,
+                                message,
+                            )
+                            val nextShowsTimestamp = next != null &&
+                                scenario.enableTimeAwareness &&
+                                shouldShowOnlineTimestamp(message, next)
+                            val sameSpeakerAsPrevious = previous != null &&
+                                !showTimestamp &&
+                                previous.contentType == RoleplayContentType.DIALOGUE &&
+                                message.contentType == RoleplayContentType.DIALOGUE &&
+                                previous.speaker == message.speaker &&
+                                (!scenario.isGroupChat || previous.speakerName == message.speakerName)
+                            val sameSpeakerAsNext = next != null &&
+                                !nextShowsTimestamp &&
+                                next.contentType == RoleplayContentType.DIALOGUE &&
+                                message.contentType == RoleplayContentType.DIALOGUE &&
+                                next.speaker == message.speaker &&
+                                (!scenario.isGroupChat || next.speakerName == message.speakerName)
+                            if (showTimestamp) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = NarraUi.space8),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Surface(
+                                        color = colors.systemBackground,
+                                        shape = NarraShapes.pill,
+                                    ) {
+                                        Text(
+                                            text = formatOnlineTime(message.createdAt),
+                                            modifier = Modifier.padding(
+                                                horizontal = NarraUi.space8,
+                                                vertical = NarraUi.space4
+                                            ),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = colors.systemText,
+                                        )
+                                    }
+                                }
+                            }
+                            RoleplayMessageItem(
+                                message = message,
+                                colors = messageColors,
+                                backdropState = backdropState,
+                                onRetryTurn = onRetryTurn,
+                                onRetryAiPhoto = onRetryAiPhoto,
+                                onEditUserMessage = onEditUserMessage,
+                                onQuoteMessage = onQuoteMessage,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
+                                onRecallMessage = onRecallMessage,
+                                onDeleteMessage = onDeleteMessage,
+                                onOpenQuotedMessage = { quotedMessageId ->
+                                    val targetIndex =
+                                        visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
+                                    if (targetIndex >= 0) {
+                                        scope.launch {
+                                            listState.animateScrollToItem(targetIndex)
+                                        }
+                                    }
+                                },
+                                onConfirmTransferReceipt = onConfirmTransferReceipt,
+                                onOpenVideoCall = onOpenVideoCall,
+                                bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
+                                noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+                                showSpeakerName = if (message.speaker == RoleplaySpeaker.USER) {
+                                    false
+                                } else {
+                                    scenario.isGroupChat
+                                },
+                                groupedWithPrevious = sameSpeakerAsPrevious,
+                                groupedWithNext = sameSpeakerAsNext,
+                            )
+                        }
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showJumpButtons && !isAtTop,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = NarraUi.space8, end = NarraUi.space8),
+                    enter = fadeIn(tween(180)) + scaleIn(
+                        initialScale = 0.85f,
+                        animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                    ),
+                    exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.85f, animationSpec = tween(140)),
+                ) {
+                    NarraIconButton(
+                        onClick = {
+                            scope.launch {
+                                listState.animateScrollToItem(0)
+                            }
+                        },
+                        modifier = Modifier.size(OnlinePhoneJumpButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
+                            contentColor = colors.textPrimary,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Lucide.ArrowUp,
+                            contentDescription = "跳到顶部",
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showJumpButtons && !isAtBottomExact,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = NarraUi.space8, bottom = NarraUi.space12),
+                    enter = fadeIn(tween(180)) + scaleIn(
+                        initialScale = 0.85f,
+                        animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                    ),
+                    exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.85f, animationSpec = tween(140)),
+                ) {
+                    NarraIconButton(
+                        onClick = {
+                            scope.launch {
+                                autoScrollState.scrollToEnd(
+                                    listState = listState,
+                                    lastIndex = visibleMessages.lastIndex,
+                                    animated = true,
+                                    resumeAutoFollow = true,
+                                )
+                            }
+                        },
+                        modifier = Modifier.size(OnlinePhoneJumpButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Lucide.ArrowDown,
+                            contentDescription = "跳到底部",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+
+                AppSnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = NarraUi.space8),
+                )
+            }
+
+            AnimatedVisibility(
+                visible = showAiHelperContent,
+                enter = expandVertically(
+                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+                ) + fadeIn(tween(180)),
+                exit = shrinkVertically(tween(180)) + fadeOut(tween(140)),
+            ) {
+                RoleplayOnlineAiHelperBar(
+                    modifier = Modifier
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8)
+                        .heightIn(max = expandedPanelMaxHeight)
+                        .verticalScroll(rememberScrollState()),
+                    backdropState = backdropState,
+                    colors = colors,
+                    suggestions = suggestions,
+                    isGeneratingSuggestions = isGeneratingSuggestions,
+                    suggestionErrorMessage = suggestionErrorMessage,
+                    isSending = isSending,
+                    onGenerateSuggestions = onGenerateSuggestions,
+                    onApplySuggestion = onApplySuggestion,
+                    onClearSuggestions = {
+                        onClearSuggestions()
+                        showAiHelperPanel = false
+                    },
+                )
+            }
+
+            AnimatedVisibility(
+                visible = replyToMessageId.isNotBlank(),
+                enter = expandVertically(
+                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 420f),
+                ) + fadeIn(tween(160)),
+                exit = shrinkVertically(tween(160)) + fadeOut(tween(120)),
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                    color = chromeSurfaceColor,
+                    shape = NarraShapes.medium,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height(36.dp),
+                            shape = NarraShapes.pill,
+                            color = colors.characterAccent.copy(alpha = 0.68f),
+                        ) {}
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = NarraUi.space8),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                        ) {
+                            Text(
+                                text = "回复 ${replyToSpeakerName.ifBlank { "对方" }}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colors.characterAccent,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = replyToPreview,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.textMuted,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        androidx.compose.material3.TextButton(onClick = onClearQuotedMessage) {
+                            Text("取消")
+                        }
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("roleplay_online_input")
+                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+            ) {
+                RoleplayInputBar(
+                    colors = colors,
+                    backdropState = backdropState,
+                    input = input,
+                    inputFocusToken = inputFocusToken,
+                    isSending = isSending,
+                    onInputChange = onInputChange,
+                    onSend = onSend,
+                    onRequestMentionCandidateReply = if (scenario.isGroupChat) {
+                        { candidate -> onRequestGroupParticipantReply(candidate.id) }
+                    } else {
+                        null
+                    },
+                    showAiHelperButton = showAiHelperEntry,
+                    aiHelperActive = showAiHelperContent || hasAiHelperActivity,
+                    onToggleAiHelper = if (showAiHelperEntry) {
+                        {
+                            if (showAiHelperPanel) {
+                                showAiHelperPanel = false
+                            } else {
+                                showAiHelperPanel = true
+                                if (!hasAiHelperActivity) {
+                                    onGenerateSuggestions()
+                                }
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                    onCancel = onCancelSending,
+                    onOpenSpecialPlay = onOpenTransferPlay,
+                    quickActions = quickActions,
+                    mentionCandidates = groupMentionCandidates,
+                    pendingImageParts = pendingImageParts,
+                    onPickImage = onPickImage,
+                    onRemovePendingImagePart = onRemovePendingImagePart,
+                    expandedPanelMaxHeight = expandedPanelMaxHeight,
+                )
+            }
         }
+
     }
 
 }
 
-}
-
-internal fun roleplayOnlineBackdropScrim(backdropState: ImmersiveBackdropState): Brush = Brush.verticalGradient(
-    colors = listOf(
-        backdropState.palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.14f else 0f),
-        backdropState.palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.28f else 0f),
-    ),
-)
+internal fun roleplayOnlineBackdropScrim(backdropState: ImmersiveBackdropState): Brush =
+    Brush.verticalGradient(
+        colors = listOf(
+            backdropState.palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.14f else 0f),
+            backdropState.palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.28f else 0f),
+        ),
+    )
 
 @Composable
 private fun OnlinePhoneHeaderButton(
@@ -868,7 +975,8 @@ private fun RoleplayOnlineAiHelperBar(
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
 ) {
-    val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
+    val showPanel =
+        suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     val actionEnabled = !isSending && !isGeneratingSuggestions
     val view = LocalView.current
     val shape = NarraShapes.large

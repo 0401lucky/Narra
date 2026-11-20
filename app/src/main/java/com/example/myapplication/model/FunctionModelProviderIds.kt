@@ -9,18 +9,22 @@ data class FunctionModelProviderIds(
     val momentsProviderId: String = "",
     val searchProviderId: String = "",
     val giftImageProviderId: String = "",
+    val embeddingProviderId: String = "",
 ) {
     fun providerIdFor(function: ProviderFunction): String {
         return when (function) {
             ProviderFunction.CHAT -> ""
             ProviderFunction.TITLE_SUMMARY -> (titleSummaryProviderId as String?).orEmpty().trim()
-            ProviderFunction.CHAT_SUGGESTION -> (chatSuggestionProviderId as String?).orEmpty().trim()
+            ProviderFunction.CHAT_SUGGESTION -> (chatSuggestionProviderId as String?).orEmpty()
+                .trim()
+
             ProviderFunction.MEMORY -> (memoryProviderId as String?).orEmpty().trim()
             ProviderFunction.TRANSLATION -> (translationProviderId as String?).orEmpty().trim()
             ProviderFunction.PHONE_SNAPSHOT -> (phoneSnapshotProviderId as String?).orEmpty().trim()
             ProviderFunction.MOMENTS -> (momentsProviderId as String?).orEmpty().trim()
             ProviderFunction.SEARCH -> (searchProviderId as String?).orEmpty().trim()
             ProviderFunction.GIFT_IMAGE -> (giftImageProviderId as String?).orEmpty().trim()
+            ProviderFunction.EMBEDDING -> (embeddingProviderId as String?).orEmpty().trim()
         }
     }
 
@@ -36,6 +40,7 @@ data class FunctionModelProviderIds(
             ProviderFunction.MOMENTS -> copy(momentsProviderId = normalizedProviderId)
             ProviderFunction.SEARCH -> copy(searchProviderId = normalizedProviderId)
             ProviderFunction.GIFT_IMAGE -> copy(giftImageProviderId = normalizedProviderId)
+            ProviderFunction.EMBEDDING -> copy(embeddingProviderId = normalizedProviderId)
         }
     }
 
@@ -55,6 +60,7 @@ data class FunctionModelProviderIds(
             momentsProviderId = keepIfValid((momentsProviderId as String?).orEmpty()),
             searchProviderId = keepIfValid((searchProviderId as String?).orEmpty()),
             giftImageProviderId = keepIfValid((giftImageProviderId as String?).orEmpty()),
+            embeddingProviderId = keepIfValid((embeddingProviderId as String?).orEmpty()),
         )
     }
 }

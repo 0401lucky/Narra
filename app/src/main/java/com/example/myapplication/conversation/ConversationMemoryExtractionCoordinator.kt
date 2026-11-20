@@ -7,6 +7,8 @@ import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.companionSourceEligibility
+import com.example.myapplication.model.CompanionSourceEligibility
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.ProviderFunction
@@ -15,7 +17,31 @@ class ConversationMemoryExtractionCoordinator(
     private val aiPromptExtrasService: AiPromptExtrasService,
     private val memoryRepository: MemoryRepository,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
+    private val durableCoordinator: DurableMemoryExtractionCoordinator? = null,
 ) {
+    suspend fun usesDurableMemory(): Boolean = durableCoordinator?.isEnabled() == true
+
+    val hasArchiveContext: Boolean get() = durableCoordinator != null
+
+    suspend fun summaryRuntimeContext(conversationId: String, assistantId: String) =
+        durableCoordinator?.runtimeContext(conversationId, assistantId)
+
+    suspend fun summarySourceAllowed(
+        context: com.example.myapplication.model.MemoryRuntimeContext,
+        message: ChatMessage
+    ): Boolean =
+        durableCoordinator?.summarySourceAllowed(context, message) == true
+
+    suspend fun updatePendingRoleplayMemories(
+        conversationId: String,
+        assistantId: String
+    ): Boolean =
+        durableCoordinator?.processAutomatic(
+            conversationId,
+            assistantId,
+            manualTrigger = true
+        )?.updated == true
+
     suspend fun updateChatMemories(
         assistant: Assistant,
         completedMessages: List<ChatMessage>,
@@ -29,12 +55,15 @@ class ConversationMemoryExtractionCoordinator(
         if (recentMessageWindow <= 0) {
             return false
         }
-        val memoryProvider = settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
+        val memoryProvider =
+            settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
         val memoryModel = settings.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
             return false
         }
-        val recentMessages = completedMessages.takeLast(recentMessageWindow)
+        val recentMessages = completedMessages.filter {
+            it.companionSourceEligibility() == CompanionSourceEligibility.TEXT_ALLOWED
+        }.takeLast(recentMessageWindow)
         val memoryInput = buildMemoryInput(recentMessages)
         if (memoryInput.isBlank()) {
             return false
@@ -78,18 +107,26 @@ class ConversationMemoryExtractionCoordinator(
         sceneMemoryMaxItems: Int,
         buildMemoryInput: (List<ChatMessage>) -> String,
     ): Boolean {
+        // 已接入档案的安装在兼容读取期间也不能回到旧整组替换写入。
+        if (durableCoordinator != null) return durableCoordinator.processAutomatic(
+            conversationId,
+            assistant.id
+        ).updated
         if (!assistant.memoryEnabled) {
             return false
         }
         if (recentMessageWindow <= 0) {
             return false
         }
-        val memoryProvider = settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
+        val memoryProvider =
+            settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
         val memoryModel = settings.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
             return false
         }
-        val recentMessages = completedMessages.takeLast(recentMessageWindow)
+        val recentMessages = completedMessages.filter {
+            it.companionSourceEligibility() == CompanionSourceEligibility.TEXT_ALLOWED
+        }.takeLast(recentMessageWindow)
         val memoryInput = buildMemoryInput(recentMessages)
         if (memoryInput.isBlank()) {
             return false
@@ -162,9 +199,10 @@ class ConversationMemoryExtractionCoordinator(
         }
         val pinnedEntries = existingEntries.filter { it.pinned }
         val mutableEntries = existingEntries.filterNot { it.pinned }
-        val normalizedItems = (mutableEntries.map { normalizeMemoryContent(it.content) } + memoryItems.map(::normalizeMemoryContent))
-            .filter { it.isNotBlank() }
-            .distinct()
+        val normalizedItems =
+            (mutableEntries.map { normalizeMemoryContent(it.content) } + memoryItems.map(::normalizeMemoryContent))
+                .filter { it.isNotBlank() }
+                .distinct()
         val condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1)
         val condensedItems = if (normalizedItems.size > condensedTargetCount) {
             runCatching {
@@ -295,9 +333,10 @@ class ConversationMemoryExtractionCoordinator(
             .map(::normalizeMemoryContent)
             .filter { it.isNotBlank() }
             .distinct()
-        val combinedItems = (mutableEntries.map { entry -> normalizeMemoryContent(entry.content) } + normalizedNewItems)
-            .filter { it.isNotBlank() }
-            .distinct()
+        val combinedItems =
+            (mutableEntries.map { entry -> normalizeMemoryContent(entry.content) } + normalizedNewItems)
+                .filter { it.isNotBlank() }
+                .distinct()
         val targetCount = condensedTargetCount.coerceAtLeast(1)
         val condensedItems = if (combinedItems.size > targetCount) {
             runCatching {
@@ -415,7 +454,7 @@ class ConversationMemoryExtractionCoordinator(
             .asSequence()
             .filter { entry ->
                 (entry.scopeType == longScopeType && entry.resolvedScopeId() == longScopeId) ||
-                    (entry.scopeType == MemoryScopeType.CONVERSATION && entry.resolvedScopeId() == conversationId)
+                        (entry.scopeType == MemoryScopeType.CONVERSATION && entry.resolvedScopeId() == conversationId)
             }
             .map { it.content }
             .map(::normalizeMemoryContent)

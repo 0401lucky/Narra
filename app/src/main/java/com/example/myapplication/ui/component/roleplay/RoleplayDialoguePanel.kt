@@ -4,11 +4,20 @@ import com.example.myapplication.ui.component.*
 
 import android.widget.Toast
 import com.example.myapplication.BuildConfig
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import com.composables.icons.lucide.ArrowDown
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.Lucide
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -57,6 +66,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
@@ -132,13 +142,14 @@ internal fun RoleplayDialoguePanel(
     lineHeightScale: Float = 1.0f,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     onToggleTopBar: () -> Unit = {},
+    messageContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val colors = rememberImmersiveRoleplayColors(backdropState, noBackgroundSkin)
     val storyMessages = messages.filter { it.contentType != RoleplayContentType.SYSTEM }
     val listState = rememberLazyListState()
     val autoScrollState = rememberRoleplayStreamingAutoScrollState(conversationIdentity)
     val lastStoryMessage = storyMessages.lastOrNull()
-    RoleplayStreamingAutoScrollEffect(
+    if (messageContent == null) RoleplayStreamingAutoScrollEffect(
         state = autoScrollState,
         listState = listState,
         conversationIdentity = conversationIdentity,
@@ -152,8 +163,8 @@ internal fun RoleplayDialoguePanel(
     val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT
     val isOfflineReplayActionInstalled =
         isOfflineReplayFixtureReady &&
-            offlineReplayPhase == RoleplayOfflineReplayPhase.READY &&
-            onStartOfflineReplay != null
+                offlineReplayPhase == RoleplayOfflineReplayPhase.READY &&
+                onStartOfflineReplay != null
     val benchmarkRuntimePolicy = if (
         BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
     ) {
@@ -174,12 +185,12 @@ internal fun RoleplayDialoguePanel(
     }
     val isRoleplayScrollFixtureReady =
         benchmarkRuntimePolicy?.scenarioId == BenchmarkScenarioId.F2_ROLEPLAY_SCROLL &&
-            benchmarkSourceMessageCount ==
-            BenchmarkScenarioId.F2_ROLEPLAY_SCROLL.fixtureId.roleplayMessageCount
+                benchmarkSourceMessageCount ==
+                BenchmarkScenarioId.F2_ROLEPLAY_SCROLL.fixtureId.roleplayMessageCount
     val isAtTop by remember(listState, storyMessages.size) {
         derivedStateOf {
             storyMessages.isEmpty() ||
-                (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 8)
+                    (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 8)
         }
     }
     val isAtBottomExact by remember(listState, storyMessages.size) {
@@ -187,11 +198,11 @@ internal fun RoleplayDialoguePanel(
             val layoutInfo = listState.layoutInfo
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
             storyMessages.isEmpty() || (
-                lastVisibleItem != null &&
-                    lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
-                    !listState.canScrollForward &&
-                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
-                )
+                    lastVisibleItem != null &&
+                            lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                            !listState.canScrollForward &&
+                            (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
+                    )
         }
     }
     val isLastStoryMessageVisible by remember(listState, storyMessages.size) {
@@ -200,8 +211,8 @@ internal fun RoleplayDialoguePanel(
             val lastIndex = storyMessages.lastIndex
             lastIndex >= 0 && layoutInfo.visibleItemsInfo.any { item ->
                 item.index == lastIndex &&
-                    item.offset < layoutInfo.viewportEndOffset &&
-                    item.offset + item.size > layoutInfo.viewportStartOffset
+                        item.offset < layoutInfo.viewportEndOffset &&
+                        item.offset + item.size > layoutInfo.viewportStartOffset
             }
         }
     }
@@ -212,23 +223,27 @@ internal fun RoleplayDialoguePanel(
     )
     val isOfflineReplayInitialReady =
         isOfflineReplayActionInstalled &&
-            lastStoryMessage?.isStreaming == true &&
-            lastStoryMessage.messageStatus == MessageStatus.LOADING &&
-            offlineReplaySpec.isInitialContent(lastStoryMessage.content) &&
-            isOfflineReplayViewportReady
+                lastStoryMessage?.isStreaming == true &&
+                lastStoryMessage.messageStatus == MessageStatus.LOADING &&
+                offlineReplaySpec.isInitialContent(lastStoryMessage.content) &&
+                isOfflineReplayViewportReady
     val isOfflineReplayCompleteReady =
         isOfflineReplayFixtureReady &&
-            offlineReplayPhase == RoleplayOfflineReplayPhase.COMPLETED &&
-            !isOfflineReplayActionInstalled &&
-            // 当前观察层在回放完成后仍保留末尾流式预览，最终状态由后续收口统一清理。
-            lastStoryMessage?.isStreaming == true &&
-            lastStoryMessage.messageStatus == MessageStatus.LOADING &&
-            offlineReplaySpec.isCompletedContent(lastStoryMessage.content) &&
-            isOfflineReplayViewportReady
+                offlineReplayPhase == RoleplayOfflineReplayPhase.COMPLETED &&
+                !isOfflineReplayActionInstalled &&
+                // 当前观察层在回放完成后仍保留末尾流式预览，最终状态由后续收口统一清理。
+                lastStoryMessage?.isStreaming == true &&
+                lastStoryMessage.messageStatus == MessageStatus.LOADING &&
+                offlineReplaySpec.isCompletedContent(lastStoryMessage.content) &&
+                isOfflineReplayViewportReady
     var jumpIndicator by remember(listState, storyMessages.size) {
         mutableStateOf<RoleplayJumpIndicator?>(null)
     }
-    LaunchedEffect(storyMessages.firstOrNull()?.sourceMessageId, storyMessages.firstOrNull()?.createdAt, storyMessages.size) {
+    LaunchedEffect(
+        storyMessages.firstOrNull()?.sourceMessageId,
+        storyMessages.firstOrNull()?.createdAt,
+        storyMessages.size
+    ) {
         jumpIndicator = null
     }
     val scrollHintConnection = remember(storyMessages.size, isAtTop, isAtBottomExact) {
@@ -266,16 +281,26 @@ internal fun RoleplayDialoguePanel(
         }
     }
     val scrollScope = rememberCoroutineScope()
+    var stageSuggestionsOpen by remember(conversationIdentity) { mutableStateOf(false) }
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val suggestionMaxHeight = (maxHeight * 0.30f).coerceAtLeast(NarraMinimumTouchTarget)
         val actionMaxHeight = (maxHeight * 0.18f).coerceAtLeast(NarraMinimumTouchTarget)
+        // 大字或键盘缩小时保留正文和输入，辅助建议改由原输入工具打开。
+        val compactStage = messageContent != null &&
+                (LocalDensity.current.fontScale >= 1.5f || maxHeight < NarraMinimumTouchTarget * 8)
+        LaunchedEffect(compactStage) {
+            if (!compactStage) stageSuggestionsOpen = false
+        }
+        val suggestionDialogMaxHeight = maxHeight * 0.60f
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = NarraUi.space16, end = NarraUi.space16, bottom = NarraUi.space8),
             verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
-            if (storyMessages.isEmpty()) {
+            if (messageContent != null) {
+                messageContent(Modifier.fillMaxWidth().weight(1f, fill = true))
+            } else if (storyMessages.isEmpty()) {
                 // 空白区域点击切换顶栏，避免手势实现停留在占位状态
                 Box(
                     modifier = Modifier
@@ -319,7 +344,17 @@ internal fun RoleplayDialoguePanel(
                             items = storyMessages,
                             key = { _, message -> message.uiItemId },
                             contentType = { _, message -> roleplayLazyContentType(message) },
-                        ) { _, message ->
+                        ) { index, message ->
+                            val previous = storyMessages.getOrNull(index - 1)
+                            val next = storyMessages.getOrNull(index + 1)
+                            val groupedWithPrevious = previous != null &&
+                                    previous.contentType == RoleplayContentType.DIALOGUE &&
+                                    message.contentType == RoleplayContentType.DIALOGUE &&
+                                    previous.speaker == message.speaker
+                            val groupedWithNext = next != null &&
+                                    next.contentType == RoleplayContentType.DIALOGUE &&
+                                    message.contentType == RoleplayContentType.DIALOGUE &&
+                                    next.speaker == message.speaker
                             RoleplayMessageItem(
                                 message = message,
                                 colors = colors,
@@ -331,35 +366,60 @@ internal fun RoleplayDialoguePanel(
                                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                                 lineHeightScale = lineHeightScale,
                                 noBackgroundSkin = noBackgroundSkin,
+                                groupedWithPrevious = groupedWithPrevious,
+                                groupedWithNext = groupedWithNext,
                             )
                         }
                     }
 
-                    if (jumpIndicator == RoleplayJumpIndicator.TOP && !isAtTop) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = jumpIndicator == RoleplayJumpIndicator.TOP && !isAtTop,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = NarraUi.space8, end = NarraUi.space8),
+                        enter = fadeIn(tween(180)) + scaleIn(
+                            initialScale = 0.85f,
+                            animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                        ),
+                        exit = fadeOut(tween(140)) + scaleOut(
+                            targetScale = 0.85f,
+                            animationSpec = tween(140)
+                        ),
+                    ) {
                         NarraIconButton(
                             onClick = {
                                 scrollScope.launch {
                                     listState.animateScrollToItem(0)
                                 }
                             },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = NarraUi.space8, end = NarraUi.space8)
-                                .size(RoleplayInteractiveIconButtonSize),
+                            modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = colors.panelBackgroundStrong,
                                 contentColor = colors.panelText,
                             ),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ArrowUpward,
+                                imageVector = Lucide.ArrowUp,
                                 contentDescription = stringResource(id = R.string.roleplay_jump_to_top),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
                     }
 
-                    if (jumpIndicator == RoleplayJumpIndicator.BOTTOM && !isAtBottomExact) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = jumpIndicator == RoleplayJumpIndicator.BOTTOM && !isAtBottomExact,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = NarraUi.space8, bottom = NarraUi.space12),
+                        enter = fadeIn(tween(180)) + scaleIn(
+                            initialScale = 0.85f,
+                            animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                        ),
+                        exit = fadeOut(tween(140)) + scaleOut(
+                            targetScale = 0.85f,
+                            animationSpec = tween(140)
+                        ),
+                    ) {
                         NarraIconButton(
                             onClick = {
                                 scrollScope.launch {
@@ -371,17 +431,14 @@ internal fun RoleplayDialoguePanel(
                                     )
                                 }
                             },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = NarraUi.space8, bottom = NarraUi.space12)
-                                .size(RoleplayInteractiveIconButtonSize),
+                            modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             ),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ArrowDownward,
+                                imageVector = Lucide.ArrowDown,
                                 contentDescription = stringResource(id = R.string.roleplay_jump_to_bottom),
                                 modifier = Modifier.size(20.dp),
                             )
@@ -389,7 +446,7 @@ internal fun RoleplayDialoguePanel(
                     }
                 }
             }
-            if (showAiHelper) {
+            if (showAiHelper && !compactStage) {
                 RoleplaySuggestionSection(
                     colors = colors,
                     backdropState = backdropState,
@@ -412,7 +469,10 @@ internal fun RoleplayDialoguePanel(
                     overlayColor = colors.panelBackgroundStrong,
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
+                        modifier = Modifier.padding(
+                            horizontal = NarraUi.space16,
+                            vertical = NarraUi.space8
+                        ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     ) {
@@ -483,8 +543,37 @@ internal fun RoleplayDialoguePanel(
                     onPickImage = onPickImage,
                     onRemovePendingImagePart = onRemovePendingImagePart,
                     expandedPanelMaxHeight = actionMaxHeight,
+                    quickActionsInDialog = messageContent != null,
+                    compactInlineEditor = compactStage,
+                    showAiHelperButton = showAiHelper && compactStage,
+                    aiHelperActive = stageSuggestionsOpen,
+                    onToggleAiHelper = { stageSuggestionsOpen = !stageSuggestionsOpen },
                 )
             }
+        }
+        if (showAiHelper && compactStage && stageSuggestionsOpen) {
+            NarraAlertDialog(
+                title = stringResource(R.string.roleplay_ai_helper_title),
+                onDismiss = { stageSuggestionsOpen = false },
+                onConfirm = { stageSuggestionsOpen = false },
+                confirmLabel = "关闭",
+                dismissLabel = null,
+                modifier = Modifier.testTag("companion_stage_suggestions_dialog"),
+                content = {
+                    RoleplaySuggestionSection(
+                        colors = colors,
+                        backdropState = backdropState,
+                        suggestions = suggestions,
+                        isGeneratingSuggestions = isGeneratingSuggestions,
+                        suggestionErrorMessage = suggestionErrorMessage,
+                        isSending = isSending,
+                        onGenerateSuggestions = onGenerateSuggestions,
+                        onApplySuggestion = onApplySuggestion,
+                        onClearSuggestions = onClearSuggestions,
+                        maxHeight = suggestionDialogMaxHeight,
+                    )
+                },
+            )
         }
     }
 }

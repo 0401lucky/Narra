@@ -110,6 +110,8 @@ internal class RoleplayRoundTripExecutor(
     private val buildEconomyPromptContext: suspend (String) -> String = { "" },
     private val settleTransfer: suspend (String) -> Unit = {},
     private val releaseTransfer: suspend (String) -> Unit = {},
+    private val usesDurableMemory: suspend () -> Boolean = { false },
+    private val resolveMemoryRuntimeContext: suspend (String, String) -> com.example.myapplication.model.MemoryRuntimeContext? = { _, _ -> null },
 ) {
     private val messageSnapshotMutationMutex = Mutex()
     private val memoryExtractionGate = MemoryExtractionGate()
@@ -153,14 +155,25 @@ internal class RoleplayRoundTripExecutor(
 
         var generationCommitted = false
         var committedMessages: List<ChatMessage> = emptyList()
+        val durableRecallEnabled = assistant?.memoryEnabled == true && usesDurableMemory()
+        val frozenMemoryContext = if (durableRecallEnabled) resolveMemoryRuntimeContext(session.conversationId, requireNotNull(assistant).id) else null
+        val memoryRecallRequestId = if (durableRecallEnabled) java.util.UUID.randomUUID().toString() else ""
+        val requestLoadingMessage = loadingMessage.copy(memoryRecallRequestId = memoryRecallRequestId)
+        fun withRequestAnchor(messages: List<ChatMessage>) = messages.map { message ->
+            if (message.id == loadingMessage.id) message.copy(memoryRecallRequestId = memoryRecallRequestId) else message
+        }
 
         try {
+            frozenMemoryContext?.let { context ->
+                check(context.conversationId == session.conversationId && context.scenarioId == scenario.id && context.runId == session.runId &&
+                    context.personaKey == com.example.myapplication.context.MemoryArchiveIdentity.personaKey(scenario)) { "当前记忆运行或身份已改变，请重新发送" }
+            }
             withMessageSnapshotMutationLock {
                 when (initialPersistence) {
                     is RoundTripInitialPersistence.Append -> {
                         conversationRepository.appendMessages(
                             conversationId = session.conversationId,
-                            messages = initialPersistence.messages,
+                            messages = withRequestAnchor(initialPersistence.messages),
                             selectedModel = selectedModel,
                         )
                     }
@@ -168,7 +181,7 @@ internal class RoleplayRoundTripExecutor(
                     is RoundTripInitialPersistence.Upsert -> {
                         conversationRepository.upsertMessages(
                             conversationId = session.conversationId,
-                            messages = initialPersistence.messages,
+                            messages = withRequestAnchor(initialPersistence.messages),
                             selectedModel = selectedModel,
                         )
                     }
@@ -176,7 +189,7 @@ internal class RoleplayRoundTripExecutor(
                     is RoundTripInitialPersistence.ReplaceSnapshot -> {
                         conversationRepository.replaceConversationSnapshot(
                             conversationId = session.conversationId,
-                            messages = initialPersistence.messages,
+                            messages = withRequestAnchor(initialPersistence.messages),
                             selectedModel = selectedModel,
                         )
                     }
@@ -228,6 +241,9 @@ internal class RoleplayRoundTripExecutor(
                 promptMode = PromptMode.ROLEPLAY,
                 scenarioPresetId = scenario.presetId,
             )
+            if (promptContext.memoryRecallPlan != null) {
+                check(promptContext.memoryRecallPlan.context == frozenMemoryContext) { "本轮记忆运行已改变，请重新发送" }
+            }
             val beforePromptScriptResult = scriptEventCoordinator.execute(
                 RoleplayScriptEventRequest(
                     event = RoleplayScriptEvent.BEFORE_PROMPT,
@@ -242,14 +258,18 @@ internal class RoleplayRoundTripExecutor(
             val economyDirectorNote = runCatching {
                 buildEconomyPromptContext(scenario.id)
             }.getOrDefault("")
-            val generationPromptEnvelope = if (scenario.isGroupChat) {
+            val recallRequest = promptContext.memoryRecallPlan?.takeIf { memoryRecallRequestId.isNotBlank() }?.let { plan ->
+                com.example.myapplication.model.MemoryRecallRequest(memoryRecallRequestId, loadingMessage.id,
+                    requestMessages.lastOrNull { it.role == MessageRole.USER }?.id.orEmpty(), plan, nowProvider())
+            }
+            val generationPromptEnvelope = (if (scenario.isGroupChat) {
                 promptContext.promptEnvelope.copy(
                     statusCardsEnabled = false,
                     hideStatusBlocksInBubble = true,
                 )
             } else {
                 promptContext.promptEnvelope
-            }
+            }).copy(memoryRecallRequest = recallRequest)
             val referenceCandidates = RoleplayOnlineReferenceSupport.buildCandidates(
                 messages = requestMessagesForModel,
                 scenario = scenario,
@@ -361,7 +381,7 @@ internal class RoleplayRoundTripExecutor(
                     toolingOptions = toolingOptions,
                     rawDebugDump = debugDump,
                     extraContextSections = runtimeDecorationSections,
-                )
+                ).copy(memoryRecallRequestId = recallRequest?.requestId.orEmpty())
                 contextLogStore.push(contextSnapshot)
                 RoleplayStateSupport.applyPromptContext(
                     current = current,
@@ -385,7 +405,7 @@ internal class RoleplayRoundTripExecutor(
                         conversationId = session.conversationId,
                         selectedModel = selectedModel,
                         requestMessages = requestMessagesForModel,
-                        loadingMessage = loadingMessage,
+                        loadingMessage = requestLoadingMessage,
                         buildFinalMessages = buildFinalMessages,
                         systemPrompt = decoratedPrompt,
                         statusCardsEnabled = generationPromptEnvelope.statusCardsEnabled,
@@ -729,7 +749,7 @@ internal class RoleplayRoundTripExecutor(
                             val memoryWindow = state.settings.memoryAutoSummaryEvery
                             // 累计水位线：自上次提取以来新增 completed ≥ window 即触发，避免计数跳变跨过倍数点时永久丢失窗口
                             if (
-                                memoryExtractionGate.shouldExtract(
+                                usesDurableMemory() || memoryExtractionGate.shouldExtract(
                                     session.conversationId,
                                     completedCount,
                                     memoryWindow,
@@ -894,7 +914,7 @@ internal class RoleplayRoundTripExecutor(
                 throwable = throwable,
                 fallback = ROLEPLAY_SEND_FAILURE_MESSAGE,
             )
-            val failedAssistant = loadingMessage.copy(
+            val failedAssistant = requestLoadingMessage.copy(
                 content = ROLEPLAY_SEND_FAILURE_MESSAGE,
                 status = MessageStatus.ERROR,
                 parts = emptyList(),
@@ -1142,15 +1162,13 @@ internal class RoleplayRoundTripExecutor(
         assistant: Assistant?,
         requestMessages: List<ChatMessage>,
     ): List<ChatMessage> {
-        val summary = conversationSummaryRepository.getSummary(conversation.id)
-        return ConversationMessageTransforms.trimRequestMessagesWithSummary(
+        val memoryContext = resolveMemoryRuntimeContext(conversation.id, assistant?.id.orEmpty()) ?: return requestMessages
+        val summary = conversationSummaryRepository.getSummaryForContext(memoryContext)
+        return com.example.myapplication.conversation.ConversationSummaryCoverageSupport.trimRequestMessagesWithSummary(
+            summary = summary,
             requestMessages = requestMessages,
-            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-            summaryCoveredMessageCount = summary
-                ?.takeIf { it.summary.isNotBlank() }
-                ?.coveredMessageCount
-                ?: 0,
             recentWindow = resolveSummaryRecentWindow(assistant),
+            expectedMemoryContext = memoryContext,
         )
     }
 

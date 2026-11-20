@@ -18,6 +18,13 @@ import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.normalizedForContextImport
 
 interface AiSettingsEditor {
+    suspend fun saveAssistantsWithCompanionCopy(
+        assistants: List<Assistant>,
+        selectedAssistantId: String,
+        sourceAssistantId: String,
+        targetAssistantId: String,
+    ) = saveAssistants(assistants, selectedAssistantId)
+
     suspend fun saveProviderSettings(
         providers: List<ProviderSettings>,
         selectedProviderId: String,
@@ -82,6 +89,10 @@ interface AiSettingsEditor {
 
     suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int)
 
+    suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int)
+
+    suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits)
+
     suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String)
 
     suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition)
@@ -93,6 +104,16 @@ class DefaultAiSettingsEditor(
     private val settingsStore: SettingsStore,
     private val apiServiceFactory: ApiServiceFactory,
 ) : AiSettingsEditor {
+    override suspend fun saveAssistantsWithCompanionCopy(
+        assistants: List<Assistant>, selectedAssistantId: String,
+        sourceAssistantId: String, targetAssistantId: String,
+    ) = settingsStore.saveAssistantsWithCompanionCopy(
+        assistants.map { it.normalizedForContextImport() },
+        selectedAssistantId,
+        sourceAssistantId,
+        targetAssistantId,
+    )
+
     override suspend fun saveProviderSettings(
         providers: List<ProviderSettings>,
         selectedProviderId: String,
@@ -134,6 +155,7 @@ class DefaultAiSettingsEditor(
             selectedAssistantId = selectedAssistantId,
         )
     }
+
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
         appColorTheme: AppColorTheme,
@@ -230,7 +252,18 @@ class DefaultAiSettingsEditor(
         settingsStore.saveMemorySettings(autoSummaryEvery, capacity)
     }
 
-    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+    override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) {
+        settingsStore.saveMemoryRecallTokenBudget(tokenBudget)
+    }
+
+    override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) {
+        settingsStore.saveMemoryResidentLimits(limits)
+    }
+
+    override suspend fun saveMemoryPromptSettings(
+        extractionPrompt: String,
+        injectionPrompt: String
+    ) {
         settingsStore.saveMemoryPromptSettings(extractionPrompt, injectionPrompt)
     }
 

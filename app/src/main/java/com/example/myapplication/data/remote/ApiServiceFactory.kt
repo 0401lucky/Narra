@@ -1,6 +1,7 @@
 package com.example.myapplication.data.remote
 
 import com.example.myapplication.model.ProviderApiProtocol
+import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.network.normalizeSecureHttpBaseUrl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -12,11 +13,13 @@ class ApiServiceFactory {
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val DEFAULT_READ_TIMEOUT_SECONDS = 120L
         const val STREAM_READ_TIMEOUT_SECONDS = 600L
+
         // 非流式 extras（日记 / 摘要 / 记忆 / 标题 / 手机等）使用的长超时：
         // 思考模型 + 长上下文的首字节返回常常 >120s，120s 会触发 SocketTimeoutException
         // 而服务端仍在完成生成，API 后台看得到完整输出但客户端拿不到。
         const val LONG_READ_TIMEOUT_SECONDS = 600L
     }
+
     private var cachedApiBaseUrl: String? = null
     private var cachedApiKey: String? = null
     private var cachedApi: OpenAiCompatibleApi? = null
@@ -44,6 +47,52 @@ class ApiServiceFactory {
     private var cachedAnthropicStreamBaseUrl: String? = null
     private var cachedAnthropicStreamApiKey: String? = null
     private var cachedAnthropicStreamClient: OkHttpClient? = null
+
+    private var cachedEmbeddingApi: EmbeddingApiCache? = null
+    private var cachedLongEmbeddingApi: EmbeddingApiCache? = null
+
+    private class EmbeddingApiCache(
+        val baseUrl: String,
+        val apiKey: String,
+        val api: MemoryEmbeddingApi,
+    )
+
+    /** 向量请求不自动重试 POST；未知失败由持久任务留待用户明确重试。 */
+    @Synchronized
+    fun createEmbedding(
+        baseUrl: String,
+        apiKey: String,
+        longRunning: Boolean = false,
+    ): MemoryEmbeddingApi {
+        val normalizedBaseUrl = normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+        val trimmedKey = apiKey.trim()
+        val previous = if (longRunning) cachedLongEmbeddingApi else cachedEmbeddingApi
+        if (previous?.baseUrl == normalizedBaseUrl && previous.apiKey == trimmedKey) return previous.api
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(if (longRunning) LONG_READ_TIMEOUT_SECONDS else 10L, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("Authorization", "Bearer $trimmedKey")
+                        .build()
+                )
+            }
+            .build()
+        val api = Retrofit.Builder()
+            .baseUrl(normalizedBaseUrl)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(AppJson.gson))
+            .build()
+            .create(MemoryEmbeddingApi::class.java)
+        val cached = EmbeddingApiCache(normalizedBaseUrl, trimmedKey, api)
+        if (longRunning) cachedLongEmbeddingApi = cached else cachedEmbeddingApi = cached
+        return api
+    }
 
     @Synchronized
     fun create(
@@ -75,7 +124,7 @@ class ApiServiceFactory {
         val api = Retrofit.Builder()
             .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(AppJson.gson))
             .build()
             .create(OpenAiCompatibleApi::class.java)
 
@@ -116,7 +165,7 @@ class ApiServiceFactory {
         val api = Retrofit.Builder()
             .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(AppJson.gson))
             .build()
             .create(AnthropicApi::class.java)
 
@@ -163,7 +212,7 @@ class ApiServiceFactory {
         val api = Retrofit.Builder()
             .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(AppJson.gson))
             .build()
             .create(OpenAiCompatibleApi::class.java)
 
@@ -207,7 +256,7 @@ class ApiServiceFactory {
         val api = Retrofit.Builder()
             .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(AppJson.gson))
             .build()
             .create(AnthropicApi::class.java)
 
@@ -360,7 +409,7 @@ class ApiServiceFactory {
 
     private fun isGeminiNativeMethodUrl(lowerBaseUrl: String): Boolean {
         return lowerBaseUrl.contains("/models/") ||
-            lowerBaseUrl.contains(":generatecontent") ||
-            lowerBaseUrl.contains(":streamgeneratecontent")
+                lowerBaseUrl.contains(":generatecontent") ||
+                lowerBaseUrl.contains(":streamgeneratecontent")
     }
 }

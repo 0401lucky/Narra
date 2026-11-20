@@ -211,7 +211,7 @@ private fun ContextLogApiCard(snapshot: ContextGovernanceSnapshot) {
                 SettingsHelpButton(
                     title = "日志信息",
                     description = "这里显示本次请求使用的提供商、模型和上下文来源。\n\n" +
-                        "tokens 仅为预估值，请以模型实际消耗为准。日志分段保留实际发送的上下文，" +
+                        "tokens 仅为预估值，请以模型实际消耗为准。日志分段展示组装的上下文，记忆是否发出以本轮回执为准；" +
                         "底部可按来源筛选，再次点击当前来源或选择“全部”可恢复完整视图。",
                 )
             }
@@ -226,6 +226,27 @@ private fun ContextLogApiCard(snapshot: ContextGovernanceSnapshot) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            if (snapshot.hasMemoryRecallPlan || snapshot.memoryRecallRequestId.isNotBlank()) {
+                Text(snapshot.memoryRecallSummary, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.testTag("memory_recall_receipt_status"))
+                snapshot.memoryRecallRequestId.takeIf(String::isNotBlank)?.let { requestId ->
+                    SelectionContainer { Text("请求 ID：$requestId", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+                snapshot.memoryRecallReceipt?.takeIf { it.requestId == snapshot.memoryRecallRequestId }?.let { receipt ->
+                    Text("候选 ${receipt.selected.size} 项 · 本次确认发送 ${receipt.sent.size} 项 · 省略说明 ${receipt.omitted.size} 项",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (receipt.sent.isNotEmpty()) {
+                        SelectionContainer {
+                            Text(receipt.sent.joinToString("\n") { "${it.id} · v${it.revision} · [${it.spanStart}, ${it.spanEnd})" },
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    if (receipt.omitted.isNotEmpty()) {
+                        Text(receipt.omitted.joinToString("\n") { "${it.ref.id}：${it.reason.label}" },
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),

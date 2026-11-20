@@ -28,6 +28,7 @@ import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
+import com.example.myapplication.testutil.FakeMemoryArchiveTransferRepository
 import com.example.myapplication.testutil.FakePresetRepository
 import com.example.myapplication.testutil.FakeSettingsStore
 import com.example.myapplication.testutil.FakeWorldBookRepository
@@ -71,11 +72,13 @@ class ContextTransferViewModelTest {
         val worldBookRepository = FakeWorldBookRepository()
         val memoryRepository = FakeMemoryRepository()
         val summaryRepository = FakeConversationSummaryRepository()
+        val memoryTransfer = FakeMemoryArchiveTransferRepository()
         val viewModel = createContextTransferViewModel(
             services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = memoryRepository,
             conversationSummaryRepository = summaryRepository,
+            memoryTransferRepository = memoryTransfer,
         )
 
         advanceUntilIdle()
@@ -128,32 +131,37 @@ class ContextTransferViewModelTest {
         assertEquals(1, viewModel.uiState.value.importPreview?.memoryCount)
         assertEquals(2, viewModel.uiState.value.importPreview?.summaryCount)
 
+        selectMemoryTargets(viewModel)
+        advanceUntilIdle()
         viewModel.confirmImport()
         advanceUntilIdle()
 
         assertTrue(services.settingsRepository.settingsFlow.first().assistants.any { it.id == "assistant-existing" })
         assertTrue(services.settingsRepository.settingsFlow.first().assistants.any { it.id == "assistant-imported" })
         assertEquals("白塔城", worldBookRepository.listEntries().single().title)
-        assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
-        assertEquals("已经整理好前文摘要。", summaryRepository.getSummary("c1")?.summary)
-        assertEquals("前四条消息已压缩。", summaryRepository.listAllSummarySegments().single().summary)
+        assertTrue(memoryRepository.currentEntries().isEmpty())
+        assertEquals(setOf("用户喜欢短句回复", "已经整理好前文摘要。", "前四条消息已压缩。"), memoryTransfer.exportedData.records.map { it.content }.toSet())
+        assertEquals(null, summaryRepository.getSummary("c1"))
+        assertTrue(summaryRepository.listAllSummarySegments().isEmpty())
         assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
     }
 
     @Test
-    fun importBundleJson_skipsSummarySegmentsWithMissingConversation() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+    fun importBundleJson_preservesSummarySegmentsAsArchiveMaterials() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val services = createTestAiServices(
-            settings = AppSettings(),
+            settings = AppSettings(assistants = listOf(Assistant(id = "local", name = "本机角色"))),
             dispatcher = mainDispatcherRule.dispatcher,
         )
         val memoryRepository = FakeMemoryRepository()
         val summaryRepository = FakeConversationSummaryRepository()
+        val memoryTransfer = FakeMemoryArchiveTransferRepository()
         val viewModel = createContextTransferViewModel(
             services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = memoryRepository,
             conversationSummaryRepository = summaryRepository,
             existingConversationIdsProvider = { setOf("c-existing") },
+            memoryTransferRepository = memoryTransfer,
         )
 
         advanceUntilIdle()
@@ -190,14 +198,16 @@ class ContextTransferViewModelTest {
         advanceUntilIdle()
         assertTrue(
             viewModel.uiState.value.importPreview?.noticeMessages.orEmpty()
-                .any { it.contains("1 条摘要分段") },
+                .any { it.contains("2 条摘要及分段") },
         )
 
+        selectMemoryTargets(viewModel)
         viewModel.confirmImport()
         advanceUntilIdle()
 
-        assertEquals("segment-kept", summaryRepository.listAllSummarySegments().single().id)
-        assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
+        assertTrue(summaryRepository.listAllSummarySegments().isEmpty())
+        assertEquals(setOf("保留的分段。", "孤儿分段。", "用户喜欢短句回复"), memoryTransfer.exportedData.records.map { it.content }.toSet())
+        assertTrue(memoryRepository.currentEntries().isEmpty())
         assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
     }
 
@@ -954,6 +964,7 @@ class ContextTransferViewModelTest {
         presetRepository: FakePresetRepository = FakePresetRepository(),
         importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
         existingConversationIdsProvider: suspend () -> Set<String>? = { null },
+        memoryTransferRepository: FakeMemoryArchiveTransferRepository = FakeMemoryArchiveTransferRepository(),
     ): ContextTransferViewModel {
         return ContextTransferViewModel(
             settingsRepository = services.settingsRepository,
@@ -964,7 +975,17 @@ class ContextTransferViewModelTest {
             presetRepository = presetRepository,
             importedAssistantAvatarSaver = importedAssistantAvatarSaver,
             existingConversationIdsProvider = existingConversationIdsProvider,
+            memoryTransferRepository = memoryTransferRepository,
         )
+    }
+
+    private suspend fun kotlinx.coroutines.test.TestScope.selectMemoryTargets(viewModel: ContextTransferViewModel) {
+        val preview = requireNotNull(viewModel.uiState.value.importPreview)
+        val target = preview.memoryTargetOptions.first().target
+        for (group in preview.memoryGroups) {
+            viewModel.selectMemoryImportTarget(group.key, target)
+            advanceUntilIdle()
+        }
     }
 
     private fun buildPngCharacterCard(json: String): ByteArray {

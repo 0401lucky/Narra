@@ -51,7 +51,9 @@ class FixtureSpecTest {
             if (character == '甲') '乙' else '甲'
         }.joinToString("")
         val changed = dataset.copy(
-            chatMessages = listOf(first.copy(content = sameLengthReplacement)) + dataset.chatMessages.drop(1),
+            chatMessages = listOf(first.copy(content = sameLengthReplacement)) + dataset.chatMessages.drop(
+                1
+            ),
         )
 
         assertEquals(original, changed.safeSummary())
@@ -68,13 +70,19 @@ class FixtureSpecTest {
         )
 
         assertTrue(populatedScenarios.all { it.fixtureId == BenchmarkFixtureId.S2_POPULATED })
-        assertEquals(BenchmarkFixtureId.S0_FIRST_RUN, BenchmarkScenarioId.S0_FIRST_RUN_STARTUP.fixtureId)
-        assertEquals(BenchmarkFixtureId.S3_SUPPORTED_UPGRADE, BenchmarkScenarioId.S3_UPGRADE_STARTUP.fixtureId)
+        assertEquals(
+            BenchmarkFixtureId.S0_FIRST_RUN,
+            BenchmarkScenarioId.S0_FIRST_RUN_STARTUP.fixtureId
+        )
+        assertEquals(
+            BenchmarkFixtureId.S3_SUPPORTED_UPGRADE,
+            BenchmarkScenarioId.S3_UPGRADE_STARTUP.fixtureId
+        )
     }
 
     @Test
-    fun supportedUpgradeFixture_declaresMainProcessSourceSchema47() {
-        assertEquals(47, BenchmarkFixtureId.S3_SUPPORTED_UPGRADE.sourceDatabaseVersion)
+    fun supportedUpgradeFixture_declaresMainProcessSourceSchema56() {
+        assertEquals(56, BenchmarkFixtureId.S3_SUPPORTED_UPGRADE.sourceDatabaseVersion)
     }
 
     @Test
@@ -108,7 +116,10 @@ class FixtureSpecTest {
                 conversationId = BenchmarkFixtureIds.ROLEPLAY_CONVERSATION_ID,
             ),
         )
-        assertEquals(100, spec.persistedMessageCount(totalMessageCount = 101, streamingMessageCount = 1))
+        assertEquals(
+            100,
+            spec.persistedMessageCount(totalMessageCount = 101, streamingMessageCount = 1)
+        )
         assertTrue(spec.hasExpectedPersistedMessageCount(100))
         assertFalse(spec.hasExpectedPersistedMessageCount(99))
     }

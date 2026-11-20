@@ -168,6 +168,7 @@ class SettingsViewModel(
     private val voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
     private val mimoTtsClient: MimoTtsClient? = null,
     private val remoteSpeechRecognitionService: RemoteSpeechRecognitionService? = null,
+    private val onAssistantRemoved: suspend (String) -> Unit = {},
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -197,7 +198,7 @@ class SettingsViewModel(
         modelCatalogRepository = modelCatalogRepository,
         settingsEditor = settingsEditor,
     )
-    private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor, imageFileCleaner)
+    private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor, imageFileCleaner, onAssistantRemoved)
     private val healthCoordinator = SettingsHealthCoordinator(modelCatalogRepository)
 
     fun updateSelectedModel(value: String) = updateCurrentProvider { provider ->
@@ -861,6 +862,39 @@ class SettingsViewModel(
         }
     }
 
+    fun updateMemoryRecallTokenBudget(value: Int) {
+        viewModelScope.launch {
+            try {
+                settingsEditor.saveMemoryRecallTokenBudget(value)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                updateUiState { current ->
+                    current.copy(
+                        message = SensitiveTextRedactor.throwableMessageForUi(
+                            throwable,
+                            "记忆预算保存失败，请重试",
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    fun updateMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) {
+        viewModelScope.launch {
+            try {
+                settingsEditor.saveMemoryResidentLimits(limits.normalized())
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                updateUiState { current -> current.copy(
+                    message = SensitiveTextRedactor.throwableMessageForUi(throwable, "常驻认知容量保存失败，请重试"),
+                ) }
+            }
+        }
+    }
+
     fun updateMemoryExtractionPrompt(value: String) {
         val injection = storedSettings.value.memoryInjectionPrompt
         viewModelScope.launch {
@@ -1142,6 +1176,7 @@ class SettingsViewModel(
             voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
             mimoTtsClient: MimoTtsClient? = null,
             remoteSpeechRecognitionService: RemoteSpeechRecognitionService? = null,
+            onAssistantRemoved: suspend (String) -> Unit = {},
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 SettingsViewModel(
@@ -1149,6 +1184,7 @@ class SettingsViewModel(
                     settingsEditor = settingsEditor,
                     modelCatalogRepository = modelCatalogRepository,
                     imageFileCleaner = imageFileCleaner,
+                    onAssistantRemoved = onAssistantRemoved,
                     voiceCloneSampleCleaner = voiceCloneSampleCleaner,
                     mimoTtsClient = mimoTtsClient,
                     remoteSpeechRecognitionService = remoteSpeechRecognitionService,

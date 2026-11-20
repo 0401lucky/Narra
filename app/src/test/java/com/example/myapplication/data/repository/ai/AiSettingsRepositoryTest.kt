@@ -134,11 +134,20 @@ private class ThemeTestSettingsStore : SettingsStore {
         history: List<com.example.myapplication.model.TranslationHistoryEntry>,
     ) = unsupported()
 
-    override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = unsupported()
+    override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) =
+        unsupported()
 
     override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = unsupported()
 
-    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) =
+    override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) = unsupported()
+
+    override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) =
+        unsupported()
+
+    override suspend fun saveMemoryPromptSettings(
+        extractionPrompt: String,
+        injectionPrompt: String
+    ) =
         unsupported()
 
     override suspend fun saveMemoryInjectionPosition(

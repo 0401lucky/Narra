@@ -3,11 +3,49 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.ProviderFunctionModelMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsProviderDraftSupportTest {
+    @Test
+    fun removedEmbeddingModel_disablesOnlyItsSelectionForAllModelRemovalActions() {
+        val provider = ProviderSettings(
+            id = "embedding-provider",
+            selectedModel = "chat-model",
+            memoryModel = "extraction-model",
+            embeddingModel = "vector-model",
+            embeddingModelMode = ProviderFunctionModelMode.CUSTOM,
+            availableModels = listOf("chat-model", "vector-model"),
+            models = listOf(ModelInfo("chat-model"), ModelInfo("vector-model")),
+        )
+        val changes = listOf(
+            SettingsProviderDraftSupport.removeModelFromProvider(
+                listOf(provider),
+                provider.id,
+                "vector-model"
+            ).single(),
+            SettingsProviderDraftSupport.clearModelsFromProvider(listOf(provider), provider.id)
+                .single(),
+            SettingsProviderDraftSupport.applyFetchedModelSelection(
+                currentProviders = listOf(provider),
+                providerId = provider.id,
+                fetchedModels = emptyList(),
+                selectedModelIds = setOf("chat-model"),
+            ).providers.single(),
+        )
+        changes.forEach { changed ->
+            assertEquals("", changed.embeddingModel)
+            assertEquals(ProviderFunctionModelMode.DISABLED, changed.embeddingModelMode)
+            assertEquals("", changed.resolveFunctionModel(ProviderFunction.EMBEDDING))
+            assertEquals(provider.memoryModel, changed.memoryModel)
+        }
+        assertEquals("chat-model", changes.first().selectedModel)
+        assertEquals("chat-model", changes.last().selectedModel)
+    }
+
     @Test
     fun normalizeProviders_trimsFieldsAndEnsuresFallbackName() {
         val normalized = SettingsProviderDraftSupport.normalizeProviders(
@@ -83,7 +121,10 @@ class SettingsProviderDraftSupportTest {
         )
 
         assertEquals(listOf("model-a", "model-b"), update.providers.single().availableModels)
-        assertEquals(setOf(ModelAbility.TOOL), update.providers.single().models?.first { it.modelId == "model-a" }?.abilities)
+        assertEquals(
+            setOf(ModelAbility.TOOL),
+            update.providers.single().models?.first { it.modelId == "model-a" }?.abilities
+        )
         assertTrue(update.message.contains("新增 1"))
     }
 

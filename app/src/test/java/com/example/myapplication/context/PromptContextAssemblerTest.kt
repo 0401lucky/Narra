@@ -1,6 +1,7 @@
 package com.example.myapplication.context
 
 import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.conversation.ConversationSummaryCoverageSupport
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_PRESETS
@@ -13,6 +14,8 @@ import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MemoryRuntimeContext
+import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
@@ -22,6 +25,7 @@ import com.example.myapplication.model.QWEN_COMPAT_PRESET_ID
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakePresetRepository
+import com.example.myapplication.testutil.fakeSummaryRuntimeArchive
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,6 +34,12 @@ import org.junit.Test
 
 class PromptContextAssemblerTest {
     private val assembler = DefaultPromptContextAssembler()
+
+    private fun summarySources(count: Int): List<ChatMessage> = (1..count).map {
+        ChatMessage("m$it", "c1", MessageRole.USER, "合成来源$it", createdAt = it.toLong())
+    }
+
+    private fun summaryRuntime() = MemoryRuntimeContext("assistant-1", "space", "c1", "scene", "run", "persona", 1)
 
     @Test
     fun assemble_returnsEmptyPromptWhenAssistantMissing() = runBlocking {
@@ -246,46 +256,22 @@ class PromptContextAssemblerTest {
 
     @Test
     fun assemble_includesConversationSummary() = runBlocking {
+        val sources = summarySources(18)
         val assembler = DefaultPromptContextAssembler(
-            conversationSummaryRepository = object : com.example.myapplication.data.repository.context.ConversationSummaryRepository {
-                override fun observeSummary(conversationId: String) = kotlinx.coroutines.flow.flowOf(
+            conversationSummaryRepository = FakeConversationSummaryRepository(
+                initialSummaries = listOf(
                     ConversationSummary(
-                        conversationId = conversationId,
+                        conversationId = "c1",
                         assistantId = "assistant-1",
                         summary = "用户正在调查白塔城的失窃案，已确认嫌疑人与北境商会有关。",
                         coveredMessageCount = 18,
                         updatedAt = 10L,
+                        sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(sources),
+                        completionStatus = PromptCompletionStatus.COMPLETED,
                     ),
-                )
-
-                override fun observeSummaries() = kotlinx.coroutines.flow.flowOf(
-                    listOf(
-                        ConversationSummary(
-                            conversationId = "c1",
-                            assistantId = "assistant-1",
-                            summary = "用户正在调查白塔城的失窃案，已确认嫌疑人与北境商会有关。",
-                            coveredMessageCount = 18,
-                            updatedAt = 10L,
-                        ),
-                    ),
-                )
-
-                override suspend fun getSummary(conversationId: String): ConversationSummary? {
-                    return ConversationSummary(
-                        conversationId = conversationId,
-                        assistantId = "assistant-1",
-                        summary = "用户正在调查白塔城的失窃案，已确认嫌疑人与北境商会有关。",
-                        coveredMessageCount = 18,
-                        updatedAt = 10L,
-                    )
-                }
-
-                override suspend fun listSummaries(): List<ConversationSummary> = emptyList()
-
-                override suspend fun upsertSummary(summary: ConversationSummary) = Unit
-
-                override suspend fun deleteSummary(conversationId: String) = Unit
-            },
+                ),
+                sourceMessages = sources,
+            ),
         )
 
         val result = assembler.assemble(
@@ -306,6 +292,8 @@ class PromptContextAssemblerTest {
 
     @Test
     fun assemble_includesRecentSummarySegmentsInPromptAndContextLog() = runBlocking {
+        val sources = summarySources(12)
+        val runtime = summaryRuntime()
         val assembler = DefaultPromptContextAssembler(
             conversationSummaryRepository = FakeConversationSummaryRepository(
                 initialSummaries = listOf(
@@ -314,6 +302,9 @@ class PromptContextAssemblerTest {
                         assistantId = "assistant-1",
                         summary = "总摘要：两人已经进入白塔。",
                         coveredMessageCount = 12,
+                        sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(sources),
+                        completionStatus = PromptCompletionStatus.COMPLETED,
+                        memoryContext = runtime,
                     ),
                 ),
                 initialSegments = listOf(
@@ -327,6 +318,9 @@ class PromptContextAssemblerTest {
                         endCreatedAt = 6L,
                         messageCount = 6,
                         summary = "第一段：发现白塔入口。",
+                        sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(sources.take(6)),
+                        completionStatus = PromptCompletionStatus.COMPLETED,
+                        memoryContext = runtime,
                     ),
                     ConversationSummarySegment(
                         id = "seg-2",
@@ -338,9 +332,14 @@ class PromptContextAssemblerTest {
                         endCreatedAt = 12L,
                         messageCount = 6,
                         summary = "第二段：确认北境商会的暗号。",
+                        sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(sources.takeLast(6)),
+                        completionStatus = PromptCompletionStatus.COMPLETED,
+                        memoryContext = runtime,
                     ),
                 ),
+                sourceMessages = sources,
             ),
+            memoryArchiveRepository = fakeSummaryRuntimeArchive { listOf(runtime) },
         )
 
         val result = assembler.assemble(
@@ -371,6 +370,8 @@ class PromptContextAssemblerTest {
 
     @Test
     fun assemble_roleplayAddsSummaryFallbackWhenPresetHasNoSummarySlot() = runBlocking {
+        val sources = summarySources(6)
+        val runtime = summaryRuntime()
         val customPreset = Preset(
             id = "custom-no-summary",
             name = "自定义无摘要预设",
@@ -400,10 +401,15 @@ class PromptContextAssemblerTest {
                         assistantId = "assistant-1",
                         summary = "总摘要：两人已进入钟楼，守夜人刚离开。",
                         coveredMessageCount = 6,
+                        sourceSnapshot = ConversationSummaryCoverageSupport.sourceSnapshot(sources),
+                        completionStatus = PromptCompletionStatus.COMPLETED,
+                        memoryContext = runtime,
                     ),
                 ),
+                sourceMessages = sources,
             ),
             presetRepository = FakePresetRepository(listOf(customPreset)),
+            memoryArchiveRepository = fakeSummaryRuntimeArchive { listOf(runtime) },
         )
 
         val result = assembler.assemble(

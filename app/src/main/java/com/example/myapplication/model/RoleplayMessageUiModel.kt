@@ -45,4 +45,6 @@ data class RoleplayMessageUiModel(
     val canRetry: Boolean = false,
     val actionPart: ChatMessagePart? = null,
     val specialPart: ChatMessagePart? = null,
+    val companionReply: ParsedCompanionReply? = null,
+    val companionBeat: CompanionBeat? = null,
 )

@@ -93,8 +93,14 @@ class SettingsPersistenceCoordinatorTest {
         assertEquals("https://example.com/v1/", editor.savedProviders.single().baseUrl)
         assertEquals("model-a", editor.savedProviders.single().selectedModel)
         assertEquals(provider.id, editor.savedSelectedProviderId)
-        assertEquals(provider.id, editor.savedFunctionModelProviderIds.providerIdFor(ProviderFunction.TITLE_SUMMARY))
-        assertEquals(provider.id, result.functionModelProviderIds?.providerIdFor(ProviderFunction.TITLE_SUMMARY))
+        assertEquals(
+            provider.id,
+            editor.savedFunctionModelProviderIds.providerIdFor(ProviderFunction.TITLE_SUMMARY)
+        )
+        assertEquals(
+            provider.id,
+            result.functionModelProviderIds?.providerIdFor(ProviderFunction.TITLE_SUMMARY)
+        )
         assertEquals(ThemeMode.DARK, editor.savedThemeMode)
         assertFalse(editor.savedReasoningExpandedByDefault)
         assertTrue(editor.savedCodeBlockAutoWrap)
@@ -103,7 +109,10 @@ class SettingsPersistenceCoordinatorTest {
         assertTrue(editor.savedRoleplayHighContrast)
         assertFalse(editor.savedShowOnlineRoleplayNarration)
         assertEquals(RoleplayLineHeightScale.RELAXED, editor.savedRoleplayLineHeightScale)
-        assertEquals(RoleplayNoBackgroundSkinPreset.IMESSAGE, editor.savedRoleplayNoBackgroundSkin.preset)
+        assertEquals(
+            RoleplayNoBackgroundSkinPreset.IMESSAGE,
+            editor.savedRoleplayNoBackgroundSkin.preset
+        )
         assertEquals(76, editor.savedRoleplayNoBackgroundSkin.maxWidthPercent)
         assertFalse(editor.savedRoleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
         assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
@@ -113,24 +122,25 @@ class SettingsPersistenceCoordinatorTest {
     }
 
     @Test
-    fun saveSettings_backgroundGlassDraft_displayFailurePropagatesWithoutReportingSuccess() = runTest {
-        val failure = IOException("主题设置写入失败")
-        val editor = RecordingSettingsEditor().apply { displaySettingsFailure = failure }
-        val coordinator = SettingsPersistenceCoordinator(editor)
-        val draft = SettingsPreferenceDraftSupport.updateRoleplayNoBackgroundSkin(
-            current = SettingsUiState(),
-            skin = RoleplayNoBackgroundSkinSettings(
-                preset = RoleplayNoBackgroundSkinPreset.WECHAT,
-                onlineBackgroundGlassEnabled = false,
-            ),
-        )
+    fun saveSettings_backgroundGlassDraft_displayFailurePropagatesWithoutReportingSuccess() =
+        runTest {
+            val failure = IOException("主题设置写入失败")
+            val editor = RecordingSettingsEditor().apply { displaySettingsFailure = failure }
+            val coordinator = SettingsPersistenceCoordinator(editor)
+            val draft = SettingsPreferenceDraftSupport.updateRoleplayNoBackgroundSkin(
+                current = SettingsUiState(),
+                skin = RoleplayNoBackgroundSkinSettings(
+                    preset = RoleplayNoBackgroundSkinPreset.WECHAT,
+                    onlineBackgroundGlassEnabled = false,
+                ),
+            )
 
-        val result = runCatching { coordinator.saveSettings(draft) }
+            val result = runCatching { coordinator.saveSettings(draft) }
 
-        assertSame(failure, result.exceptionOrNull())
-        assertFalse(draft.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
-        assertTrue(editor.savedRoleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
-    }
+            assertSame(failure, result.exceptionOrNull())
+            assertFalse(draft.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+            assertTrue(editor.savedRoleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+        }
 
     @Test
     fun saveSelectedModel_updatesDraftProvidersForCurrentSelection() = runBlocking {
@@ -195,42 +205,46 @@ class SettingsPersistenceCoordinatorTest {
     }
 
     @Test
-    fun saveSelectedModel_prefersCurrentSelectedDraftProviderWhenSavedSettingsStillStale() = runBlocking {
-        val editor = RecordingSettingsEditor()
-        val coordinator = SettingsPersistenceCoordinator(editor)
-        val providerA = ProviderSettings(
-            id = "provider-a",
-            name = "Provider A",
-            baseUrl = "https://a.example.com/v1/",
-            apiKey = "key-a",
-            selectedModel = "model-a",
-            availableModels = listOf("model-a"),
-        )
-        val draftProvider = ProviderSettings(
-            id = "provider-draft",
-            name = "Draft Provider",
-            baseUrl = "https://draft.example.com/v1/",
-            apiKey = "draft-key",
-        )
+    fun saveSelectedModel_prefersCurrentSelectedDraftProviderWhenSavedSettingsStillStale() =
+        runBlocking {
+            val editor = RecordingSettingsEditor()
+            val coordinator = SettingsPersistenceCoordinator(editor)
+            val providerA = ProviderSettings(
+                id = "provider-a",
+                name = "Provider A",
+                baseUrl = "https://a.example.com/v1/",
+                apiKey = "key-a",
+                selectedModel = "model-a",
+                availableModels = listOf("model-a"),
+            )
+            val draftProvider = ProviderSettings(
+                id = "provider-draft",
+                name = "Draft Provider",
+                baseUrl = "https://draft.example.com/v1/",
+                apiKey = "draft-key",
+            )
 
-        val result = coordinator.saveSelectedModel(
-            savedSettings = AppSettings(
-                providers = listOf(providerA),
-                selectedProviderId = providerA.id,
-            ),
-            currentProviders = listOf(providerA, draftProvider),
-            currentSelectedProviderId = draftProvider.id,
-            selectedModel = "gpt-4o-mini",
-        )
+            val result = coordinator.saveSelectedModel(
+                savedSettings = AppSettings(
+                    providers = listOf(providerA),
+                    selectedProviderId = providerA.id,
+                ),
+                currentProviders = listOf(providerA, draftProvider),
+                currentSelectedProviderId = draftProvider.id,
+                selectedModel = "gpt-4o-mini",
+            )
 
-        val persistedDraftProvider = editor.savedProviders.first { it.id == draftProvider.id }
-        assertEquals(draftProvider.id, editor.savedSelectedProviderId)
-        assertEquals("gpt-4o-mini", persistedDraftProvider.selectedModel)
-        assertTrue(persistedDraftProvider.availableModels.contains("gpt-4o-mini"))
-        assertEquals(draftProvider.id, result.selectedProviderId)
-        assertEquals("gpt-4o-mini", result.providers.first { it.id == draftProvider.id }.selectedModel)
-        assertEquals("model-a", result.providers.first { it.id == providerA.id }.selectedModel)
-    }
+            val persistedDraftProvider = editor.savedProviders.first { it.id == draftProvider.id }
+            assertEquals(draftProvider.id, editor.savedSelectedProviderId)
+            assertEquals("gpt-4o-mini", persistedDraftProvider.selectedModel)
+            assertTrue(persistedDraftProvider.availableModels.contains("gpt-4o-mini"))
+            assertEquals(draftProvider.id, result.selectedProviderId)
+            assertEquals(
+                "gpt-4o-mini",
+                result.providers.first { it.id == draftProvider.id }.selectedModel
+            )
+            assertEquals("model-a", result.providers.first { it.id == providerA.id }.selectedModel)
+        }
 
     @Test
     fun saveUserProfile_delegatesToEditor() = runBlocking {
@@ -292,7 +306,8 @@ class SettingsPersistenceCoordinatorTest {
         var savedRoleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE
         var savedRoleplayHighContrast: Boolean = false
         var savedRoleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL
-        var savedRoleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings()
+        var savedRoleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings =
+            RoleplayNoBackgroundSkinSettings()
         var savedScreenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings()
         var savedSearchSettings: SearchSettings = SearchSettings()
         var savedDisplayName: String = ""
@@ -304,7 +319,10 @@ class SettingsPersistenceCoordinatorTest {
         var savedFunctionModelProviderIds: com.example.myapplication.model.FunctionModelProviderIds =
             com.example.myapplication.model.FunctionModelProviderIds()
 
-        override suspend fun saveProviderSettings(providers: List<ProviderSettings>, selectedProviderId: String) {
+        override suspend fun saveProviderSettings(
+            providers: List<ProviderSettings>,
+            selectedProviderId: String
+        ) {
             savedProviders = providers
             savedSelectedProviderId = selectedProviderId
         }
@@ -317,7 +335,10 @@ class SettingsPersistenceCoordinatorTest {
 
         override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) = Unit
 
-        override suspend fun saveAssistants(assistants: List<Assistant>, selectedAssistantId: String) = Unit
+        override suspend fun saveAssistants(
+            assistants: List<Assistant>,
+            selectedAssistantId: String
+        ) = Unit
 
         override suspend fun saveDisplaySettings(
             themeMode: ThemeMode,
@@ -377,24 +398,46 @@ class SettingsPersistenceCoordinatorTest {
             settings: com.example.myapplication.model.VoiceRecognitionSettings,
         ) = Unit
 
-        override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) {
+        override suspend fun saveUserProfile(
+            displayName: String,
+            personaPrompt: String,
+            avatarUri: String,
+            avatarUrl: String
+        ) {
             savedDisplayName = displayName
             savedPersonaPrompt = personaPrompt
             savedAvatarUri = avatarUri
             savedAvatarUrl = avatarUrl
         }
 
-        override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) {
+        override suspend fun saveUserPersonaMasks(
+            masks: List<UserPersonaMask>,
+            defaultMaskId: String
+        ) {
             savedUserPersonaMasks = masks
             savedDefaultUserPersonaMaskId = defaultMaskId
         }
 
         override suspend fun saveDefaultPresetId(presetId: String) = Unit
 
-        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
+        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) =
+            Unit
+
         override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
-        override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit
-        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) = Unit
+        override suspend fun saveMemoryRecallTokenBudget(tokenBudget: Int) =
+            error("本测试不应保存记忆预算")
+
+        override suspend fun saveMemoryResidentLimits(limits: com.example.myapplication.model.MemoryResidentLimits) =
+            error("本测试不应保存认知容量")
+
+        override suspend fun saveMemoryPromptSettings(
+            extractionPrompt: String,
+            injectionPrompt: String
+        ) = Unit
+
+        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) =
+            Unit
+
         override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) = Unit
     }
 }

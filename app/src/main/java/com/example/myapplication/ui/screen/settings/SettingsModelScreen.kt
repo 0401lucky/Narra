@@ -42,16 +42,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.ui.component.ModelIcon
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.modelpicker.ModelPickerQuickAction
 import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
+import com.example.myapplication.ui.theme.NarraShapes
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @Composable
@@ -74,8 +79,13 @@ fun SettingsModelScreen(
     )
     val provider = uiState.currentProvider
     val draftSettings = uiState.toDraftAppSettings()
-    val providerOptions = remember(uiState.providers) {
-        uiState.providers.filter { it.enabled }
+    var selectingRole by rememberSaveable { mutableStateOf("") }
+    val selectedFunction = selectingRole.toProviderFunctionOrNull()
+    val providerOptions = remember(uiState.providers, selectedFunction) {
+        uiState.providers.filter {
+            it.enabled && (selectedFunction != ProviderFunction.EMBEDDING ||
+                it.resolvedApiProtocol() == ProviderApiProtocol.OPENAI_COMPATIBLE)
+        }
     }
     val currentProviderId = uiState.selectedProviderId.ifBlank { provider?.id.orEmpty() }
     val currentModel = provider?.selectedModel.orEmpty()
@@ -98,7 +108,6 @@ fun SettingsModelScreen(
             )
         }
     }
-    var selectingRole by rememberSaveable { mutableStateOf("") }
 
     Scaffold(
         topBar = { SettingsTopBar(title = "模型", onNavigateBack = onNavigateBack) },
@@ -110,7 +119,7 @@ fun SettingsModelScreen(
                 .padding(innerPadding),
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTag("settings_model_list"),
                 contentPadding = PaddingValues(
                     start = SettingsScreenPadding,
                     top = 12.dp,
@@ -197,6 +206,23 @@ fun SettingsModelScreen(
                 }
 
                 item {
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.EMBEDDING)
+                    RoleModelCard(
+                        icon = Icons.Outlined.Psychology,
+                        title = "向量检索模型",
+                        subtitle = "可选。启用后，相关记忆与查询文本会发送给所选服务；未启用时仍使用本地检索。",
+                        statusLabel = cardState.statusLabel,
+                        currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
+                        emptyStateText = "未启用，使用本地检索",
+                        onClick = { selectingRole = "embedding" },
+                        modifier = Modifier.testTag("embedding_model_card"),
+                        subtitleMaxLines = Int.MAX_VALUE,
+                        shape = NarraShapes.medium,
+                    )
+                }
+
+                item {
                     val cardState = draftSettings.toRoleModelCardState(ProviderFunction.PHONE_SNAPSHOT)
                     RoleModelCard(
                         icon = Icons.Outlined.Build,
@@ -246,20 +272,41 @@ fun SettingsModelScreen(
         }
     }
 
-    if (selectingRole.isNotBlank() && providerOptions.isNotEmpty()) {
-        val selectedFunction = selectingRole.toProviderFunctionOrNull()
+    if (selectedFunction == ProviderFunction.EMBEDDING && providerOptions.isEmpty()) {
+        NarraAlertDialog(
+            title = "尚无可用的向量服务",
+            message = "请先添加并启用 OpenAI 兼容提供商，再为它添加向量模型。未启用时仍使用本地检索。",
+            onDismiss = { selectingRole = "" },
+            onConfirm = { selectingRole = "" },
+            confirmLabel = "知道了",
+            dismissLabel = null,
+            shape = NarraShapes.large,
+            actionContentColor = MaterialTheme.colorScheme.onSurface,
+        )
+    } else if (selectingRole.isNotBlank() && providerOptions.isNotEmpty()) {
         val providerRoleState = draftSettings.toRoleModelCardState(selectedFunction)
         val pickerProvider = if (selectedFunction == null || selectedFunction == ProviderFunction.CHAT) {
             provider
+        } else if (selectedFunction == ProviderFunction.EMBEDDING) {
+            providerOptions.firstOrNull {
+                it.id == draftSettings.functionModelProviderIds.providerIdFor(selectedFunction)
+            }
         } else {
             draftSettings.resolveFunctionProvider(selectedFunction)
         }
-        val pickerProviderId = pickerProvider?.id.orEmpty().ifBlank { currentProviderId }
+        val pickerProviderId = pickerProvider?.id.orEmpty().ifBlank {
+            if (selectedFunction == ProviderFunction.EMBEDDING) {
+                providerOptions.first().id
+            } else {
+                currentProviderId
+            }
+        }
         val roleTitle = when (selectingRole) {
             "chat" -> "选择主会话模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "title" -> "选择标题总结模型"
             "suggestion" -> "选择会话建议模型"
             "memory" -> "选择记忆模型"
+            "embedding" -> "选择向量模型"
             "phone_snapshot" -> "选择查手机模型"
             "moments" -> "选择朋友圈模型"
             "gift_image" -> "选择默认生图模型"
@@ -290,31 +337,41 @@ fun SettingsModelScreen(
                     emptyList()
                 } else {
                     val mode = selectedProvider?.resolveFunctionModelMode(selectedFunction)
-                        ?: if (selectedFunction == ProviderFunction.GIFT_IMAGE) {
+                        ?: if (selectedFunction == ProviderFunction.GIFT_IMAGE || selectedFunction == ProviderFunction.EMBEDDING) {
                             ProviderFunctionModelMode.DISABLED
                         } else {
                             ProviderFunctionModelMode.FOLLOW_DEFAULT
                         }
-                    listOf(
-                        ModelPickerQuickAction(
-                            id = QuickActionFollowDefault,
-                            title = "跟随默认模型",
-                            supportingText = "自动使用当前主会话模型",
-                            selected = mode == ProviderFunctionModelMode.FOLLOW_DEFAULT,
-                        ),
-                        ModelPickerQuickAction(
-                            id = QuickActionDisabled,
-                            title = "关闭该功能",
-                            supportingText = "彻底停用，不再回退默认模型",
-                            selected = mode == ProviderFunctionModelMode.DISABLED,
-                        ),
-                    )
+                    buildList {
+                        if (selectedFunction != ProviderFunction.EMBEDDING) {
+                            add(
+                                ModelPickerQuickAction(
+                                    id = QuickActionFollowDefault,
+                                    title = "跟随默认模型",
+                                    supportingText = "自动使用当前主会话模型",
+                                    selected = mode == ProviderFunctionModelMode.FOLLOW_DEFAULT,
+                                ),
+                            )
+                        }
+                        add(
+                            ModelPickerQuickAction(
+                                id = QuickActionDisabled,
+                                title = if (selectedFunction == ProviderFunction.EMBEDDING) "关闭向量检索" else "关闭该功能",
+                                supportingText = if (selectedFunction == ProviderFunction.EMBEDDING) "" else "彻底停用，不再回退默认模型",
+                                selected = mode == ProviderFunctionModelMode.DISABLED,
+                            ),
+                        )
+                    }
                 }
             },
             onSelectQuickAction = { selectedProviderId, optionId ->
                 val function = selectingRole.toProviderFunctionOrNull()
                 if (function != null && function != ProviderFunction.CHAT) {
-                    val mode = if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED
+                    val mode = if (optionId == QuickActionFollowDefault && function != ProviderFunction.EMBEDDING) {
+                        ProviderFunctionModelMode.FOLLOW_DEFAULT
+                    } else {
+                        ProviderFunctionModelMode.DISABLED
+                    }
                     onUpdateFunctionModelMode(function, selectedProviderId, mode)
                 }
                 selectingRole = ""
@@ -342,15 +399,18 @@ private fun RoleModelCard(
     providerName: String,
     emptyStateText: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitleMaxLines: Int = 2,
+    shape: Shape = RoundedCornerShape(8.dp),
 ) {
     val palette = rememberSettingsPalette()
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+        shape = shape,
         color = palette.surface.copy(alpha = 0.7f),
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.2f)),
         shadowElevation = 0.dp,
@@ -379,7 +439,7 @@ private fun RoleModelCard(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.body,
-                            maxLines = 2,
+                            maxLines = subtitleMaxLines,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -495,7 +555,7 @@ private fun AppSettings.toRoleModelCardState(
     }
 
     val provider = resolveFunctionProvider(function)
-    val mode = resolveFunctionModeSafely(function)
+    val mode = resolveFunctionModelMode(function)
     val explicitModel = provider?.resolveExplicitFunctionModel(function).orEmpty()
     val resolvedModel = resolveFunctionModel(function)
     return when (mode) {
@@ -523,20 +583,6 @@ private fun AppSettings.toRoleModelCardState(
     }
 }
 
-private fun AppSettings.resolveFunctionModeSafely(
-    function: ProviderFunction,
-): ProviderFunctionModelMode {
-    val provider = resolveFunctionProvider(function)
-    if (provider == null) {
-        return if (function == ProviderFunction.GIFT_IMAGE) {
-            ProviderFunctionModelMode.DISABLED
-        } else {
-            ProviderFunctionModelMode.FOLLOW_DEFAULT
-        }
-    }
-    return provider.resolveFunctionModelMode(function)
-}
-
 private fun SettingsUiState.toDraftAppSettings(): AppSettings {
     return savedSettings.copy(
         providers = providers,
@@ -551,6 +597,7 @@ private fun String.toProviderFunctionOrNull(): ProviderFunction? {
         "title" -> ProviderFunction.TITLE_SUMMARY
         "suggestion" -> ProviderFunction.CHAT_SUGGESTION
         "memory" -> ProviderFunction.MEMORY
+        "embedding" -> ProviderFunction.EMBEDDING
         "phone_snapshot" -> ProviderFunction.PHONE_SNAPSHOT
         "moments" -> ProviderFunction.MOMENTS
         "gift_image" -> ProviderFunction.GIFT_IMAGE

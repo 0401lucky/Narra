@@ -1,5 +1,8 @@
 package com.example.myapplication.ui.component.roleplay
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -267,9 +270,18 @@ internal class RoleplayStreamingAutoScrollState {
 
                     delta <= 0 -> return@runProgrammaticScroll
                     else -> {
-                        listState.scrollBy(
-                            delta.coerceAtMost(RoleplayStreamingMaxScrollStepPx).toFloat(),
-                        )
+                        val stepPx = delta.coerceAtMost(RoleplayStreamingMaxScrollStepPx).toFloat()
+                        if (stepPx <= 180f && remainingPasses == 4) {
+                            listState.animateScrollBy(
+                                value = stepPx,
+                                animationSpec = tween(
+                                    durationMillis = 52,
+                                    easing = LinearOutSlowInEasing,
+                                ),
+                            )
+                        } else {
+                            listState.scrollBy(stepPx)
+                        }
                         remainingPasses -= 1
                         if (remainingPasses > 0) {
                             withFrameNanos { }

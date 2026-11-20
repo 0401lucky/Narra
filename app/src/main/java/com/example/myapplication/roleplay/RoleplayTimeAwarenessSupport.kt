@@ -14,8 +14,9 @@ object RoleplayTimeAwarenessSupport {
     fun buildPromptSection(
         interactionMode: RoleplayInteractionMode,
         nowProvider: () -> Long = { System.currentTimeMillis() },
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
     ): String {
-        val currentTime = formatCurrentPromptTime(nowProvider())
+        val currentTime = formatCurrentPromptTime(nowProvider(), zoneId)
         return when (interactionMode) {
             RoleplayInteractionMode.ONLINE_PHONE -> {
                 buildString {
@@ -34,7 +35,7 @@ object RoleplayTimeAwarenessSupport {
 
             RoleplayInteractionMode.OFFLINE_DIALOGUE,
             RoleplayInteractionMode.OFFLINE_LONGFORM,
-            -> {
+                -> {
                 buildString {
                     append("【时间感知】\n")
                     append("1. 当前绝对时间：")
@@ -51,12 +52,15 @@ object RoleplayTimeAwarenessSupport {
         }
     }
 
-    fun formatCurrentPromptTime(timestamp: Long = System.currentTimeMillis()): String {
+    fun formatCurrentPromptTime(
+        timestamp: Long = System.currentTimeMillis(),
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+    ): String {
         return runCatching {
             SimpleDateFormat(
                 "yyyy年M月d日 EEEE HH:mm",
                 Locale.SIMPLIFIED_CHINESE,
-            ).format(Date(timestamp))
+            ).apply { timeZone = java.util.TimeZone.getTimeZone(zoneId) }.format(Date(timestamp))
         }.getOrDefault("当前时间未知")
     }
 }

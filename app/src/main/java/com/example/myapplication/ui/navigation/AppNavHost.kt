@@ -38,6 +38,10 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        enterTransition = { narraNavEnterTransition() },
+        exitTransition = { narraNavExitTransition() },
+        popEnterTransition = { narraNavPopEnterTransition() },
+        popExitTransition = { narraNavPopExitTransition() },
     ) {
         composable(AppRoutes.HOME) {
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()

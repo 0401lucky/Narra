@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -239,7 +240,13 @@ fun ImmersiveBackdrop(
     modifier: Modifier = Modifier,
     fallbackBackgroundColor: Color? = null,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    val hazeState = LocalImmersiveHazeState.current
+    val backdropModifier = if (hazeState != null) {
+        modifier.fillMaxSize().haze(state = hazeState)
+    } else {
+        modifier.fillMaxSize()
+    }
+    Box(modifier = backdropModifier) {
         val bitmap = backdropState.imageBitmap
         if (bitmap != null) {
             Image(
@@ -336,12 +343,24 @@ fun ImmersiveGlassSurface(
         if (hazeState != null && blurRadius > 0.dp) {
             baseMod = baseMod.hazeChild(
                 state = hazeState,
-                shape = shape,
                 style = HazeStyle(
                     blurRadius = blurRadius,
                     backgroundColor = Color.Transparent,
                     tint = HazeTint(Color.Transparent)
                 )
+            )
+        }
+        if (blurRadius > 0.dp) {
+            baseMod = baseMod.border(
+                width = 0.75.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        backdropState.palette.panelHighlight.copy(alpha = 0.22f),
+                        backdropState.palette.panelBorder.copy(alpha = 0.08f),
+                        backdropState.palette.shadowColor.copy(alpha = 0.05f),
+                    ),
+                ),
+                shape = shape,
             )
         }
 

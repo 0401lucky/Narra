@@ -27,8 +27,45 @@ import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.ShopItemDraft
 import com.example.myapplication.model.fallbackPolishResult
+import com.example.myapplication.model.MemoryExtractionSnapshot
+import com.example.myapplication.model.PromptCompletionResult
+import com.example.myapplication.model.PromptCompletionStatus
+import com.example.myapplication.model.MemoryEventSummarySnapshot
 
 interface AiPromptExtrasService {
+    suspend fun requestMemoryEventSummary(
+        snapshot: MemoryEventSummarySnapshot,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PromptCompletionResult = error("当前环境未配置事件摘要接口")
+
+    suspend fun requestMemoryExtraction(
+        snapshot: MemoryExtractionSnapshot,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PromptCompletionResult = error("当前环境未配置完整记忆提取接口")
+
+    suspend fun generateConversationSummaryResult(
+        conversationText: String, baseUrl: String, apiKey: String, modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PromptCompletionResult = PromptCompletionResult(
+        generateConversationSummary(conversationText, baseUrl, apiKey, modelId, apiProtocol, provider), PromptCompletionStatus.UNKNOWN,
+    )
+
+    suspend fun generateRoleplayConversationSummaryResult(
+        conversationText: String, baseUrl: String, apiKey: String, modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PromptCompletionResult = PromptCompletionResult(
+        generateRoleplayConversationSummary(conversationText, baseUrl, apiKey, modelId, apiProtocol, provider), PromptCompletionStatus.UNKNOWN,
+    )
     suspend fun generateTitle(
         firstUserMessage: String,
         baseUrl: String,
@@ -300,6 +337,7 @@ class DefaultAiPromptExtrasService internal constructor(
     private val characterArtService: CharacterArtPromptService,
     private val imagePromptPolishService: ImagePromptPolishService,
     private val roleplayShopPromptService: RoleplayShopPromptService,
+    private val eventService: MemoryEventPromptService,
 ) : AiPromptExtrasService {
 
     constructor(
@@ -335,6 +373,7 @@ class DefaultAiPromptExtrasService internal constructor(
         characterArtService = CharacterArtPromptService(core),
         imagePromptPolishService = ImagePromptPolishService(core),
         roleplayShopPromptService = RoleplayShopPromptService(core),
+        eventService = MemoryEventPromptService(core),
     )
 
     override suspend fun generateTitle(
@@ -368,6 +407,32 @@ class DefaultAiPromptExtrasService internal constructor(
         apiProtocol = apiProtocol,
         provider = provider,
     )
+
+    override suspend fun requestMemoryExtraction(
+        snapshot: MemoryExtractionSnapshot, baseUrl: String, apiKey: String, modelId: String,
+        apiProtocol: ProviderApiProtocol, provider: ProviderSettings?,
+    ): PromptCompletionResult = memoryService.requestMemoryExtraction(snapshot, baseUrl, apiKey, modelId, apiProtocol, provider)
+
+    override suspend fun requestMemoryEventSummary(
+        snapshot: MemoryEventSummarySnapshot,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PromptCompletionResult = eventService.generate(
+        snapshot, baseUrl, apiKey, modelId, apiProtocol, provider,
+    )
+
+    override suspend fun generateConversationSummaryResult(
+        conversationText: String, baseUrl: String, apiKey: String, modelId: String,
+        apiProtocol: ProviderApiProtocol, provider: ProviderSettings?,
+    ): PromptCompletionResult = summaryService.generateConversationSummaryResult(conversationText, baseUrl, apiKey, modelId, apiProtocol, provider)
+
+    override suspend fun generateRoleplayConversationSummaryResult(
+        conversationText: String, baseUrl: String, apiKey: String, modelId: String,
+        apiProtocol: ProviderApiProtocol, provider: ProviderSettings?,
+    ): PromptCompletionResult = summaryService.generateRoleplayConversationSummaryResult(conversationText, baseUrl, apiKey, modelId, apiProtocol, provider)
 
     override suspend fun generateConversationSummary(
         conversationText: String,
