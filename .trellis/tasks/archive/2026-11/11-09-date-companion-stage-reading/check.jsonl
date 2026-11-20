@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "独立验证、截图/迁移与结果口径"}
+{"file": ".trellis/spec/backend/index.md", "reason": "按实际UI/Room/设置/领域范围逐文件加载相关完整规范，减少重复大注入"}
+{"file": ".trellis/tasks/archive/2026-11/11-09-date-companion-stage-reading/research/check-bootstrap-continue.md", "reason": "限流后的短审查入口；完整14条路径与原要求保持"}

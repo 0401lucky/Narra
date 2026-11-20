@@ -1,0 +1,15 @@
+{
+  "version": "2.4.1-dev",
+  "versionCode": 20401,
+  "applicationId": "com.narra.app.dev",
+  "runId": "44745192024",
+  "sourceSha": "18ec00c42837b995df05d55deea759651606ccc9",
+  "publicationCommit": "e7d3f2f7",
+  "apkSize": 83029801,
+  "apkSha256": "f9df232f89f755571b49a66e15d16d20cfe7b6921463f15c909c6c1dda53dad2",
+  "signingCertificateSha256": "3a6c57eec0641bc00830252eb821d62c9e9b2f639c5989d0bc42b29b843546e8",
+  "pinnedVerifier": "36.1.0",
+  "publicHeadAndMimeAndHashVerified": true,
+  "optionalUpdate": true,
+  "localApk": "D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\apk\\debug\\Narra-v2.4.1-dev-20401-dev.apk"
+}

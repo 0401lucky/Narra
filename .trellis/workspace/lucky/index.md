@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
-- **Last Active**: 2026-11-06
+- **Total Sessions**: 18
+- **Last Active**: 2026-11-20
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~466 | Active |
+| `journal-1.md` | ~617 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,10 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 18 | 2026-11-20 | v2.4.1-dev UI与陪伴云端发版 | `5a62efab`, `74d152d9`, `3b5db12d`, `18ec00c4`, `e7d3f2f7`, `5e02e13e` | `main` |
+| 17 | 2026-11-20 | v2.4.1 D6 历史资料与原生集成收尾 | - | `main` |
+| 16 | 2026-11-19 | v2.4.1 D5 语音翻译与收藏工程收口 | - | `main` |
+| 15 | 2026-11-19 | v2.4.1 D4 工程收口 | - | `main` |
 | 14 | 2026-11-06 | v2.3 dev 云端自动发版完成 | `30746e33`, `d77a2956` | `main` |
 | 13 | 2026-11-06 | P06 世界书与资料库完成、视觉接纳及归档 | `c925da5e961261ec69400ad2d987cecfb2653359`, `b7af5429cd215a65598a34bffb714a53651b5a8a` | `main` |
 | 12 | 2026-11-05 | v2.3四批扩面总验收与父任务归档 | `4c93ae27`, `2cf55f1f`, `4d32dabf`, `0c272255`, `b7aad3e6`, `76adadc9`, `75b9a28d`, `ce7eb322` | `main` |

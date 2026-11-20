@@ -1,0 +1,1770 @@
+{
+  "version": "2.4.1",
+  "rowCount": 52,
+  "engineeringVerified": 52,
+  "published": false,
+  "rows": [
+    {
+      "id": "F01",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.ui.navigation.CompanionIntegrationStoryTest",
+          "method": "productionRoleFilter_emptyResultCanClearAndReturnWithoutRequests",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "34-native-stories",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "正常配置保留内建角色；实际验证空筛选及返回/创建，不伪造生产零角色状态。"
+    },
+    {
+      "id": "F02",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionEntryViewModelTest",
+          "method": "prepareRestoreAndDirect_doNotSeedStaticGreeting",
+          "outcome": "passed",
+          "seconds": "0.204",
+          "report": "jvm-xml/dea0963a824e60cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F03",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionPresentationRequestTest",
+          "method": "pointOfViewOnlyAffectsNarration_andOpeningKeepsThirdPerson",
+          "outcome": "passed",
+          "seconds": "0.463",
+          "report": "jvm-xml/8298c08c9500ac5d.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "HTTP 人称/行动主体规则可验证；真实模型不代写用户反应的效果未测。"
+    },
+    {
+      "id": "F04",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "discardedOpeningRerolls_neverBecomeMessagesOrSources",
+          "outcome": "passed",
+          "seconds": "0.136",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F05",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionEntryViewModelTest",
+          "method": "repeatedAccept_createsOneCanonicalOpening",
+          "outcome": "passed",
+          "seconds": "0.255",
+          "report": "jvm-xml/dea0963a824e60cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "openingAccept_failureKeepsPreviewAndRepeatedAcceptCommitsOnce",
+          "outcome": "passed",
+          "seconds": "0.109",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F06",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionEntryViewModelTest",
+          "method": "prepareRestoreAndDirect_doNotSeedStaticGreeting",
+          "outcome": "passed",
+          "seconds": "0.204",
+          "report": "jvm-xml/dea0963a824e60cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F07",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "sameDateAndMidnight_fullAuthorizedHistoryKeepsScenesAndExportsUnloadedRecords",
+          "outcome": "passed",
+          "seconds": "0.317",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "emptyDirectEncountersRemainRealGroups_withoutInventingLegacyMeetings",
+          "outcome": "passed",
+          "seconds": "0.049",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F08",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionEntryViewModelTest",
+          "method": "leavingAForB_cancelsLateResponseAndKeepsBPreparation",
+          "outcome": "passed",
+          "seconds": "0.149",
+          "report": "jvm-xml/dea0963a824e60cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "changedPersona_refusesLateArtifact",
+          "outcome": "passed",
+          "seconds": "0.032",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F09",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "sameText_canBeSeparateTurns",
+          "outcome": "passed",
+          "seconds": "0.035",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "networkFailure_keepsInputAndNeedsExplicitRetry",
+          "outcome": "passed",
+          "seconds": "0.043",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F10",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "canonicalFailure_reopensAndSavesWithoutCallingModel",
+          "outcome": "passed",
+          "seconds": "0.101",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "artifactFailure_keepsMemoryCopyAndRetriesStorageOnly",
+          "outcome": "passed",
+          "seconds": "0.057",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "首次产物无任何持久副本仅保证当前进程，不保证杀进程恢复。"
+    },
+    {
+      "id": "F11",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "transactionFailure_keepsArtifactAndOldCanonical",
+          "outcome": "passed",
+          "seconds": "0.097",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "externalEdit_rejectsRerollAndKeepsNewText",
+          "outcome": "passed",
+          "seconds": "0.048",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F12",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "batchEdit_oneStaleRevisionIsAllOrNothing",
+          "outcome": "passed",
+          "seconds": "0.11",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "batchStorageFailure_rollsBackOriginalsTurnAndSourceInvalidation",
+          "outcome": "passed",
+          "seconds": "0.102",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "deletingSource_preventsResurrection",
+          "outcome": "passed",
+          "seconds": "0.05",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "F13",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "twoOwners_claimExactlyOnce",
+          "outcome": "passed",
+          "seconds": "0.028",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "concurrentRequests_reserveBoundedRecoverySlotsBeforeCallingModel",
+          "outcome": "passed",
+          "seconds": "0.132",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "双 owner/持久 claim 是 Android 适配；不声称浏览器多标签页已测。"
+    },
+    {
+      "id": "F14",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.ui.navigation.CompanionIntegrationStoryTest",
+          "method": "productionEntry_completeStoryPreservesRunRawAndModelAuthorization",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "38-native-complete-story",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G01",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionBuiltinPresetTest",
+          "method": "defaultInput_doesNotRequirePlotChange",
+          "outcome": "passed",
+          "seconds": "0.163",
+          "report": "jvm-xml/2c02eda522a865de.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionBuiltinPresetTest",
+          "method": "defaultContinue_doesNotRequirePlotChange",
+          "outcome": "passed",
+          "seconds": "0.876",
+          "report": "jvm-xml/2c02eda522a865de.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅工程请求结构和内置规则；真实沉默/相处表现未测。"
+    },
+    {
+      "id": "G02",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionPresentationRequestTest",
+          "method": "fiveStylesAndDefault_preserveRoleFactsAndUseOnlyRealInputForWorldBook",
+          "outcome": "passed",
+          "seconds": "0.487",
+          "report": "jvm-xml/8298c08c9500ac5d.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅工程原输入/角色事实与请求边界；拒绝、纠正、换话题的真实模型效果未测。"
+    },
+    {
+      "id": "G03",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionPresentationRequestTest",
+          "method": "sameStyleKeepsTwoCharactersDifferentAndDoesNotRewriteHistory",
+          "outcome": "passed",
+          "seconds": "0.154",
+          "report": "jvm-xml/8298c08c9500ac5d.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "工程角色/风格隔离；真实不同人格表达效果未测。"
+    },
+    {
+      "id": "G04",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "continueFailureRetryAndReroll_keepTypedHttpSemanticsAndStoredControl",
+          "outcome": "passed",
+          "seconds": "0.15",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "typed CONTINUE 与请求规则可验证；角色自主表达和用户执笔权的真实效果未测。"
+    },
+    {
+      "id": "G05",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "responsesContinue_rerollKeepsSemanticsAndActualReceipt",
+          "outcome": "passed",
+          "seconds": "0.113",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "anthropicContinue_rerollKeepsSemanticsAndActualReceipt",
+          "outcome": "passed",
+          "seconds": "0.122",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "fullRepositoryExport_keepsUnloadedRawTimeSpeakerAndTypedControl",
+          "outcome": "passed",
+          "seconds": "0.049",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G06",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "finalHttp_aggregatesOnlySameDailyRolePersonaAndExcludesGroupPrivate",
+          "outcome": "passed",
+          "seconds": "0.15",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "finalHttp_emptyAuthorizationAndBreakpointCannotFallBackToRawHistory",
+          "outcome": "passed",
+          "seconds": "0.144",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G07",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "presetDepthZeroWorldBook_preservesRolesOrderAndActualInputDecoration",
+          "outcome": "passed",
+          "seconds": "0.106",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G08",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.MemoryExtractionBatcherTest",
+          "method": "longMessageTailAndSurrogatePairsHaveFullCoverage",
+          "outcome": "passed",
+          "seconds": "0.0",
+          "report": "jvm-xml/0309d66fdd2b7747.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.ConversationSummaryCoordinatorTest",
+          "method": "updateConversationSummary_longMessageIncludesTailEvenWhenLegacyFormatterClips",
+          "outcome": "passed",
+          "seconds": "0.004",
+          "report": "jvm-xml/5866d8b371a07c64.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "完整原料与预算可验证，不承诺所有正文都进入每次模型有限上下文。"
+    },
+    {
+      "id": "G09",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionTimePolicyTest",
+          "method": "frozenCharacterZone_crossesNewYearWithoutChangingOriginalTime",
+          "outcome": "passed",
+          "seconds": "0.136",
+          "report": "jvm-xml/5c3aaa2dfa14659a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionTimePolicyTest",
+          "method": "disabledTime_keepsNarrativeDatesAndSuppressesRealTimeWrapping",
+          "outcome": "passed",
+          "seconds": "0.094",
+          "report": "jvm-xml/5c3aaa2dfa14659a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "设备显示日期、角色 ZoneId 与保存绝对时间分开；不改系统时钟。"
+    },
+    {
+      "id": "G10",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_chatEndReasons_preserveContentAndOnlyOneTerminalEvidence",
+          "outcome": "passed",
+          "seconds": "0.102",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_dispatchFailure_keepsExactlyOneEvidence",
+          "outcome": "passed",
+          "seconds": "0.013",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_toolRouteWithoutCalls_usesTheBufferedFinalReplyEvidence",
+          "outcome": "passed",
+          "seconds": "0.078",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_rawMetadataNeverCopiesAnErrorSentence",
+          "outcome": "passed",
+          "seconds": "0.019",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_consumerError_isNotRelabeledAsServerFailure",
+          "outcome": "passed",
+          "seconds": "0.004",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "jsonResponses_nonStreamAndStreamFallback_keepEvidenceForEveryProtocol",
+          "outcome": "passed",
+          "seconds": "0.068",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_remoteError_keepsFailureEvidenceWithoutSuccessfulTerminalOrSecrets",
+          "outcome": "passed",
+          "seconds": "0.043",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_malformedChunkBeforeStop_doesNotConfirmCompleteContent",
+          "outcome": "passed",
+          "seconds": "0.008",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_mislabelledSseAndClientFallback_keepEvidence",
+          "outcome": "passed",
+          "seconds": "0.086",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_responsesMalformedTerminalPayload_cannotConfirmComplete",
+          "outcome": "passed",
+          "seconds": "0.011",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_responsesTerminalEvidence_preservesStatusAndIncompleteReason",
+          "outcome": "passed",
+          "seconds": "0.053",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_responsesFailedWithoutDetails_stillFails",
+          "outcome": "passed",
+          "seconds": "0.018",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_existingGeminiCompatibility_keepsCandidateEndReason",
+          "outcome": "passed",
+          "seconds": "0.025",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_consumerCancellation_neverEmitsSuccessfulTerminal",
+          "outcome": "passed",
+          "seconds": "0.02",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "nonStream_reasoningOnlyIsNotConvertedIntoVisibleAnswer",
+          "outcome": "passed",
+          "seconds": "0.023",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_responsesProgressDoesNotPoisonCompletedItemButIncompleteDoneCannotBeErased",
+          "outcome": "passed",
+          "seconds": "0.035",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_chatRefusalOrPendingToolOverridesReportedStop",
+          "outcome": "passed",
+          "seconds": "0.043",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_responsesTextDoneOrEofAlone_remainsUnknown",
+          "outcome": "passed",
+          "seconds": "0.008",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_anthropicPendingToolIsNotACompletedAnswer",
+          "outcome": "passed",
+          "seconds": "0.009",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_afterToolCall_usesOnlyTheFinalStreamEvidence",
+          "outcome": "passed",
+          "seconds": "0.073",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.ai.AiGatewayCompletionEvidenceTest",
+          "method": "stream_anthropicStopReasonsAndTransportStop_areSeparate",
+          "outcome": "passed",
+          "seconds": "0.068",
+          "report": "jvm-xml/8cc8fdb9767df66f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "missingEvidence_orEarlyEnd_doesNotPublish",
+          "outcome": "passed",
+          "seconds": "0.054",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G11",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionRequestCoordinatorTest",
+          "method": "memoryRecall_eachRequestIsFreshAndDisabledOrFailedRecallHasNoOldInjection",
+          "outcome": "passed",
+          "seconds": "0.292",
+          "report": "jvm-xml/9057ac969a6cc473.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "G12",
+      "engineering": "verified",
+      "checks": [
+        {
+          "kind": "static",
+          "report": "validation/final-protection.json",
+          "outcome": "passed"
+        }
+      ],
+      "missing": [],
+      "limits": "本版无 GPS/地图/隐私圈；只验证无新增定位契约，不是完整定位系统。"
+    },
+    {
+      "id": "U01",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionReplyParserTest",
+          "method": "xmlProjection_preservesRawAndRealNodeSpans",
+          "outcome": "passed",
+          "seconds": "0.002",
+          "report": "jvm-xml/b9a273163343bbf4.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionReplyParserTest",
+          "method": "plainTextAndLegacyXml_remainReadableWithoutPresentation",
+          "outcome": "passed",
+          "seconds": "0.002",
+          "report": "jvm-xml/b9a273163343bbf4.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U02",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionBeatPlayerTest",
+          "method": "advanceWhileTyping_revealsBeforeNextClickAndCancelsScheduledTick",
+          "outcome": "passed",
+          "seconds": "0.004",
+          "report": "jvm-xml/20dfeacddb00f88e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionBeatPlayerTest",
+          "method": "typing_keepsComplexEmojiAndTagFlagWhole",
+          "outcome": "passed",
+          "seconds": "0.004",
+          "report": "jvm-xml/20dfeacddb00f88e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U03",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionBeatPlayerTest",
+          "method": "end_replaysLocallyOnNextClickWithoutChangingProjection",
+          "outcome": "passed",
+          "seconds": "0.005",
+          "report": "jvm-xml/20dfeacddb00f88e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.ui.screen.roleplay.CompanionHistoryScreenTest",
+          "method": "readOnlyArchive_at320dpAnd200PercentDisablesWritesAndClearsSelectionBeforeExit",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "29-native-current-source",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U04",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionResourceResolverTest",
+          "method": "missingFiles_fallBackInOrderAndDecorCannotBecomeSubject",
+          "outcome": "passed",
+          "seconds": "0.004",
+          "report": "jvm-xml/b6eef7ea368ded2f.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "本地图片/稳定 ID/兜底适配；未移植参考平台角色素材或 CSS。"
+    },
+    {
+      "id": "U05",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionReplyParserTest",
+          "method": "absentDisabledAndIncompleteObservation_neverReusePreviousValue",
+          "outcome": "passed",
+          "seconds": "0.001",
+          "report": "jvm-xml/b9a273163343bbf4.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionProjectionRepositoryTest",
+          "method": "editedAndBrokenSource_recomputesOrClearsObservation",
+          "outcome": "passed",
+          "seconds": "0.14",
+          "report": "jvm-xml/c5bff8130f73a817.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U06",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionReplyParserTest",
+          "method": "observationUsesStableIdsAndFrozenLabels",
+          "outcome": "passed",
+          "seconds": "0.001",
+          "report": "jvm-xml/b9a273163343bbf4.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.local.AppSettingsStoreCompanionWritingTest",
+          "method": "invalidNamesAndTooManyFields_doNotPartiallyWrite",
+          "outcome": "passed",
+          "seconds": "0.021",
+          "report": "jvm-xml/24528d52fd7e207a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U07",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionReadingPaginationTest",
+          "method": "mixedPages_filterBeforePagingAndKeepAllCommittedSources",
+          "outcome": "passed",
+          "seconds": "0.499",
+          "report": "jvm-xml/336f169f7ecac7b9.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionReadingPaginationTest",
+          "method": "deletedCursor_keepsOlderPageAndExpandedWindow",
+          "outcome": "passed",
+          "seconds": "0.129",
+          "report": "jvm-xml/336f169f7ecac7b9.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "sameDateAndMidnight_fullAuthorizedHistoryKeepsScenesAndExportsUnloadedRecords",
+          "outcome": "passed",
+          "seconds": "0.317",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "successfulLateOpening_revokedScopeCannotPublishItsOriginals",
+          "outcome": "passed",
+          "seconds": "0.009",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "successfulLateOlderPage_revokedScopeClearsOriginalsAndFrozenOperations",
+          "outcome": "passed",
+          "seconds": "0.011",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "successfulExpandedRefresh_revokedScopeCannotRestoreItsLoadedWindow",
+          "outcome": "passed",
+          "seconds": "0.021",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "lateRevokedOlderScope_doesNotCancelNewOpening",
+          "outcome": "passed",
+          "seconds": "0.024",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "lateRevokedRefreshScope_doesNotCancelNewQuery",
+          "outcome": "passed",
+          "seconds": "0.011",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U08",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionReadingViewModelTest",
+          "method": "expandedPages_refreshKeepsBoundaryEditsAndAnchorWithoutDuplicates",
+          "outcome": "passed",
+          "seconds": "0.012",
+          "report": "jvm-xml/777210f5ae10effd.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "当前 JVM 与 D4 原生锚点交接分别标注；不将宿主/编译当物理设备证明。"
+    },
+    {
+      "id": "U09",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.ui.screen.roleplay.CompanionReadingScreenTest",
+          "test": "oneLongPressThenDrag_cancelsReadingMenuWithoutSelectingOrNavigating",
+          "code": 0,
+          "error": null,
+          "latest_run": "d4-final-native-device-38",
+          "method": "oneLongPressThenDrag_cancelsReadingMenuWithoutSelectingOrNavigating",
+          "outcome": "passed",
+          "ledgerReport": "11-09-date-companion-stage-reading/research/recover-2026-11-19/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "引用 D4 原生触控实际方法；本次历史管理/Back 另有 D6 方法，不累计为本次执行。"
+    },
+    {
+      "id": "U10",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.ui.screen.roleplay.CompanionHistoryScreenTest",
+          "method": "multiEditAndDelete_requireExplicitConfirmAndKeepBackLayers",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "29-native-current-source",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        },
+        {
+          "class": "com.example.myapplication.ui.screen.roleplay.CompanionHistoryScreenTest",
+          "method": "readOnlyArchive_at320dpAnd200PercentDisablesWritesAndClearsSelectionBeforeExit",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "29-native-current-source",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        },
+        {
+          "class": "com.example.myapplication.ui.screen.roleplay.CompanionHistoryScreenTest",
+          "method": "editorAt320dpAnd200Percent_usesRealDialogFontAndKeepsImeSaveAndBackLayers",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "29-native-current-source",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U11",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "disabledAndMissingConfiguration_neverTranslateOrSynthesize",
+          "outcome": "passed",
+          "seconds": "0.013",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "preparedAfterNewOwnerAndStartFailure_neverReportPlaying",
+          "outcome": "passed",
+          "seconds": "0.01",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "Fake/本地 WAV 证明调用与开始/停止合同；真实 MiMo 和物理设备音效未测。"
+    },
+    {
+      "id": "U12",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionSpeechRequestKeysTest",
+          "method": "effectiveTextLanguageEndpointModelVoiceAndTranslationKeys_doNotCollide",
+          "outcome": "passed",
+          "seconds": "0.005",
+          "report": "jvm-xml/451d41ca3c19e49a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionSpeechRequestKeysTest",
+          "method": "cloneSamePathAndSize_differentActualBytesHaveDifferentKeyAndFrozenPayload",
+          "outcome": "passed",
+          "seconds": "0.017",
+          "report": "jvm-xml/451d41ca3c19e49a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "译文缓存是会话内存 LRU，音频是持久缓存。"
+    },
+    {
+      "id": "U13",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "lateUncancellableTranslation_afterNewSelectionCannotSynthesize",
+          "outcome": "passed",
+          "seconds": "0.013",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "lateUncancellableTts_afterLeavingCannotPublishOrPrepare",
+          "outcome": "passed",
+          "seconds": "0.008",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "工程代次/取消/宿主验证；物理蓝牙/耳机/系统路由未测。"
+    },
+    {
+      "id": "U14",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "crossEncounterNarrationQueue_isSerialAndStopDoesNotStartNext",
+          "outcome": "passed",
+          "seconds": "0.008",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.voice.PrivateCompanionVoiceFilePublisherTest",
+          "method": "declaredWaveLengthOrPartialFrame_isRejectedWithoutPublishedFile",
+          "outcome": "passed",
+          "seconds": "0.015",
+          "report": "jvm-xml/2d9687e1913e1b72.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "MiMo 整段响应及分段串行朗读；没有 PCM 增量或音频时钟逐字字幕。"
+    },
+    {
+      "id": "U15",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionReadingSupportTest",
+          "method": "manualSelection_spansTwoConversationsInChronologicalOrder",
+          "outcome": "passed",
+          "seconds": "0.006",
+          "report": "jvm-xml/67efa1593be8baeb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionSpeechRequestKeysTest",
+          "method": "longSelectedText_usesCompleteGraphemesAndPreservesExactSourceOrder",
+          "outcome": "passed",
+          "seconds": "0.014",
+          "report": "jvm-xml/451d41ca3c19e49a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "sameDateAndMidnight_fullAuthorizedHistoryKeepsScenesAndExportsUnloadedRecords",
+          "outcome": "passed",
+          "seconds": "0.317",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U16",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "fullRepositoryExport_keepsUnloadedRawTimeSpeakerAndTypedControl",
+          "outcome": "passed",
+          "seconds": "0.049",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "cancelledSaf_isZeroReadZeroWriteAndNoSuccess",
+          "outcome": "passed",
+          "seconds": "0.026",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "successfulReadThenRevokedScope_doesNotWriteItsFrozenOriginals",
+          "outcome": "passed",
+          "seconds": "0.027",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "safWriteAndCloseFailures_neverReportSavedAndCloseTheStream",
+          "outcome": "passed",
+          "seconds": "0.03",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "safNullStreamAndPermissionFailure_neverReportSaved",
+          "outcome": "passed",
+          "seconds": "0.034",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.viewmodel.CompanionHistoryViewModelTest",
+          "method": "scopeLostDuringExportRead_clearsOldWindowWithoutWritingOrReportingSuccess",
+          "outcome": "passed",
+          "seconds": "0.017",
+          "report": "jvm-xml/ce02fc12421910cb.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "pendingCanonicalAndEditedRecovery_exportFullOriginalsWithoutReaderOrMachineQualification",
+          "outcome": "passed",
+          "seconds": "0.081",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.ui.navigation.CompanionIntegrationStoryTest",
+          "method": "productionDocuments_queuedSafExportsAllRawAndShowsNewFailureWithoutLosingOriginals",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "34-native-stories",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "TXT 是 UTF-8 BOM 阅读副本，不是可恢复聊天备份。"
+    },
+    {
+      "id": "U17",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "editAndDelete_blockLateGenerationVoiceExtractionButKeepIndependentManualVersionsAndFavorite",
+          "outcome": "passed",
+          "seconds": "0.218",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.RoomCompanionVoiceRepositoryTest",
+          "method": "realSourceRevisionAndDeletion_keepFavoriteSnapshotAndNotifyObserver",
+          "outcome": "passed",
+          "seconds": "0.13",
+          "report": "jvm-xml/16276851374cc53e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "U18",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.context.CompanionAppearanceTransferCodecTest",
+          "method": "packageRoundTrip_preservesContentMappingWithoutPrivateDomains",
+          "outcome": "passed",
+          "seconds": "0.002",
+          "report": "jvm-xml/4bceccfb1f397a3d.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.CompanionAppearanceTransferCodecTest",
+          "method": "ancillaryPrivateTextAndArbitraryPaths_areRejected",
+          "outcome": "passed",
+          "seconds": "0.002",
+          "report": "jvm-xml/4bceccfb1f397a3d.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.CompanionAppearanceTransferCodecTest",
+          "method": "privateV3_preservesAuthorizedMemoryAndPreferencesWhileOldMissingDomainStaysNull",
+          "outcome": "passed",
+          "seconds": "0.007",
+          "report": "jvm-xml/4bceccfb1f397a3d.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "publicExport_stripsMetadataAndPrivateFieldsAndMapsDuplicatePixels",
+          "outcome": "passed",
+          "seconds": "0.138",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.system.security.SensitiveTextRedactorTest",
+          "method": "throwableMessageForUi_androidPrivateAliasesDoNotExposeFileLocations",
+          "outcome": "passed",
+          "seconds": "0.001",
+          "report": "jvm-xml/e6c0bb84a29598ff.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "公开装扮白名单与私人记忆资料分别授权；没有分享后端或全聊天/音频备份。"
+    },
+    {
+      "id": "X01",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "pending_isSavedButNotMachineSource",
+          "outcome": "passed",
+          "seconds": "0.044",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "brokenSelectedAttempt_deniesOriginalsManualSourcesAndSummary",
+          "outcome": "passed",
+          "seconds": "0.073",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryManagementRepositoryTest",
+          "method": "pendingCanonicalAndEditedRecovery_exportFullOriginalsWithoutReaderOrMachineQualification",
+          "outcome": "passed",
+          "seconds": "0.081",
+          "report": "jvm-xml/5563ff3a74323d2a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "X02",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionRepositoryTest",
+          "method": "continue_hasNoopCoverageButNoUserFacts",
+          "outcome": "passed",
+          "seconds": "0.048",
+          "report": "jvm-xml/a35c72fe4c245cf8.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionTextExportTest",
+          "method": "fullRepositoryExport_keepsUnloadedRawTimeSpeakerAndTypedControl",
+          "outcome": "passed",
+          "seconds": "0.049",
+          "report": "jvm-xml/bab2517b98a9cce9.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "X03",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionProjectionRepositoryTest",
+          "method": "serializedMetadataIsNeverTrustedAndRawWinsOverDisplayParts",
+          "outcome": "passed",
+          "seconds": "0.077",
+          "report": "jvm-xml/c5bff8130f73a817.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionDisplayParagraphsTest",
+          "method": "parsedTagsAndEntityLookingText_arePreservedWithoutAnotherDecode",
+          "outcome": "passed",
+          "seconds": "0.0",
+          "report": "jvm-xml/0114446dc00bfddc.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "X04",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.local.AppSettingsStoreCompanionWritingTest",
+          "method": "oldAssistantSaveAndRemoval_preserveThenRemoveOnlyOwnedWriting",
+          "outcome": "passed",
+          "seconds": "0.038",
+          "report": "jvm-xml/24528d52fd7e207a.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.local.AppSettingsStoreCompanionVisualTest",
+          "method": "concurrentVisualSaves_publishOneWholeSnapshotAndOneConflict",
+          "outcome": "passed",
+          "seconds": "0.023",
+          "report": "jvm-xml/bbc9a2c594c3f8dc.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.local.AppSettingsStoreContextTransferTest",
+          "method": "oldPackageMissingCompanionDomain_preservesFutureMapAndOtherRawCharacters",
+          "outcome": "passed",
+          "seconds": "0.029",
+          "report": "jvm-xml/82031f4f8e2c74a1.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "旧包缺域保持目标；未知高版不降级，设置并发必须 CAS。"
+    },
+    {
+      "id": "X05",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.conversation.CompanionTurnCoordinatorTest",
+          "method": "canonicalFailure_reopensAndSavesWithoutCallingModel",
+          "outcome": "passed",
+          "seconds": "0.101",
+          "report": "jvm-xml/5e4198ca5939166b.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.RoomCompanionVoiceRepositoryTest",
+          "method": "publishedAudio_reopensAndAttachesWithoutAnotherPublication",
+          "outcome": "passed",
+          "seconds": "0.147",
+          "report": "jvm-xml/16276851374cc53e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "取消标志与文件清理同时无法落盘时，不无条件承诺重启后的取消状态。"
+    },
+    {
+      "id": "X06",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.roleplay.companion.CompanionVoiceControllerTest",
+          "method": "storedFavoriteWithDeletedSource_playsSnapshotWithoutTranslationOrTts",
+          "outcome": "passed",
+          "seconds": "0.011",
+          "report": "jvm-xml/caf06e35ffc41dc1.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.RoomCompanionVoiceRepositoryTest",
+          "method": "lruAndManualClear_skipFavoritesAndCurrentOwnerPins",
+          "outcome": "passed",
+          "seconds": "0.252",
+          "report": "jvm-xml/16276851374cc53e.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        }
+      ],
+      "missing": [],
+      "limits": "独立收藏保留历史音频与原来源版本，失效不冒充当前原文。"
+    },
+    {
+      "id": "X07",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.roleplay.CompanionHistoryScopeTest",
+          "method": "continuous_freshUnextractedOriginalsCrossConversationWithFirstPersona",
+          "outcome": "passed",
+          "seconds": "0.049",
+          "report": "jvm-xml/77013315d0d928e5.xml",
+          "round": "13-full-jvm",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.ui.navigation.CompanionIntegrationStoryTest",
+          "method": "productionEntry_completeStoryPreservesRunRawAndModelAuthorization",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "38-native-complete-story",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "仅合成工程验证；真实模型/物理设备和视觉接纳不能由本行自动推定。"
+    },
+    {
+      "id": "X08",
+      "engineering": "verified",
+      "checks": [
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "noMemoryRoomCommitRetry_preservesLaterWorldAndPresetEditsAfterReopen",
+          "outcome": "passed",
+          "seconds": "0.173",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "settingReceiptBeforeRoomAck_survivesBothReopensWithoutOverwritingUser",
+          "outcome": "passed",
+          "seconds": "0.226",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "largeBoundedAppearancePlan_freezesPixelsOnceAndRestoresAfterReopen",
+          "outcome": "passed",
+          "seconds": "1.345",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "collidingLocalPlanId_cannotRemoveOrReplaceExistingFrozenPlan",
+          "outcome": "passed",
+          "seconds": "0.109",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.ContextTransferRecoveryRepositoryTest",
+          "method": "frozenPlanAndPublishedFileTampering_refusesWithoutChangingSettings",
+          "outcome": "passed",
+          "seconds": "0.217",
+          "report": "jvm-xml/26650123da553f1e.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.local.AppSettingsStoreContextTransferTest",
+          "method": "sameReceiptAfterUserEditsAndFileReopen_doesNotOverwriteOrIncrementRevision",
+          "outcome": "passed",
+          "seconds": "0.042",
+          "report": "jvm-xml/82031f4f8e2c74a1.xml",
+          "round": "26-native-repairs-verified",
+          "sourceStable": true,
+          "kind": "jvm"
+        },
+        {
+          "class": "com.example.myapplication.data.repository.context.CompanionTransferFileInstrumentedTest",
+          "method": "privateHashPublicationAndPlanReceipt_areDurableAndNeverOverwriteChangedFile",
+          "outcome": "passed",
+          "statusCode": 0,
+          "round": "29-native-current-source",
+          "sourceStable": true,
+          "ledgerReport": "11-09-date-companion-history-integration/research/validation/native-latest-methods.json",
+          "kind": "native"
+        }
+      ],
+      "missing": [],
+      "limits": "Room、文件、DataStore 各自回执/CAS；不宣称跨存储原子性。"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "短入口：写代码前按Pre-Development Checklist读取实际相关规范"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "模块分层、AppGraph与职责"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "最小充分验证、源/结果对应、截图仅verify"}
+{"file": ".trellis/spec/guides/index.md", "reason": "跨层与复用指南入口，支持文档按所改模块读取"}
+{"file": ".trellis/spec/backend/companion-presentation-guidelines.md", "reason": "D3同源raw/Beat/观测及settings CAS核心接口"}
+{"file": ".trellis/tasks/archive/2026-11/11-09-date-companion-style-observation/research/handoff-2026-11-18.md", "reason": "最新已验证上游接口、37JVM/37设备及视觉未接纳边界"}
+{"file": ".trellis/tasks/archive/2026-11/11-09-date-companion-stage-reading/research/upstream-readiness.md", "reason": "真实Reader/资源接口及模型授权隔离的短研究"}
+{"file": ".trellis/tasks/archive/2026-11/11-09-date-companion-stage-reading/research/compact-context.md", "reason": "限流后短上下文加载约定，相关规范仍须按需完整读取"}

@@ -1,0 +1,87 @@
+{
+  "id": "date-companion-entry-context",
+  "name": "date-companion-entry-context",
+  "title": "v2.4.1 陪伴 D2：三种开场与上下文衔接",
+  "description": "现有线下入口内的三开场、继续、回聊天与记忆/世界书上下文",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "roleplay",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-11-09",
+  "completedAt": "2026-11-20",
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "18ec00c42837b995df05d55deea759651606ccc9",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "11-09-date-companion",
+  "relatedFiles": [
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-entry-context/prd.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-entry-context/design.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-entry-context/implement.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/acceptance-matrix.md"
+  ],
+  "notes": "2026-11-09 用户明确批准最新完整方案并开始；后续按依赖验收推进，不重复询问已定范围。保留v2.4与无关工作区改动，未授权发布。 2026-11-20用户确认207项UI基准，2.4.1-dev Actions/R2/Pages/公开清单全部通过，工程归档；未实测模型/物理音效保持单列。",
+  "meta": {
+    "target_version": "2.4.1",
+    "work_package": "D2",
+    "planning_review": "approved",
+    "implementation_state": "verified",
+    "verification": {
+      "status": "passed",
+      "verified_at": "2026-11-11",
+      "jvm_unique_tests": 397,
+      "screenshot_tests": 35,
+      "device_unique_tests": 21,
+      "handoff": "research/handoff.md",
+      "device_report": "research/device-final-validation.json",
+      "commit_state": "pending_full_version_wrap_up"
+    },
+    "author_validation": {
+      "report": "research/implementation-validation.json",
+      "handoff": "research/implementation-handoff.md",
+      "jvm_unique_tests": 385,
+      "screenshot_tests": 35,
+      "native_ui_tests_compiled": 13,
+      "native_ui_tests_executed": false
+    },
+    "dependencies": [
+      "11-09-date-companion-foundation"
+    ],
+    "execution_approval": {
+      "requested_at": "2026-11-09",
+      "user_message": "可以，没问题，开始吧",
+      "scope": "批准最新完整2.4.1方案，按D1至D6依赖实施与验证；不包括外部发布"
+    },
+    "publication": {
+      "authorized_at": "2026-11-20",
+      "target_version": "2.4.1-dev",
+      "version_code": 20401,
+      "state": "published",
+      "run_id": "44745192024",
+      "run_url": "https://github.com/0401lucky/Narra/actions/runs/44745192024",
+      "source_sha": "18ec00c42837b995df05d55deea759651606ccc9",
+      "publication_commit": "e7d3f2f7bf168938a37b8d10091241c965eac544",
+      "apk_sha256": "f9df232f89f755571b49a66e15d16d20cfe7b6921463f15c909c6c1dda53dad2",
+      "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.4.1-dev-20401-dev.apk?v=20401",
+      "optional_update": true,
+      "ui_baseline_approval": "用户明确接纳207候选，14原图保留；目标CI222/222、221图零差异"
+    },
+    "delivery_state": "engineering_and_visual_verified_published",
+    "release_validation": {
+      "dev_release": "success",
+      "android_quality": "success",
+      "screenshot_tests": 222,
+      "screenshot_matches": 221,
+      "new_idle_regression_and_recovery": 22,
+      "real_model_quality": "not_tested",
+      "physical_audio": "not_tested",
+      "device_upgrade": "not_tested"
+    }
+  }
+}

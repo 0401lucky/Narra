@@ -1,0 +1,90 @@
+{
+  "id": "date-companion-history-integration",
+  "name": "date-companion-history-integration",
+  "title": "v2.4.1 陪伴 D6：历史导出与集成交付",
+  "description": "跨场次历史、修订/导出、资料边界与完整兼容验收",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "roleplay",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-11-09",
+  "completedAt": "2026-11-20",
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "18ec00c42837b995df05d55deea759651606ccc9",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "11-09-date-companion",
+  "relatedFiles": [
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-history-integration/prd.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-history-integration/design.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion-history-integration/implement.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/acceptance-matrix.md"
+  ],
+  "notes": "2026-11-09 用户批准最新完整方案并开始；2026-11-20 用户批准工程归档、推送GitHub及Actions构建/R2/内置可选更新发版，目标2.4.1-dev。保留v2.4依赖和无关工作区改动。 2026-11-20用户确认207项UI基准，2.4.1-dev Actions/R2/Pages/公开清单全部通过，工程归档；未实测模型/物理音效保持单列。",
+  "meta": {
+    "target_version": "2.4.1",
+    "work_package": "D6",
+    "planning_review": "approved",
+    "implementation_state": "engineering_native_verified_visual_acceptance_pending",
+    "upstream_handoff": "../11-09-date-companion-voice/research/handoff.md",
+    "readiness": "2026-11-20 D6工程/原生集成收口：唯一完整JVM2955后定向修复，最新去重2956/2956、原生9/9、52账本52/52、编译/双APK/baseline/Lint通过。schema56→57旧58表全保留；40新增35修改75路径，296保护仅允许build测试依赖。11原生候选与实际完整TXT已审阅。截图53项1匹配52未接纳，旧34与D4同字节；真实模型/物理音效待验，不提交发布或自动归档。",
+    "handoff": "research/handoff.md",
+    "validation": {
+      "jvm_latest": 2956,
+      "native_latest": 9,
+      "engineering_matrix_verified": 52,
+      "schema": 57,
+      "source_paths": 75,
+      "visual_acceptance": "pending",
+      "real_model_quality": "not_tested",
+      "physical_audio": "not_tested",
+      "published": false
+    },
+    "publication": {
+      "authorized_at": "2026-11-20",
+      "target_version": "2.4.1-dev",
+      "version_code": 20401,
+      "state": "published",
+      "pipeline": "GitHub Actions -> R2 -> GitHub Pages -> public update verification",
+      "user_message": "他已经做完了吧，现在让它推送github，走更新发版流程了，github action，上传r2和内置更新之类的",
+      "run_id": "44745192024",
+      "run_url": "https://github.com/0401lucky/Narra/actions/runs/44745192024",
+      "source_sha": "18ec00c42837b995df05d55deea759651606ccc9",
+      "publication_commit": "e7d3f2f7bf168938a37b8d10091241c965eac544",
+      "apk_sha256": "f9df232f89f755571b49a66e15d16d20cfe7b6921463f15c909c6c1dda53dad2",
+      "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.4.1-dev-20401-dev.apk?v=20401",
+      "optional_update": true,
+      "ui_baseline_approval": "用户明确接纳207候选，14原图保留；目标CI222/222、221图零差异"
+    },
+    "dependencies": [
+      "11-09-date-companion-foundation",
+      "11-09-date-companion-entry-context",
+      "11-09-date-companion-style-observation",
+      "11-09-date-companion-stage-reading",
+      "11-09-date-companion-voice"
+    ],
+    "execution_approval": {
+      "requested_at": "2026-11-09",
+      "user_message": "可以，没问题，开始吧",
+      "scope": "批准最新完整2.4.1方案，按D1至D6依赖实施与验证；不包括外部发布"
+    },
+    "delivery_state": "engineering_and_visual_verified_published",
+    "release_validation": {
+      "dev_release": "success",
+      "android_quality": "success",
+      "screenshot_tests": 222,
+      "screenshot_matches": 221,
+      "new_idle_regression_and_recovery": 22,
+      "real_model_quality": "not_tested",
+      "physical_audio": "not_tested",
+      "device_upgrade": "not_tested"
+    },
+    "last_release_handoff": "research/release-handoff-2026-11-20.md"
+  }
+}

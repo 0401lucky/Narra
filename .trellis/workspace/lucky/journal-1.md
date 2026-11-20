@@ -464,3 +464,154 @@ P04/P05/P10/P11共4批全部交付，80新增与158总基准、159截图、1826 
 ### Next Steps
 
 - 本次2.3发布工作已完成；2.4记忆改造等待用户明确恢复，不自动启动实施。
+
+
+## Session 15: v2.4.1 D4 工程收口
+
+**Date**: 2026-11-19
+**Task**: v2.4.1 D4 工程收口
+**Branch**: `main`
+
+### Summary
+
+本地演出、素材与连续阅读完成工程和原生验收；F5显示保真与真实输入/滚动测试收口，旧视觉差异与D3一致未接纳，本轮不实施D5产品。
+
+### Main Changes
+
+- 保留字面标签、完整grapheme和连续空白；真实滚动接管回看位置，名称编辑增加明确往返同步断言。
+- 同步D4 PRD/执行计划、父矩阵、2.4.1版本记录、规范、最终接口交接及50路径/279保护项证明。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] JVM分轮最新去重149/149通过；设备38其余32与45最后1项分轮最新去重33/33通过，不称同轮全过。
+- [OK] 编译、双APK通过；46当前Lint 0 errors/Fatal、55 warnings、3 hints。
+- [OK] 旧35截图1匹配、34既有差异；34 current actual与D3逐字节一致，新增像素差异0，旧基准不变。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 按已批准依赖继续D5，优先消费D4交接与两份只读研究，不重复稳定D4验证；D5/D6及旧视觉接纳仍待后续。
+
+## Session 16: v2.4.1 D5 语音翻译与收藏工程收口
+
+**Date**: 2026-11-19
+**Task**: 11-09-date-companion-voice
+**Branch**: `main`
+
+### Summary
+
+按已批准方案激活原D5，先冻结领域接口，再由原生runtime/storage/UI独占文件实施，独立check复核，主会话唯一Gradle/formatter/隔离设备。完整声音与实际UI工程收口，D6待接手。
+
+### Main Changes
+
+- 独立静音默认、MiMo/角色音色、跨场旁白选区/有界分段、TRANSLATION冻结HTTP/键、唯一声音owner及实际start状态。
+- 私有音频/Room两阶段回执、免费补保存、独立收藏、来源失效和有限LRU/手清；schema55→56、固定55/S3维护，旧schema/PNG/版本参数/更新JSON和用户改动保留。
+- 定向修复语种常量、观察异常恢复、停止后纯补存、取消删除失败tombstone及路径凭据；首轮KSP/类型失败保留，不减断言或反复全量测试。
+- 同步7节voicespec、PRD/implement/design、父矩阵/任务状态、2.4.1记录与research/handoff.md。只手工记录journal，没有调用自动提交/归档脚本。
+
+### Git Commits
+
+No commits; 本轮明确不提交、推送、发布或自动归档。
+
+### Testing
+
+- [OK] 05/07/09原XML按class+method最新去重107/107、15类；实际各轮105/29/2，不累计为136。
+- [OK] 10隔离Narra_Memory_V24/emulator-5580：8/8、3类；6真实Compose、1合成WAV原生Player、1固定55升级。
+- [OK] main/JVM/AndroidTest/baseline编译、dev/test APK、最终Lint；0errors/57warnings/3hints，2新增仅AGP新版提示。
+- [OK] 独立271保护项无漂移；源码30新增/19修改/零删除，49个D5路径。D4旧149/33前置未重跑，旧34截图差异未接纳/替换。
+
+### Status
+
+[OK] D5工程completed，目录保留；整个2.4.1/D6未完成或发布。
+
+### Next Steps
+
+- D6从D5 handoff接完整收藏/来源/音频版本与历史导出，不把Reader窗口当全部、不重新合成补挂接。
+- 真实MiMo/克隆/物理设备路由焦点、视觉接纳仍未测；仅整段响应/分段串行，首次无持久副本及双介质取消标志失败的跨进程限制保留。
+
+
+## Session 17: v2.4.1 D6 历史资料与原生集成收尾
+
+**Date**: 2026-11-20
+**Task**: v2.4.1 D6 历史资料与原生集成收尾
+**Branch**: `main`
+
+### Summary
+
+续接原会话完成D6工程；JVM最新2956/2956、原生9/9、52账本52/52、Lint与双APK/baseline通过；75工程路径保旧数据/用户改动。视觉/真实模型/物理音效待验，不提交发布或归档。
+
+### Main Changes
+
+续接会话 `01a1f40d-b58c-71b2-9578-d1f93fbd6a65` 已批准的 v2.4.1 D6。
+
+- 历史场次/日期/年月/只读旧档、完整仓储TXT/SAF、批次CAS改删、公开装扮白名单、
+  私人v3单份冻结和分阶段回执恢复完成工程/原生集成。
+- 独立检查修复授权撤销与旧owner清窗、PNG/像素与版本/ID映射、Android非空目录
+  发布/真实旧单文件恢复、私有路径别名脱敏和真实UI选择器/IME/动作可用时序。
+- 唯一完整JVM2955后定向复验，最新唯一2956/2956；原生29六项+34两项+38一项，
+  最新唯一9/9，52行账本52/52，无缺方法。每轮失败和源码/APK绑定保留。
+- 26新dev包、36最终测试包及Lint通过（0错误61告警3提示）；27当前main的baseline
+  编译通过；37安装后拉回两APK SHA一致。main在后续测试修复中未改变。
+- 11原生候选和实际123条TXT22119字节已审阅，保UTF-8 BOM、原CRLF、未载入原文。
+  53截图verify仅1匹配、52差异仍待接纳；34旧actual与D4逐字节相同，18无D4 before。
+- D6实际40新增35修改75工程路径、0删除；296保护295保持，build唯一测试依赖差异，
+  schema56→57只增操作回执表，旧58表/S3 v56全部保留。版本记录与父/子状态同步。
+- 功能2.4.1，发包参数仍2.3.0-dev/20300；本轮未提交、推送、发布或自动归档。
+  真实模型/MiMo/物理音效、视觉接纳仍待验，父子任务保留in_progress及明确meta状态。
+
+实际交接：`.trellis/tasks/11-09-date-companion-history-integration/research/handoff.md`。
+最终门禁与源绑定：同任务`research/validation/final-validation-summary.json`。
+
+
+### Git Commits
+
+(本轮未提交；D6工程与原生验证收尾)
+
+### Status
+
+[OK] **工程与原生验证完成；视觉/真实效果待验，任务未归档**
+
+
+## Session 18: v2.4.1-dev UI与陪伴云端发版
+
+**Date**: 2026-11-20
+**Task**: v2.4.1-dev UI与陪伴云端发版
+**Branch**: `main`
+
+### Summary
+
+已发布2.4.1-dev/20401，包含2.4记忆依赖、D1–D6与UI改进。修复空闲通知竞态，红灯1后22回归与完整云端JVM/Lint通过；用户接纳207基准，222截图/221图零差异。Actions44745192024/R2/Pages/公开可选更新全成功，APK SHA及原证书独立核验。D1–D6/父任务归档，保留其它工作区改动。
+
+### Main Changes
+
+- GitHub Actions构建并发布R2/内置可选更新；保留原dev签名与版本20401
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5a62efab` | (see git log) |
+| `74d152d9` | (see git log) |
+| `3b5db12d` | (see git log) |
+| `18ec00c4` | (see git log) |
+| `e7d3f2f7` | (see git log) |
+| `5e02e13e` | (see git log) |
+
+### Testing
+
+- [OK] 42两类22/22；IDE定向格式化Kotlin0字节变化；78次发布守卫/actionlint通过；云端完整JVM/Lint与222截图通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真实模型/MiMo、物理音效及真机覆盖安装仍待独立实测

@@ -1,0 +1,129 @@
+{
+  "version": "2.4.1",
+  "engineeringGate": "passed",
+  "published": false,
+  "fullJvmRound": "13-full-jvm",
+  "jvmLatest": {
+    "count": 2956,
+    "passed": 2956,
+    "failed": 0,
+    "skipped": 0
+  },
+  "nativeLatest": {
+    "count": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ledgerVerified": 52,
+  "baselineRound": "27-baseline-current-source",
+  "mainApkRound": "26-native-repairs-verified",
+  "testApkRound": "36-final-story-test-apk-lint",
+  "installedPackages": [
+    {
+      "package": "com.narra.app.dev",
+      "buildRound": "26-native-repairs-verified",
+      "source": "app/build/outputs/apk/debug/Narra-v2.3.0-dev-20300-dev.apk",
+      "sourceSha256": "f3d1698f05afa2dcb160047902993deeaee9b8f5c71e97f968ec29f24b410331",
+      "installedPath": "/data/app/~~1Zf2B4KUIEyiUYSMhVlcEg==/com.narra.app.dev--Cts5FiE5cpNa-LzhAoyfA==/base.apk",
+      "installedSha256": "f3d1698f05afa2dcb160047902993deeaee9b8f5c71e97f968ec29f24b410331",
+      "match": true
+    },
+    {
+      "package": "com.narra.app.dev.test",
+      "buildRound": "36-final-story-test-apk-lint",
+      "source": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "sourceSha256": "3f58a3309ef9cd97bfd53a837f52a61f7a4266174aae20f4a0b5f94b90e4ff7e",
+      "installedPath": "/data/app/~~eB-8P5TQqJn8uy49qQbfsw==/com.narra.app.dev.test-oZ_sKWMQUGE_rMDHKZGrxg==/base.apk",
+      "installedSha256": "3f58a3309ef9cd97bfd53a837f52a61f7a4266174aae20f4a0b5f94b90e4ff7e",
+      "match": true
+    }
+  ],
+  "sourceBindings": [
+    {
+      "round": "26-native-repairs-verified",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": [
+        "app/src/androidTest/java/com/example/myapplication/ui/navigation/CompanionIntegrationStoryTest.kt"
+      ]
+    },
+    {
+      "round": "27-baseline-current-source",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": [
+        "app/src/androidTest/java/com/example/myapplication/ui/navigation/CompanionIntegrationStoryTest.kt"
+      ]
+    },
+    {
+      "round": "29-native-current-source",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": [
+        "app/src/androidTest/java/com/example/myapplication/ui/navigation/CompanionIntegrationStoryTest.kt"
+      ]
+    },
+    {
+      "round": "34-native-stories",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": [
+        "app/src/androidTest/java/com/example/myapplication/ui/navigation/CompanionIntegrationStoryTest.kt"
+      ]
+    },
+    {
+      "round": "36-final-story-test-apk-lint",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": []
+    },
+    {
+      "round": "38-native-complete-story",
+      "mainSourcesMatchFinal": true,
+      "sourceDifferences": []
+    }
+  ],
+  "scope": {
+    "added": 40,
+    "modified": 35,
+    "removed": 0
+  },
+  "sourceCount": 1531,
+  "protectedStatus": "passed",
+  "screenshotVerify": {
+    "count": 53,
+    "matched": 1,
+    "pixelDifferences": 52,
+    "sameD4Actuals": 34,
+    "newD4Differences": 0,
+    "withoutD4Before": 18,
+    "acceptance": "pending"
+  },
+  "nativeVisualReview": "native-visual-txt-review.json",
+  "realModelQuality": "not_tested",
+  "physicalAudio": "not_tested",
+  "engineeringManifest": "final-source.json (frozen validation source)",
+  "deliveryManifest": "delivery-source.json (current source including later version documentation)",
+  "postValidationBookkeeping": [
+    {
+      "path": "版本功能添加/优化.md",
+      "beforeSha256": "fead8beaec36f9a101dbd769ae8223388b05053737d1efb93bdc94ae342e722b",
+      "afterSha256": "381f3f937ca423b2563ce6e604a1310cb3b969bcadb8dd1eb74f4b0cb42cfad4",
+      "classification": "Authorized version documentation synchronized after frozen engineering validation",
+      "affectsApk": false
+    }
+  ],
+  "deliveryScopeCounts": {
+    "added": 40,
+    "modified": 36,
+    "removed": 0
+  },
+  "independentCheck": {
+    "status": "passed",
+    "report": "../check-full-scope-2026-11-20.md",
+    "sha256": "654ec52f48955b3d762749520aeccb0c40fafcb954641eb3601134443a827fc5",
+    "remainingEngineeringFindings": 0
+  },
+  "journal": {
+    "session": 17,
+    "path": ".trellis/workspace/lucky/journal-1.md",
+    "automaticCommit": false,
+    "archive": false
+  }
+}

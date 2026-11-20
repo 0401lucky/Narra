@@ -1,0 +1,107 @@
+{
+  "id": "date-companion",
+  "name": "date-companion",
+  "title": "v2.4.1 单角色面对面陪伴：参考 SullyOS 并适配 Narra",
+  "description": "升级现有单角色线下扮演，完整实现2.4.1陪伴六块，复用v2.4记忆；2026-11-09最终方案获批准，按D1–D6依赖执行。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "roleplay",
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-11-09",
+  "completedAt": "2026-11-20",
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "18ec00c42837b995df05d55deea759651606ccc9",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "11-09-date-companion-foundation",
+    "11-09-date-companion-entry-context",
+    "11-09-date-companion-style-observation",
+    "11-09-date-companion-stage-reading",
+    "11-09-date-companion-voice",
+    "11-09-date-companion-history-integration"
+  ],
+  "parent": null,
+  "relatedFiles": [
+    "docs/agent-prompt-reference/date-companion-agent-handbook.md",
+    "docs/agent-prompt-reference/01-date-companion.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/prd.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/design.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/implement.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/acceptance-matrix.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/planning-summary.md",
+    ".trellis/tasks/archive/2026-11/11-09-date-companion/research/reference-contract.md",
+    "版本功能添加/优化.md"
+  ],
+  "notes": "2026-11-09 用户批准最新完整方案并开始；2026-11-20 用户批准工程归档、推送GitHub及Actions构建/R2/内置可选更新发版，目标2.4.1-dev。保留v2.4依赖和无关工作区改动。 2026-11-20用户确认207项UI基准，2.4.1-dev Actions/R2/Pages/公开清单全部通过，工程归档；未实测模型/物理音效保持单列。",
+  "meta": {
+    "target_version": "2.4.1",
+    "task_kind": "parent",
+    "planning_review": "approved",
+    "implementation_state": "engineering_integrated_visual_acceptance_pending",
+    "verified_children": [
+      "11-09-date-companion-foundation",
+      "11-09-date-companion-entry-context"
+    ],
+    "engineering_native_verified_children": [
+      "11-09-date-companion-foundation",
+      "11-09-date-companion-entry-context",
+      "11-09-date-companion-style-observation",
+      "11-09-date-companion-stage-reading",
+      "11-09-date-companion-voice",
+      "11-09-date-companion-history-integration"
+    ],
+    "visual_acceptance_pending_children": [
+      "11-09-date-companion-style-observation",
+      "11-09-date-companion-stage-reading",
+      "11-09-date-companion-voice",
+      "11-09-date-companion-history-integration"
+    ],
+    "active_work_package": "D6",
+    "next_work_package": null,
+    "last_engineering_handoff": "../11-09-date-companion-history-integration/research/handoff.md",
+    "session_scope": "2026-11-20 D6工程/原生集成交付：JVM最新2956/2956、原生9/9、52账本52/52、编译/双APK/baseline/Lint通过；schema56→57旧58表/S3保留，75工程路径无删除，296保护项仅允许build测试依赖。11原生候选及实际完整TXT已审阅；截图53项1匹配52差异未接纳，旧34与D4同字节、18无D4 before。D1–D6工程责任已绑定，真实模型/物理音效/视觉接纳仍单列；版本参数/更新JSON保持，不提交发布或自动归档。",
+    "publication": {
+      "authorized_at": "2026-11-20",
+      "target_version": "2.4.1-dev",
+      "version_code": 20401,
+      "state": "published",
+      "pipeline": "GitHub Actions -> R2 -> GitHub Pages -> public update verification",
+      "run_id": "44745192024",
+      "run_url": "https://github.com/0401lucky/Narra/actions/runs/44745192024",
+      "source_sha": "18ec00c42837b995df05d55deea759651606ccc9",
+      "publication_commit": "e7d3f2f7bf168938a37b8d10091241c965eac544",
+      "apk_sha256": "f9df232f89f755571b49a66e15d16d20cfe7b6921463f15c909c6c1dda53dad2",
+      "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.4.1-dev-20401-dev.apk?v=20401",
+      "optional_update": true,
+      "ui_baseline_approval": "用户明确接纳207候选，14原图保留；目标CI222/222、221图零差异"
+    },
+    "entry_strategy": "upgrade_existing_offline",
+    "planning_consent_at": "2026-11-09",
+    "scope_strategy": "complete_experience",
+    "scope_approved_at": "2026-11-09",
+    "requirement_convergence": "complete",
+    "execution_approval": {
+      "requested_at": "2026-11-09",
+      "user_message": "可以，没问题，开始吧",
+      "scope": "批准最新完整2.4.1方案，按D1至D6依赖实施与验证；不包括外部发布"
+    },
+    "delivery_state": "engineering_and_visual_verified_published",
+    "release_validation": {
+      "dev_release": "success",
+      "android_quality": "success",
+      "screenshot_tests": 222,
+      "screenshot_matches": 221,
+      "new_idle_regression_and_recovery": 22,
+      "real_model_quality": "not_tested",
+      "physical_audio": "not_tested",
+      "device_upgrade": "not_tested"
+    },
+    "last_release_handoff": "../11-09-date-companion-history-integration/research/release-handoff-2026-11-20.md"
+  }
+}
