@@ -157,6 +157,16 @@ suspend fun savePendingResult(scenarioId: String, attemptId: String): CompanionG
 - 后续扩展文风/观测时仍复用此映射，并将实际生成配置和稳定字段定义写入请求
   快照；仅有revision不能用来解释改名后的旧观测。
 
+### 可观察空闲与操作所有权
+
+- `RoleplayCompanionViewModel.runOperation` 用 `CoroutineStart.LAZY` 创建 Job，先登记
+  `operation`，再发布忙态并启动；已登记但尚未启动也必须由 `operation != null` 阻止重入。
+- `catch` / `finally` 同时校验导航 `generation` 和当前 Job 身份；先释放自己的操作槽，
+  再发布 `isBusy=false`。StateFlow 通知可同步执行下一动作，旧 Job 或旧 launch 返回值
+  不得覆盖这一动作的新 handle、错误或忙态。`refresh` 使用相同的已登记守卫。
+- 不能用“空闲收集者总在 finally 后调度”的隐含假设，也不能让测试读取私有 Job
+  或增加 sleep 掩盖该窗口；空闲通知中立即发起的真实操作必须正常执行。
+
 ## 4. 校验与错误矩阵
 
 | 条件 | 必须观察到的行为 |
@@ -171,6 +181,7 @@ suspend fun savePendingResult(scenarioId: String, attemptId: String): CompanionG
 | 输入保存失败/保存确认迟到 | 原图片和文字草稿保留；不清除后来新选的附件 |
 | 设置CAS冲突/高版本/角色已删除 | Conflict/UnsupportedVersion/CharacterMissing，保留当前数据及可恢复草稿 |
 | 离场或切页取消 | 取消当前操作；旧回调不改新场；重入不自动收费重发 |
+| 空闲通知中立即选择开场 | 新动作正常执行，旧 Job 不拦截或清理新操作；DIRECT 仍为零 HTTP |
 
 ## 5. 正常、基础与异常案例
 
@@ -186,6 +197,8 @@ suspend fun savePendingResult(scenarioId: String, attemptId: String): CompanionG
   标记、旧会话兼容及级联清理。
 - `CompanionEntryViewModelTest`：DIRECT重开、PREVIEW恢复、路由重建、接受失败/
   免费补存、未发请求输入和取消；请求计数及实际仓储状态共同断言。
+  `idleNotification_allowsImmediateOpeningSelection` 用同步通知调度发起真实 DIRECT，
+  核对 UI/Room 的 ACTIVE、无 turn/消息与零 HTTP；保留原开场/待保存恢复断言。
 - `CompanionHistoryScopeTest` / `CompanionRequestCoordinatorTest`：真实Room授权，
   三协议最终HTTP、控制语义、首次开场/重生成截止、删源挂起竞态、记忆关闭/失败、
   世界书depth 0与role顺序。不能仅断言中间prompt字符串。

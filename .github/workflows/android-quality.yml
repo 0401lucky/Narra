@@ -46,13 +46,26 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug
-        run: ./gradlew assembleDebug --console=plain
+        run: ./gradlew assembleDebug --console=plain --stacktrace
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --console=plain
+        run: ./gradlew testDebugUnitTest --console=plain --stacktrace
 
       - name: Run lint
-        run: ./gradlew lintDebug --console=plain
+        run: ./gradlew lintDebug --console=plain --stacktrace
+
+      # 保存本 job 的合成测试结果与 Gradle 问题报告，供定位真实失败。
+      - name: Upload quality diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/build/test-results/testDebugUnitTest/**
+            app/build/reports/tests/testDebugUnitTest/**
+            build/reports/problems/**
+          if-no-files-found: ignore
+          retention-days: 7
 
   # 截图回归门禁：Roborazzi 1.76 + Robolectric 合成 fixture，零像素阈值比较。
   # 约定与边界：
@@ -87,7 +100,7 @@ jobs:
       # 真实 verify 入口：只筛选截图包，不改变原有 JVM 单测集合。
       - name: Verify screenshot baselines
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.screenshot_mode != 'record'
-        run: ./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true --console=plain
+        run: ./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true --console=plain --stacktrace
 
       # 仅手动 record 模式：生成候选基准，不提交、不 verifyAndRecord。
       - name: Record candidate baselines

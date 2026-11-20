@@ -11,6 +11,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.*
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -100,7 +102,7 @@ class RoleplayCompanionViewModel(
     }
 
     fun refresh() {
-        if (openedKey == null || operation?.isActive == true) return
+        if (openedKey == null || operation != null) return
         openedKey = null
         open(mutableState.value.scenarioId, openedEntryId, openedSessionKey)
     }
@@ -478,16 +480,16 @@ class RoleplayCompanionViewModel(
     }
 
     private fun runOperation(block: suspend () -> Unit) {
-        if (operation?.isActive == true) return
+        if (operation != null) return
         val owner = generation
-        mutableState.update { it.copy(isBusy = true) }
-        operation = viewModelScope.launch {
+        val nextOperation = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            val currentOperation = currentCoroutineContext().job
             try {
                 block()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                if (owner == generation) mutableState.update {
+                if (owner == generation && operation === currentOperation) mutableState.update {
                     it.copy(
                         errorMessage = SensitiveTextRedactor.throwableMessageForUi(
                             failure,
@@ -497,12 +499,16 @@ class RoleplayCompanionViewModel(
                     )
                 }
             } finally {
-                if (owner == generation) {
-                    mutableState.update { it.copy(isBusy = false) }
+                if (owner == generation && operation === currentOperation) {
+                    // 先释放本操作，再发布空闲，允许通知中的下一次动作。
                     operation = null
+                    mutableState.update { it.copy(isBusy = false) }
                 }
             }
         }
+        operation = nextOperation
+        mutableState.update { it.copy(isBusy = true) }
+        nextOperation.start()
     }
 
     override fun onCleared() {

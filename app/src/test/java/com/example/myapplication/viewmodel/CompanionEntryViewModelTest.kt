@@ -14,9 +14,12 @@ import com.example.myapplication.model.CompanionTurnKind
 import com.example.myapplication.model.CompanionGeneratedArtifact
 import com.example.myapplication.model.PromptCompletionStatus
 import com.example.myapplication.testutil.CompanionEntryTestFixture
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -34,6 +37,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -50,6 +54,33 @@ class CompanionEntryViewModelTest : CompanionEntryTestFixture() {
     fun clearMainDispatcher() {
         viewModels.forEach { it.cancel() }
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun idleNotification_allowsImmediateOpeningSelection() = runBlocking<Unit> {
+        val context = scene()
+        val vm = viewModel()
+        val observerDispatcher = object : CoroutineDispatcher() {
+            override fun dispatch(context: CoroutineContext, block: Runnable) = block.run()
+        }
+        // 同步执行空闲通知中的真实动作，固定触发旧操作尚未释放的窗口。
+        val selection = launch(observerDispatcher, start = CoroutineStart.UNDISPATCHED) {
+            withTimeout(15_000) {
+                vm.uiState.first { !it.isBusy && it.phase == CompanionEntryPhase.PREPARE }
+            }
+            vm.chooseOpening(CompanionOpeningMode.DIRECT)
+        }
+        vm.open(context.scenarioId, "entry")
+        selection.join()
+        settle(vm)
+
+        assertNull(vm.uiState.value.errorMessage)
+        assertEquals(CompanionEntryPhase.ACTIVE, vm.uiState.value.phase)
+        val encounter = requireNotNull(vm.uiState.value.encounter)
+        assertEquals(CompanionEncounterState.ACTIVE, repository.getEncounter(encounter.id)?.state)
+        assertTrue(repository.listTurns(encounter.id).isEmpty())
+        assertTrue(conversations.listMessages(context.conversationId).isEmpty())
+        assertEquals(0, server.requestCount)
     }
 
     @Test
